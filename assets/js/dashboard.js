@@ -2,7 +2,7 @@ import { db, ref, set, onValue } from "./firebase-config.js";
 
 let localStudents = [];
 
-// 1. 4 Sütunlu CSV'yi Oku (Okul No Dahil)
+// 1. CSV Okuma (4 Sütun: Okul No; Adı Soyadı; Takım Adı; Görev)
 document.getElementById('csv-input').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -14,14 +14,13 @@ document.getElementById('csv-input').addEventListener('change', function(e) {
         encoding: "UTF-8",
         complete: function(results) {
             localStudents = results.data;
-            console.log("Personel Veritabanı Güncellendi:", localStudents);
             renderPreview();
-            alert("SİSTEM ONAYI: " + localStudents.length + " personel kimlik numaralarıyla birlikte tanımlandı.");
+            alert("PERSONEL VERİTABANI: " + localStudents.length + " kayıt Okul No ile eşleşti.");
         }
     });
 });
 
-// 2. Tabloyu Okul No Dahil Göster
+// 2. Tabloyu Okul No Dahil İnşa Etme
 function renderPreview() {
     const tbody = document.getElementById('status-body');
     if (!tbody) return;
@@ -30,23 +29,24 @@ function renderPreview() {
     localStudents.forEach((student) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${student["Okul No"] || "---"}</td>
+            <td><span class="id-tag">${student["Okul No"] || "---"}</span></td>
             <td>${student["Takım Adı"] || "Bilinmiyor"}</td>
-            <td>SEKTÖR 2A</td>
+            <td>2A</td>
             <td class="neon-text">1000</td>
             <td>
                 <strong>${student["Adı Soyadı"]}</strong> 
-                <span class="role-tag"> - ${student["Görev"] || "Analist"}</span>
+                <span class="role-text">(${student["Görev"] || "Analist"})</span>
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// 3. Operasyonu Başlat (Tüm Kimlik Verilerini Firebase'e Mühürle)
+// 3. Operasyonu Başlat ve Firebase'e Mühürle
 document.getElementById('btn-init-op').addEventListener('click', function() {
-    if (localStudents.length === 0) return alert("HATA: Önce personel listesini sisteme yükleyin!");
+    if (localStudents.length === 0) return alert("HATA: Önce personel listesini yükleyin!");
 
+    // Benzersiz takımları al ve skorlarını başlat
     const teamsInFile = [...new Set(localStudents.map(s => s["Takım Adı"]))];
 
     teamsInFile.forEach(team => {
@@ -59,8 +59,8 @@ document.getElementById('btn-init-op').addEventListener('click', function() {
         }
     });
 
-    // Okul No dahil tüm kadroyu buluta işle
+    // OKUL NO DAHİL tüm kadroyu Firebase'e gönder
     set(ref(db, 'operasyon/kadro'), localStudents).then(() => {
-        alert("OPERASYON KİLİTLENDİ: Kimlik doğrulama sistemleri aktif.");
+        alert("SİSTEM KİLİTLENDİ: Okul No tabanlı giriş protokolleri aktif.");
     });
 });
