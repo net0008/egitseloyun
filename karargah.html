@@ -12,14 +12,28 @@
 
     <main class="dashboard-container">
         
-        <section class="ops-notes">
-            <div class="note-box">
-                <h3>⚠️ OPERASYONEL PROTOKOLLER</h3>
-                <ul>
-                    <li><strong>MÜHÜRLEME KURALI:</strong> "Operasyonu Başlat" komutu verildikten sonra tim isimleri, öğrenci dağılımı ve roller üzerinde <u>değişiklik yapılamaz</u>. Tüm veriler bulut sistemine (Firebase) kilitlenir.</li>
-                    <li><strong>CSV STANDARDI:</strong> Liste ayırıcısı <strong>noktalı virgül (;)</strong> olmalıdır.</li>
-                    <li><strong>SÜTUN BAŞLIKLARI:</strong> Dosya ilk satırı mutlaka <code>Okul No;Adı Soyadı</code> şeklinde olmalıdır.</li>
-                </ul>
+        <section class="ops-instructions">
+            <div class="instruction-box">
+                <h3>🛠️ CSV VERİ HAZIRLAMA TALİMATI</h3>
+                <div class="instruction-grid">
+                    <div class="inst-item">
+                        <h4>1. Dosya Yapısı</h4>
+                        <p>Excel'de sütun başlıkları tam olarak şöyle olmalıdır: <br>
+                        <code>Okul No;Adı Soyadı;Takım Adı</code></p>
+                    </div>
+                    <div class="inst-item">
+                        <h4>2. Türkçe Karakter Desteği</h4>
+                        <p>Dosyayı kaydederken <strong>"CSV UTF-8 (Virgülle ayrılmış)"</strong> seçeneğini kullanın. Bu, Türkçe karakterlerin bozulmasını engeller.</p>
+                    </div>
+                    <div class="inst-item">
+                        <h4>3. Ayırıcı (Delimiter)</h4>
+                        <p>Sistem <strong>noktalı virgül (;)</strong> ayırıcısına göre mühürlenmiştir. Excel'de listeyi hazırlayıp bu formatta kaydedin.</p>
+                    </div>
+                    <div class="inst-item warning">
+                        <h4>⚠️ ÖNEMLİ</h4>
+                        <p>Değişiklik yapılacaksa Excel üzerinden yapılıp dosya yeniden yüklenmelidir. <strong>Operasyonu Başlat</strong> komutundan sonra veri girişi kilitlenir.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -27,7 +41,7 @@
             <h2>PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
             <div class="upload-box">
                 <input type="file" id="csv-input" accept=".csv" hidden>
-                <label for="csv-input" class="cyber-btn">📂 CSV LİSTESİ YÜKLE</label>
+                <label for="csv-input" class="cyber-btn">📂 LİSTEYİ SİSTEME YÜKLE (.CSV)</label>
                 <button class="cyber-btn primary" id="btn-init-op">⚡ OPERASYONU BAŞLAT</button>
             </div>
         </section>
@@ -40,7 +54,7 @@
                         <th>TİM ADI</th>
                         <th>AKTİF SEKTÖR</th>
                         <th>PUAN</th>
-                        <th>DURUM (ÜYE/ROL)</th>
+                        <th>PERSONEL BİLGİSİ</th>
                     </tr>
                 </thead>
                 <tbody id="status-body">
