@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Siber Karargâh | Admin Paneli</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>SİBER KARARGÂH: PERSONEL YÖNETİMİ</h1>
+            <p>Sınıf listesini (CSV) yükleyin ve timleri mühürleyin.</p>
+        </header>
+
+        <section class="upload-section">
+            <input type="file" id="csv-file" accept=".csv" hidden>
+            <label for="csv-file" class="cyber-btn">📂 LİSTE YÜKLE (.CSV)</label>
+            <button onclick="distributeTeams()" class="cyber-btn primary">⚡ OPERASYONU BAŞLAT</button>
+        </section>
+
+        <section class="preview-section">
+            <table id="personnel-table">
+                <thead>
+                    <tr>
+                        <th>Okul No</th>
+                        <th>Ad Soyad</th>
+                        <th>Tim Adı</th>
+                        <th>Uzmanlık Alanı</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    </tbody>
+            </table>
+        </section>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html>
