@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sektör Analizi | Operasyon Terminali</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="operation-body">
+    <div class="terminal-container">
+        <header class="ops-header">
+            <div class="team-badge">TİM: <span id="active-team-name">---</span></div>
+            <div class="mission-status">SEKTÖR: 2A | İRTİFA ANALİZİ</div>
+            <div class="live-score">PUAN: <span id="current-score">1000</span></div>
+        </header>
+
+        <main class="ops-main">
+            <div class="visual-panel">
+                <div class="map-wrapper">
+                    <img src="assets/img/sektor_2a.jpg" alt="Sektör 2A Haritası" id="target-map">
+                    <div class="scan-effect"></div>
+                </div>
+            </div>
+
+            <div class="command-panel">
+                <div class="intel-box">
+                    <p class="system-msg">> [SİSTEM]: Karşıt unsurlar veriyi kriptoladı.</p>
+                    <p class="mission-text">> GÖREV: En yüksek izohipsin karesini ($x^2$) şifre olarak girin.</p>
+                </div>
+
+                <div class="input-area">
+                    <label>$ root@analyst: </label>
+                    <input type="number" id="kripto-input" placeholder="Kod bekleniyor...">
+                    <button onclick="checkKripto()" class="cyber-btn">DOĞRULA</button>
+                </div>
+
+                <div class="log-window" id="log-window">
+                    <p>> Sistem hazır...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="ops_engine.js"></script>
+</body>
+</html>
