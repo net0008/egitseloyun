@@ -201,3 +201,10 @@ th { background: rgba(57, 255, 20, 0.2); }
     padding: 2px 5px;
     border: 1px solid var(--neon-green);
 }
+.cyber-select {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    font-family: 'Courier New', monospace;
+    padding: 5px;
+}
