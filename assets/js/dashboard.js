@@ -1,6 +1,6 @@
-/* * dashboard.js - Sürüm: v2.7.0
+/* * dashboard.js - Sürüm: v2.8.0
  * Karargâh Canlı İzleme ve Veri Yönetim Sistemi
- * [Hasbi Erdoğmuş - Operasyonel Mühür]
+ * [Hasbi Erdoğmuş - Sistem Temizlik Protokolü eklendi]
  */
 
 import { db, ref, set, onValue } from "./firebase-config.js";
@@ -25,12 +25,8 @@ function normalizeKey(text = "") {
         .replace(/^\uFEFF/, "")
         .trim()
         .toLocaleLowerCase("tr")
-        .replace(/ı/g, "i")
-        .replace(/ö/g, "o")
-        .replace(/ü/g, "u")
-        .replace(/ş/g, "s")
-        .replace(/ğ/g, "g")
-        .replace(/ç/g, "c")
+        .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ü/g, "u")
+        .replace(/ş/g, "s").replace(/ğ/g, "g").replace(/ç/g, "c")
         .replace(/[^a-z0-9]/g, "");
 }
 
@@ -42,10 +38,10 @@ function canonicalHeader(header = "") {
 // --- 2. GÖRSELLEŞTİRME MOTORU ---
 
 function getStatusColor(status) {
-    if (status === "Bağlantı Kuruldu" || status === "Başarılı") return "#39FF14"; // Neon Yeşil
-    if (status === "İpucu Aldı") return "#00d4ff"; // Siber Mavi
-    if (status.includes("Hata") || status.includes("Hatalı")) return "#ff3e3e"; // Uyarı Kırmızısı
-    return "#888"; // Bekleme Grisi
+    if (status === "Bağlantı Kuruldu" || status === "Başarılı") return "#39FF14";
+    if (status === "İpucu Aldı") return "#00d4ff";
+    if (status && (status.includes("Hata") || status.includes("Hatalı"))) return "#ff3e3e";
+    return "#888";
 }
 
 function renderDashboard(liveScores = {}) {
@@ -60,7 +56,6 @@ function renderDashboard(liveScores = {}) {
     let rowsHTML = "";
     localStudents.forEach((student) => {
         const teamName = student["Takım Adı"];
-        // Firebase'den gelen canlı veriyi yakala, yoksa varsayılanı göster
         const stats = liveScores[teamName] || { puan: 1000, sektor: "2A", durum: "Sinyal Bekleniyor" };
 
         rowsHTML += `
@@ -81,24 +76,22 @@ function renderDashboard(liveScores = {}) {
 
 // --- 3. FİREBASE SENKRONİZASYONU ---
 
-// Sayfa açıldığında veya veri değiştiğinde kadroyu ve skorları çek
 onValue(ref(db, "operasyon/kadro"), (snapshot) => {
     if (snapshot.exists()) {
         localStudents = snapshot.val();
-        console.log("[SİSTEM]: Kadro Firebase'den geri yüklendi.");
-        
-        // Kadro varsa, skorları dinlemeye başla
+        console.log("[SİSTEM]: Kadro yüklendi.");
         onValue(ref(db, "operasyon/skorlar"), (scoreSnap) => {
             renderDashboard(scoreSnap.val() || {});
         });
     } else {
-        renderDashboard(); // Boş tabloyu göster
+        localStudents = [];
+        renderDashboard();
     }
 });
 
 // --- 4. ETKİLEŞİM VE DOSYA YÖNETİMİ ---
 
-// CSV Dosyası Yükleme
+// CSV Yükleme
 document.getElementById("csv-input").addEventListener("change", function (e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -117,37 +110,32 @@ document.getElementById("csv-input").addEventListener("change", function (e) {
                 return clean;
             }).filter(s => s["Okul No"] && s["Takım Adı"]);
 
-            if (localStudents.length > 0) {
-                renderDashboard();
-                alert(`BAŞARILI: ${localStudents.length} personel sisteme tanıtıldı.`);
-            } else {
-                alert("HATA: CSV içeriği anlaşılamadı. Başlıkları kontrol edin.");
-            }
+            renderDashboard();
+            if (localStudents.length > 0) alert(`BAŞARILI: ${localStudents.length} personel yüklendi.`);
         }
     });
 });
 
-// Operasyonu Başlat Butonu
+// Operasyonu Başlat
 document.getElementById("btn-init-op").addEventListener("click", () => {
-    if (localStudents.length === 0) {
-        alert("HATA: Önce personel listesini yüklemelisiniz!");
-        return;
-    }
+    if (localStudents.length === 0) return alert("Önce CSV!");
 
     const teams = [...new Set(localStudents.map(s => s["Takım Adı"]))].filter(Boolean);
     const initialScores = {};
+    teams.forEach(t => initialScores[t] = { puan: 1000, sektor: "2A", durum: "Sinyal Bekleniyor" });
 
-    teams.forEach(team => {
-        initialScores[team] = {
-            puan: 1000,
-            sektor: "2A",
-            durum: "Sinyal Bekleniyor"
-        };
-    });
-
-    // Verileri Firebase'e Mühürle
     set(ref(db, "operasyon/skorlar"), initialScores);
-    set(ref(db, "operasyon/kadro"), localStudents).then(() => {
-        alert("OPERASYON BAŞLATILDI: Tüm terminaller izlemeye alındı.");
-    });
+    set(ref(db, "operasyon/kadro"), localStudents).then(() => alert("Operasyon Başlatıldı."));
+});
+
+// --- 5. KRİTİK: SUNUCU SIFIRLAMA ---
+document.getElementById("btn-reset-db").addEventListener("click", () => {
+    if (confirm("DİKKAT: Firebase üzerindeki tüm veriler (kadro ve skorlar) silinecek. Emin misiniz?")) {
+        // 'operasyon' düğümünü tamamen boşaltır
+        set(ref(db, "operasyon"), null).then(() => {
+            localStudents = [];
+            renderDashboard();
+            alert("SUNUCU TEMİZLENDİ: Tüm hayalet veriler silindi. Yeni CSV yükleyebilirsiniz.");
+        });
+    }
 });
