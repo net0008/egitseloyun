@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siber Karargâh | Admin Kontrol</title>
+    <title>Siber Karargâh | Kontrol Merkezi</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
@@ -11,8 +11,20 @@
     <div id="header-placeholder"></div>
 
     <main class="dashboard-container">
+        
+        <section class="ops-notes">
+            <div class="note-box">
+                <h3>⚠️ OPERASYONEL PROTOKOLLER</h3>
+                <ul>
+                    <li><strong>MÜHÜRLEME KURALI:</strong> "Operasyonu Başlat" komutu verildikten sonra tim isimleri, öğrenci dağılımı ve roller üzerinde <u>değişiklik yapılamaz</u>. Tüm veriler bulut sistemine (Firebase) kilitlenir.</li>
+                    <li><strong>CSV STANDARDI:</strong> Liste ayırıcısı <strong>noktalı virgül (;)</strong> olmalıdır.</li>
+                    <li><strong>SÜTUN BAŞLIKLARI:</strong> Dosya ilk satırı mutlaka <code>Okul No;Adı Soyadı</code> şeklinde olmalıdır.</li>
+                </ul>
+            </div>
+        </section>
+
         <section class="admin-controls">
-            <h2><span class="online-blink">●</span> PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
+            <h2>PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
             <div class="upload-box">
                 <input type="file" id="csv-input" accept=".csv" hidden>
                 <label for="csv-input" class="cyber-btn">📂 CSV LİSTESİ YÜKLE</label>
@@ -28,7 +40,7 @@
                         <th>TİM ADI</th>
                         <th>AKTİF SEKTÖR</th>
                         <th>PUAN</th>
-                        <th>DURUM</th>
+                        <th>DURUM (ÜYE/ROL)</th>
                     </tr>
                 </thead>
                 <tbody id="status-body">
