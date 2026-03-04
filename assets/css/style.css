@@ -1,33 +1,171 @@
-/* Temel Siber Ayarlar */
+/* --- 1. DEĞİŞKENLER VE SIFIRLAMA --- */
+:root {
+    --neon-green: #39FF14;
+    --dark-bg: #0a0a0a;
+    --matrix-glow: 0 0 10px rgba(57, 255, 20, 0.5);
+    --panel-bg: rgba(0, 20, 0, 0.85);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--neon-green);
+    font-family: 'Courier New', Courier, monospace;
+    overflow-x: hidden;
+}
+
+/* --- 2. ORTAK BİLEŞENLER (Header & Footer) --- */
 .cyber-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
     border-bottom: 2px solid var(--neon-green);
-    background: rgba(0, 20, 0, 0.9);
+    background: var(--panel-bg);
     box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+    position: relative;
+    z-index: 100;
 }
 
-.visual-area img, .visual-area video {
-    width: 100%;
-    height: auto;
-    border: 1px solid var(--neon-green);
-    filter: brightness(0.8) contrast(1.2) sepia(0.2) hue-rotate(80deg); /* Siber yeşil tonu */
+.cyber-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--neon-green);
+    background: var(--panel-bg);
+    text-align: center;
+    font-size: 0.8rem;
 }
 
-/* Tarama Çizgisi Efekti */
-.scan-line {
-    width: 100%;
-    height: 2px;
-    background: var(--neon-green);
-    opacity: 0.5;
+/* --- 3. INDEX (GİRİŞ) SAYFASI ÖZEL --- */
+.login-screen {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.video-background {
     position: absolute;
     top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.video-background video {
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    filter: brightness(0.4) contrast(1.2);
+}
+
+.login-frame {
+    background: var(--panel-bg);
+    padding: 3rem;
+    border: 2px solid var(--neon-green);
+    box-shadow: var(--matrix-glow);
+    text-align: center;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 2rem;
+}
+
+/* --- 4. OPERASYON VE PANEL DÜZENLERİ --- */
+.operation-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 20px;
+    padding: 20px;
+    height: calc(100vh - 120px);
+}
+
+.visual-panel, .command-panel {
+    border: 1px solid var(--neon-green);
+    background: var(--panel-bg);
+    padding: 15px;
+    position: relative;
+}
+
+.map-frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--neon-green);
+}
+
+.map-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: brightness(0.8) contrast(1.2) sepia(0.2) hue-rotate(80deg);
+}
+
+/* --- 5. ETKİLEŞİM VE BUTONLAR --- */
+.cyber-btn {
+    background: transparent;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    transition: 0.3s;
+}
+
+.cyber-btn:hover {
+    background: var(--neon-green);
+    color: black;
+    box-shadow: var(--matrix-glow);
+}
+
+input[type="text"], input[type="number"] {
+    background: black;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 10px;
+    font-family: inherit;
+}
+
+/* --- 6. ANİMASYONLAR --- */
+.scan-line {
+    width: 100%;
+    height: 3px;
+    background: var(--neon-green);
+    opacity: 0.6;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-shadow: 0 0 10px var(--neon-green);
     animation: scan 4s linear infinite;
+    pointer-events: none;
 }
 
 @keyframes scan {
     0% { top: 0; }
     100% { top: 100%; }
 }
+
+/* --- 7. TABLO VE ADMİN SİSTEMİ --- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    border: 1px solid var(--neon-green);
+    padding: 10px;
+    text-align: left;
+}
+
+th { background: rgba(57, 255, 20, 0.2); }
