@@ -1,4 +1,8 @@
-import { db, ref, set } from "./firebase-config.js";
+/* * dashboard.js - Sürüm: v2.3.5
+ * Karargâh Canlı İzleme ve Veri Yönetim Sistemi
+ */
+
+import { db, ref, set, onValue } from "./firebase-config.js";
 
 let localStudents = [];
 
@@ -18,6 +22,8 @@ const HEADER_ALIASES = {
     takim: "Takım Adı",
     gorev: "Görev"
 };
+
+// --- YARDIMCI FONKSİYONLAR ---
 
 function normalizeKey(text = "") {
     return String(text)
@@ -45,11 +51,9 @@ function sanitizeValue(value) {
 
 function sanitizeRow(row = {}) {
     const cleanRow = {};
-
     Object.entries(row).forEach(([key, value]) => {
         cleanRow[canonicalHeader(key)] = sanitizeValue(value);
     });
-
     return cleanRow;
 }
 
@@ -62,66 +66,90 @@ function getMissingHeaders(fields = []) {
     return REQUIRED_HEADERS.filter((header) => !normalizedFields.has(header));
 }
 
-function renderPreview() {
+// --- GÖRSELLEŞTİRME VE CANLI TAKİP ---
+
+/**
+ * Tabloyu hem yerel verilerle hem de Firebase'den gelen canlı skorlarla günceller.
+ * @param {Object} liveData Firebase'den gelen 'operasyon/skorlar' verisi
+ */
+function renderDashboard(liveData = {}) {
     const tbody = document.getElementById("status-body");
     if (!tbody) return;
 
     tbody.innerHTML = "";
 
+    if (localStudents.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Veri bekleniyor... Lütfen CSV yükleyin.</td></tr>';
+        return;
+    }
+
     localStudents.forEach((student) => {
+        const teamName = student["Takım Adı"];
+        // Eğer Firebase'de bu takıma ait veri varsa çek, yoksa varsayılanı kullan
+        const stats = liveData[teamName] || { puan: 1000, sektor: "2A", durum: "Hazır" };
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><span class="id-tag">${student["Okul No"] || "---"}</span></td>
-            <td>${student["Takım Adı"] || "Bilinmiyor"}</td>
-            <td>2A</td>
-            <td class="neon-text">1000</td>
+            <td>${teamName || "Bilinmiyor"}</td>
+            <td>${stats.sektor || "2A"}</td>
+            <td class="neon-text">${stats.puan || 1000}</td>
             <td>
                 <strong>${student["Adı Soyadı"] || "İsim Hatası"}</strong>
-                <span class="role-text">(${student["Görev"] || "Analist"})</span>
+                <span class="role-text">(${stats.durum || student["Görev"] || "Analist"})</span>
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
+// 1. Canlı İzleme Dinleyicisi: Firebase'de skor değiştikçe tabloyu tazeler
+onValue(ref(db, "operasyon/skorlar"), (snapshot) => {
+    const data = snapshot.val() || {};
+    renderDashboard(data);
+});
+
+// --- EVENT LISTENERS (ETKİLEŞİM) ---
+
+// CSV Dosyası Seçildiğinde
 document.getElementById("csv-input").addEventListener("change", function (e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     Papa.parse(file, {
         header: true,
-        delimiter: "",
+        delimiter: "", // Otomatik tespit
         skipEmptyLines: true,
         encoding: "UTF-8",
         transformHeader: canonicalHeader,
         complete: function (results) {
             const missingHeaders = getMissingHeaders(results.meta?.fields || []);
             if (missingHeaders.length > 0) {
-                alert(`HATA: CSV başlıkları eksik veya farklı. Eksik alan(lar): ${missingHeaders.join(", ")}`);
+                alert(`HATA: CSV başlıkları eksik. Eksik alan(lar): ${missingHeaders.join(", ")}`);
                 localStudents = [];
-                renderPreview();
+                renderDashboard();
                 return;
             }
 
             localStudents = (results.data || []).map(sanitizeRow).filter(hasContent);
 
             if (localStudents.length === 0) {
-                alert("HATA: CSV dosyasında geçerli personel satırı bulunamadı.");
-                renderPreview();
+                alert("HATA: CSV dosyasında geçerli personel bulunamadı.");
+                renderDashboard();
                 return;
             }
 
-            console.log("Personel verileri yüklendi:", localStudents);
-            renderPreview();
-            alert(`SİSTEM ONAYI: ${localStudents.length} personel verisi yüklendi.`);
+            console.log("CSV Yüklendi:", localStudents);
+            renderDashboard(); 
+            alert(`SİSTEM ONAYI: ${localStudents.length} personel verisi hazır.`);
         },
         error: function (error) {
-            console.error("CSV okunamadı:", error);
-            alert("HATA: CSV dosyası okunamadı. Dosya formatını kontrol edin.");
+            alert("HATA: CSV okunamadı. Formatı kontrol edin.");
         }
     });
 });
 
+// Operasyonu Başlat Düğmesi
 document.getElementById("btn-init-op").addEventListener("click", function () {
     if (localStudents.length === 0) {
         alert("HATA: Önce personel listesini sisteme yükleyin!");
@@ -130,6 +158,7 @@ document.getElementById("btn-init-op").addEventListener("click", function () {
 
     const teamsInFile = [...new Set(localStudents.map((s) => s["Takım Adı"]))].filter(Boolean);
 
+    // Her takım için başlangıç değerlerini buluta gönder
     teamsInFile.forEach((team) => {
         set(ref(db, `operasyon/skorlar/${team}`), {
             puan: 1000,
@@ -138,7 +167,8 @@ document.getElementById("btn-init-op").addEventListener("click", function () {
         });
     });
 
+    // Tüm kadroyu buluta yedekle
     set(ref(db, "operasyon/kadro"), localStudents).then(() => {
-        alert("SİSTEM KİLİTLENDİ: Operasyonel veri akışı kilitlendi.");
+        alert("SİSTEM KİLİTLENDİ: Operasyonel veri akışı canlıya alındı.");
     });
 });
