@@ -3,13 +3,12 @@ function goToOperation(teamName) {
   window.location.href = `operasyon.html?team=${encodeURIComponent(teamName)}`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const teamButtons = document.querySelectorAll('.team-btn[data-team]');
+window.startMission = goToOperation;
 
-  teamButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const teamName = btn.getAttribute('data-team');
-      goToOperation(teamName);
-    });
-  });
+document.addEventListener('click', (event) => {
+  const teamButton = event.target.closest('.team-btn[data-team]');
+  if (!teamButton) return;
+
+  const teamName = teamButton.getAttribute('data-team');
+  goToOperation(teamName);
 });
