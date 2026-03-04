@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bergama 2050 | Siber Operasyon Terminali</title>
+    <title>Bergama 2050 | Giriş</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="matrix-theme">
@@ -17,23 +17,23 @@
         </div>
 
         <div class="login-frame">
-            <div class="glitch-title">SİSTEME GİRİŞ YAPIN</div>
-            <p class="subtitle">Birim Seçimi ve Kimlik Doğrulama</p>
+            <h1 class="glitch-title" data-text="BAĞLANTI KURULUYOR...">BAĞLANTI KURULUYOR...</h1>
+            <p>Operasyon Biriminizi Seçin</p>
             
-            <div class="team-grid">
-                <button onclick="startMission('Grup Manas')">GRUP MANAS</button>
-                <button onclick="startMission('Dede Korkut')">DEDE KORKUT</button>
-                <button onclick="startMission('Türk Tim')">TÜRK TİM</button>
-                <button onclick="startMission('Serhadlar')">SERHADLAR</button>
-                <button onclick="startMission('Mete Han')">METE HAN</button>
-                <button onclick="startMission('Kurtalan Ekspres')">KURTALAN EKSPRES</button>
+            <div class="team-grid" id="team-selector-container">
+                <button class="team-btn" data-team="Grup Manas">GRUP MANAS</button>
+                <button class="team-btn" data-team="Dede Korkut">DEDE KORKUT</button>
+                <button class="team-btn" data-team="Türk Tim">TÜRK TİM</button>
+                <button class="team-btn" data-team="Serhadlar">SERHADLAR</button>
+                <button class="team-btn" data-team="Mete Han">METE HAN</button>
+                <button class="team-btn" data-team="Kurtalan Ekspres">KURTALAN EKSPRES</button>
             </div>
         </div>
     </main>
 
     <div id="footer-placeholder"></div>
 
-    <script src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/main.js"></script>
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
 </body>

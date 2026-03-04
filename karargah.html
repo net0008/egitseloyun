@@ -2,7 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Siber Karargâh | Kontrol Merkezi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siber Karargâh | Admin Kontrol</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
@@ -11,16 +12,16 @@
 
     <main class="dashboard-container">
         <section class="admin-controls">
-            <h2>PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
+            <h2><span class="online-blink">●</span> PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
             <div class="upload-box">
                 <input type="file" id="csv-input" accept=".csv" hidden>
-                <label for="csv-input" class="cyber-btn">CSV LİSTESİ YÜKLE</label>
-                <button class="cyber-btn primary" onclick="initOperation()">OPERASYONU BAŞLAT</button>
+                <label for="csv-input" class="cyber-btn">📂 CSV LİSTESİ YÜKLE</label>
+                <button class="cyber-btn primary" id="btn-init-op">⚡ OPERASYONU BAŞLAT</button>
             </div>
         </section>
 
         <section class="live-monitor">
-            <h3>ANLIK TİM DURUMLARI</h3>
+            <h3>ANLIK TİM DURUMLARI (CANLI)</h3>
             <table id="status-table">
                 <thead>
                     <tr>
@@ -38,7 +39,7 @@
 
     <div id="footer-placeholder"></div>
 
-    <script src="assets/js/dashboard.js"></script>
+    <script type="module" src="assets/js/dashboard.js"></script>
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
 </body>

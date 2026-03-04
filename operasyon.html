@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operasyon Terminali | Bergama 2050</title>
+    <title>Operasyon Terminali | Analiz</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="op-screen">
@@ -11,34 +11,36 @@
 
     <main class="operation-layout">
         <section class="visual-panel">
-            <div class="panel-header">SEKTÖR ANALİZ GÖRÜNTÜSÜ</div>
+            <div class="panel-tag">UYDU ANALİZİ: AKTİF</div>
             <div class="map-frame">
-                <img id="active-map" src="assets/img/sektor_2a.jpg" alt="Harita Yükleniyor...">
+                <img id="active-map" src="assets/img/sektor_2a.jpg" alt="Harita Bekleniyor...">
                 <div class="scan-line"></div>
             </div>
         </section>
 
         <section class="command-panel">
+            <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
             <div class="terminal-log" id="terminal-output">
-                <p>> [SİSTEM]: Bağlantı kuruldu.</p>
-                <p>> [KOMUTAN]: Analistler, 2A sektöründeki en yüksek izohipsi belirleyin.</p>
+                <p class="sys-msg">> [SİSTEM]: Güvenli bağlantı sağlandı.</p>
+                <p>> [MERKEZ]: Sektör 2A'daki irtifa verisi kriptolandı. $x^2$ protokolünü uygulayın.</p>
             </div>
             
             <div class="mission-input">
-                <label>$ KRİPTO_KOD_GİRİŞİ:</label>
-                <input type="text" id="user-input" placeholder="Veri bekleniyor...">
-                <button class="cyber-btn" onclick="processData()">ONAYLA</button>
+                <label>$ ANALİST_GİRİŞİ: </label>
+                <input type="number" id="kripto-val" placeholder="Kod..." autocomplete="off">
+                <button class="cyber-btn" id="btn-verify">ONAYLA</button>
             </div>
 
-            <div class="hint-control">
-                <button onclick="useHint()">İPUCU İSTE (Lojistik)</button>
+            <div class="extra-tools">
+                <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ</button>
+                <a href="kilavuz.html" class="cyber-btn secondary">SAHA REHBERİ</a>
             </div>
         </section>
     </main>
 
     <div id="footer-placeholder"></div>
 
-    <script src="assets/js/main.js"></script>
+    <script type="module" src="assets/js/ops_engine.js"></script>
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
 </body>
