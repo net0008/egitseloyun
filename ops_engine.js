@@ -1,63 +1,56 @@
 import { db, ref, onValue, update } from "./assets/js/firebase-config.js";
-// 1. URL'den Takım Bilgisini Al
+
+// 1. URL'den Takımı Al
 const params = new URLSearchParams(window.location.search);
-const teamName = params.get('team') || "Bilinmeyen Birim";
+const myTeam = params.get('team') || "Bilinmeyen Birim";
 
-// Global Değişkenler
-let currentScore = 1000;
-let teamMembers = [];
+// 2. Takım Bilgilerini Ekrana Yaz
+document.addEventListener("DOMContentLoaded", () => {
+    const teamTitle = document.querySelector(".panel-tag");
+    if(teamTitle) teamTitle.innerText = `UYDU ANALİZİ: ${myTeam.toUpperCase()}`;
+});
 
-// 2. Takım Bilgilerini ve Skorunu Dinle
-const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
+// 3. Canlı Skor ve Sektör Takibi
+const scoreRef = ref(db, `operasyon/skorlar/${myTeam}`);
 onValue(scoreRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        currentScore = data.puan;
-        document.getElementById('current-score').innerText = currentScore;
-        document.getElementById('current-sector').innerText = data.sektor;
+        // Puan ve Sektör bilgilerini HTML'deki ilgili yerlere bas
+        const scoreEl = document.getElementById("current-score");
+        if(scoreEl) scoreEl.innerText = data.puan;
     }
 });
 
-// 3. Kadro Bilgisini Al ve Ekranın Bir Köşesine Yaz (Excel'den Gelen İsimler)
+// 4. Takım Kadrosunu Firebase'den Çek (Senin Dashboard'dan gelen liste)
 const kadroRef = ref(db, "operasyon/kadro");
 onValue(kadroRef, (snapshot) => {
     const allStudents = snapshot.val() || [];
-    // Sadece bu takıma ait olanları filtrele
-    teamMembers = allStudents.filter(s => s["Takım Adı"] === teamName);
+    const myMembers = allStudents.filter(s => s["Takım Adı"] === myTeam);
     
-    const teamListEl = document.getElementById('team-members-list');
-    if (teamListEl) {
-        teamListEl.innerHTML = teamMembers.map(m => 
-            `<li>${m["Adı Soyadı"]} <small>(${m["Görev"]})</small></li>`
-        ).join('');
+    const listEl = document.getElementById("terminal-output"); // Veya özel bir div
+    if(listEl && myMembers.length > 0) {
+        let memberNames = myMembers.map(m => m["Adı Soyadı"]).join(", ");
+        console.log("Tim Üyeleri:", memberNames);
+        // İstersen terminalin en başına "Hoş geldin" mesajı yazdırabilirsin
     }
 });
 
-// 4. Sektör 2A Kripto Doğrulama (x^2 Mantığı)
-window.verifyCode = function() {
-    const input = document.getElementById('kripto-val').value;
-    const terminal = document.getElementById('terminal-output');
+// 5. Kripto Doğrulama (Sektör 2A: 200^2 = 40000)
+window.verifyMission = function() {
+    const val = document.getElementById("kripto-val").value;
     
-    // SEKTÖR 2A: En yüksek izohips 200m -> 200^2 = 40.000
-    if (input === "40000") {
-        terminal.innerHTML += `<p class="success">> [BAŞARILI]: Kripto çözüldü. İrtifa 200m onaylandı!</p>`;
-        
-        // Firebase'i Güncelle (Puan ekle ve sektörü 2B yap)
+    if (val === "40000") {
+        alert("KRİPTO ÇÖZÜLDÜ! Sektör 2B'ye intikal ediliyor...");
         update(scoreRef, {
-            puan: currentScore + 200,
+            puan: 1200, // 200 puan ödül
             sektor: "2B",
-            durum: "İntikal Başladı"
+            durum: "İntikalde"
         });
-
-        alert("Tebrikler! Sektör 2B'ye geçiş izni verildi.");
+        // Haritayı değiştirme kodunu buraya ekleyeceğiz
     } else {
-        terminal.innerHTML += `<p class="error">> [HATA]: Yanlış analiz! Enerji kaybı: -50 Puan.</p>`;
-        
-        // Yanlış cevap cezası
+        alert("HATALI ANALİZ! Enerji kaybı yaşanıyor.");
         update(scoreRef, {
-            puan: Math.max(0, currentScore - 50)
+            puan: 950 // 50 puan ceza
         });
     }
-    document.getElementById('kripto-val').value = ""; // Inputu temizle
-    terminal.scrollTop = terminal.scrollHeight; // Terminali aşağı kaydır
 };
