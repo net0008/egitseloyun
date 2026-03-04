@@ -1,78 +1,70 @@
-/* * ops_engine.js - Sürüm: v2.6.0
- * Güncelleme Notları:
- * - Bağlantı sinyali (Bağlantı Kuruldu) garanti altına alındı.
- * - URL parametrelerindeki Türkçe karakter ve boşluk hataları giderildi.
- * - Hata ayıklama logları (Console) eklendi.
+/* * ops_engine.js - Sürüm: v2.7.0 (Mülakat Sürümü)
+ * Not: Bağlantı sinyali garantili ve gecikmeli ateşleme ile güçlendirildi.
  */
-
 import { db, ref, onValue, update } from './assets/js/firebase-config.js';
 
-// 1. URL'den Takım İsmini Güvenli Al (Decode işlemi önemli)
+// 1. URL'den Takım İsmini TERTEMİZ Al
 const params = new URLSearchParams(window.location.search);
-let teamName = params.get('team');
+let rawTeamName = params.get('team');
 
-if (!teamName) {
-    console.error("KRİTİK HATA: Takım ismi URL'den okunamadı!");
-    alert("HATA: Takım ismi geçersiz. Lütfen ana sayfadan tekrar giriş yapın.");
-} else {
-    teamName = decodeURIComponent(teamName);
-    console.log(`[SİSTEM]: ${teamName} birimi için terminal başlatılıyor...`);
+if (!rawTeamName) {
+    alert("Takım seçilmedi! index.html sayfasına yönlendiriliyorsunuz.");
+    window.location.href = "index.html";
+}
 
-    const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
-    const terminal = document.getElementById('terminal-output');
+const teamName = decodeURIComponent(rawTeamName);
+const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
+const terminal = document.getElementById('terminal-output');
 
-    // --- KRİTİK FONKSİYON: BAĞLANTI SİNYALİNİ MÜHÜRLE ---
-    function sendConnectionSignal() {
-        update(scoreRef, { durum: "Bağlantı Kuruldu" })
-            .then(() => console.log(`[BAĞLANTI]: Karargâh'a 'Bağlantı Kuruldu' sinyali iletildi.`))
-            .catch((err) => {
-                console.error("[HATA]: Sinyal gönderilemedi, tekrar deneniyor...", err);
-                setTimeout(sendConnectionSignal, 2000); // Hata olursa 2 saniye sonra tekrar dene
-            });
-    }
+console.log(`Birim Aktif: ${teamName}`);
 
-    // Sayfa yüklendiğinde sinyali gönder
-    sendConnectionSignal();
-
-    // 2. CANLI VERİ DİNLEME (Puan ve Sektör)
-    onValue(scoreRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            const scoreEl = document.getElementById('current-score');
-            const sectorEl = document.getElementById('current-sector');
-            if (scoreEl) scoreEl.innerText = data.puan;
-            if (sectorEl) sectorEl.innerText = data.sektor;
-        }
+// --- KRİTİK: BAĞLANTIYI GARANTİLE ---
+function connectToHQ() {
+    update(scoreRef, { 
+        durum: "Bağlantı Kuruldu",
+        zaman: new Date().toLocaleTimeString() 
+    }).then(() => {
+        console.log("HQ Bağlantısı Başarılı.");
+    }).catch(() => {
+        // Bağlanamazsa 1 saniye sonra tekrar dene
+        setTimeout(connectToHQ, 1000);
     });
+}
 
-    // 3. ONAYLA BUTONU (ID: btn-verify)
-    const verifyBtn = document.getElementById('btn-verify');
-    if (verifyBtn) {
-        verifyBtn.addEventListener('click', () => {
-            const inputVal = document.getElementById('kripto-val').value.trim();
-            if (inputVal === '40000') {
-                update(scoreRef, { 
-                    puan: 1200, 
-                    sektor: "2B", 
-                    durum: "Başarılı" 
-                });
-                if(terminal) terminal.innerHTML += `<p style="color:#39FF14">> [SİSTEM]: Kripto doğrulandı. Sektör 2B aktif.</p>`;
-            } else {
-                update(scoreRef, { durum: "Hatalı Giriş" });
-                if(terminal) terminal.innerHTML += `<p style="color:#ff3e3e">> [HATA]: Yanlış kripto analizi!</p>`;
-            }
-            document.getElementById('kripto-val').value = "";
-            terminal.scrollTop = terminal.scrollHeight;
-        });
-    }
+// Sayfa yüklendikten 1 saniye sonra HQ'ya sinyal çak
+setTimeout(connectToHQ, 1000);
 
-    // 4. İPUCU BUTONU (ID: btn-hint)
-    const hintBtn = document.getElementById('btn-hint');
-    if (hintBtn) {
-        hintBtn.addEventListener('click', () => {
-            update(scoreRef, { durum: "İpucu Aldı" });
-            if(terminal) terminal.innerHTML += `<p style="color:#00d4ff">> [İPUCU]: En yüksek izohips çizgisinin (200m) karesini hesaplayın.</p>`;
-            terminal.scrollTop = terminal.scrollHeight;
-        });
+// 2. CANLI VERİ DİNLE (Puan/Sektör)
+onValue(scoreRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan;
+        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = data.sektor;
     }
+});
+
+// 3. ONAYLA BUTONU (200^2 = 40000)
+const verifyBtn = document.getElementById('btn-verify');
+if (verifyBtn) {
+    verifyBtn.addEventListener('click', () => {
+        const val = document.getElementById('kripto-val').value.trim();
+        if (val === '40000') {
+            update(scoreRef, { puan: 1200, sektor: "2B", durum: "Başarılı" });
+            if(terminal) terminal.innerHTML += `<p style="color:#39FF14">> [SİSTEM]: Doğrulama Başarılı. Sektör 2B açıldı.</p>`;
+        } else {
+            update(scoreRef, { durum: "Hatalı Giriş" });
+            if(terminal) terminal.innerHTML += `<p style="color:#ff3e3e">> [HATA]: Yanlış analiz!</p>`;
+        }
+        terminal.scrollTop = terminal.scrollHeight;
+    });
+}
+
+// 4. İPUCU BUTONU
+const hintBtn = document.getElementById('btn-hint');
+if (hintBtn) {
+    hintBtn.addEventListener('click', () => {
+        update(scoreRef, { durum: "İpucu Aldı" });
+        if(terminal) terminal.innerHTML += `<p style="color:#00d4ff">> [MERKEZ]: 200 sayısının karesini ($x^2$) hesaplayın.</p>`;
+        terminal.scrollTop = terminal.scrollHeight;
+    });
 }
