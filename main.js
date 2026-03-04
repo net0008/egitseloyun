@@ -1,14 +1,18 @@
-function goToOperation(teamName) {
-  if (!teamName) return;
-  window.location.href = `operasyon.html?team=${encodeURIComponent(teamName)}`;
-}
+// main.js
+console.log("Saha Terminali Giriş Sistemi Aktif.");
 
-window.startMission = goToOperation;
-
-document.addEventListener('click', (event) => {
-  const teamButton = event.target.closest('.team-btn[data-team]');
-  if (!teamButton) return;
-
-  const teamName = teamButton.getAttribute('data-team');
-  goToOperation(teamName);
+document.addEventListener('click', function(e) {
+    // Tıklanan eleman .team-btn mi veya içinde mi kontrol et
+    const btn = e.target.closest('.team-btn');
+    
+    if (btn) {
+        const teamName = btn.getAttribute('data-team');
+        console.log("Seçilen Tim:", teamName);
+        
+        if (teamName) {
+            // Parametreyi ekle ve operasyon sayfasına fırlat
+            const targetURL = `operasyon.html?team=${encodeURIComponent(teamName)}`;
+            window.location.href = targetURL;
+        }
+    }
 });
