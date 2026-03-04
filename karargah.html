@@ -2,38 +2,44 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Siber Karargâh | Admin Paneli</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Siber Karargâh | Kontrol Merkezi</title>
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
-<body>
-    <div class="admin-container">
-        <header>
-            <h1>SİBER KARARGÂH: PERSONEL YÖNETİMİ</h1>
-            <p>Sınıf listesini (CSV) yükleyin ve timleri mühürleyin.</p>
-        </header>
+<body class="admin-screen">
+    <div id="header-placeholder"></div>
 
-        <section class="upload-section">
-            <input type="file" id="csv-file" accept=".csv" hidden>
-            <label for="csv-file" class="cyber-btn">📂 LİSTE YÜKLE (.CSV)</label>
-            <button onclick="distributeTeams()" class="cyber-btn primary">⚡ OPERASYONU BAŞLAT</button>
+    <main class="dashboard-container">
+        <section class="admin-controls">
+            <h2>PERSONEL KAYIT VE TİM YÖNETİMİ</h2>
+            <div class="upload-box">
+                <input type="file" id="csv-input" accept=".csv" hidden>
+                <label for="csv-input" class="cyber-btn">CSV LİSTESİ YÜKLE</label>
+                <button class="cyber-btn primary" onclick="initOperation()">OPERASYONU BAŞLAT</button>
+            </div>
         </section>
 
-        <section class="preview-section">
-            <table id="personnel-table">
+        <section class="live-monitor">
+            <h3>ANLIK TİM DURUMLARI</h3>
+            <table id="status-table">
                 <thead>
                     <tr>
-                        <th>Okul No</th>
-                        <th>Ad Soyad</th>
-                        <th>Tim Adı</th>
-                        <th>Uzmanlık Alanı</th>
+                        <th>TİM ADI</th>
+                        <th>AKTİF SEKTÖR</th>
+                        <th>PUAN</th>
+                        <th>DURUM</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
+                <tbody id="status-body">
                     </tbody>
             </table>
         </section>
-    </div>
-    <script src="admin.js"></script>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="assets/js/dashboard.js"></script>
+    <script src="components/header.js"></script>
+    <script src="components/footer.js"></script>
 </body>
 </html>
