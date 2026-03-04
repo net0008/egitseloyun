@@ -1,13 +1,11 @@
-/* * dashboard.js - Sürüm: v2.4.1
- * Güncelleme: Başlangıç durumu "Sinyal Bekleniyor" olarak revize edildi.
+/* * dashboard.js - Sürüm: v2.4.2
+ * Güncelleme: Veri senkronizasyonu ve otomatik eşleşme optimize edildi.
  */
-
 import { db, ref, set, onValue } from "./firebase-config.js";
 
 let localStudents = [];
 const HEADER_ALIASES = {
-    okulno: "Okul No", okulnumarasi: "Okul No", ogrencino: "Okul No", numara: "Okul No",
-    adisoyadi: "Adı Soyadı", adsoyad: "Adı Soyadı", takimadi: "Takım Adı", takim: "Takım Adı", gorev: "Görev"
+    okulno: "Okul No", adisoyadi: "Adı Soyadı", takimadi: "Takım Adı", gorev: "Görev"
 };
 
 function normalizeKey(text = "") {
@@ -25,16 +23,14 @@ function canonicalHeader(header = "") {
 function renderDashboard(liveScores = {}) {
     const tbody = document.getElementById("status-body");
     if (!tbody) return;
-
     if (localStudents.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff3e3e;">[SİSTEM]: Kadro yüklenmedi.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff3e3e;">[SİSTEM]: Kadro bekleniyor...</td></tr>';
         return;
     }
 
     let rowsHTML = "";
     localStudents.forEach((student) => {
         const team = student["Takım Adı"];
-        // EĞER VERİ YOKSA: "Sinyal Bekleniyor" yaz
         const stats = liveScores[team] || { puan: 1000, sektor: "2A", durum: "Sinyal Bekleniyor" };
 
         rowsHTML += `
@@ -60,15 +56,16 @@ function getStatusColor(s) {
     return "#888";
 }
 
-// Firebase'den kadroyu ve skorları dinle
+// KRİTİK: Firebase'den verileri çek ve dinle
 onValue(ref(db, "operasyon/kadro"), (snap) => {
-    if (snap.val()) {
+    if (snap.exists()) {
         localStudents = snap.val();
-        onValue(ref(db, "operasyon/skorlar"), (sSnap) => renderDashboard(sSnap.val() || {}));
+        onValue(ref(db, "operasyon/skorlar"), (sSnap) => {
+            renderDashboard(sSnap.val() || {});
+        });
     }
 });
 
-// CSV Yükleme
 document.getElementById("csv-input").addEventListener("change", function(e) {
     const file = e.target.files?.[0];
     Papa.parse(file, {
@@ -80,14 +77,12 @@ document.getElementById("csv-input").addEventListener("change", function(e) {
                 return clean;
             }).filter(s => s["Okul No"]);
             renderDashboard();
-            alert("Liste Hazır.");
         }
     });
 });
 
-// Operasyonu Başlat
 document.getElementById("btn-init-op").addEventListener("click", () => {
-    if (localStudents.length === 0) return alert("Önce CSV!");
+    if (localStudents.length === 0) return alert("Önce CSV yükle!");
     const teams = [...new Set(localStudents.map(s => s["Takım Adı"]))].filter(Boolean);
     const scores = {};
     teams.forEach(t => scores[t] = { puan: 1000, sektor: "2A", durum: "Sinyal Bekleniyor" });
