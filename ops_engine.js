@@ -1,56 +1,84 @@
-import { db, ref, onValue, update } from "./assets/js/firebase-config.js";
+import { db, ref, onValue, update } from './firebase-config.js';
 
-// 1. URL'den Takımı Al
 const params = new URLSearchParams(window.location.search);
-const myTeam = params.get('team') || "Bilinmeyen Birim";
+const myTeam = params.get('team') || 'Bilinmeyen Birim';
 
-// 2. Takım Bilgilerini Ekrana Yaz
-document.addEventListener("DOMContentLoaded", () => {
-    const teamTitle = document.querySelector(".panel-tag");
-    if(teamTitle) teamTitle.innerText = `UYDU ANALİZİ: ${myTeam.toUpperCase()}`;
+const scoreEl = document.getElementById('current-score');
+const sectorEl = document.getElementById('current-sector');
+const teamMembersEl = document.getElementById('team-members-list');
+const verifyBtn = document.getElementById('btn-verify');
+const cryptoInput = document.getElementById('kripto-val');
+const terminalOutput = document.getElementById('terminal-output');
+
+function appendTerminalMessage(message, cls = 'sys-msg') {
+  if (!terminalOutput) return;
+  const p = document.createElement('p');
+  p.className = cls;
+  p.textContent = `> ${message}`;
+  terminalOutput.appendChild(p);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const teamTitle = document.querySelector('.panel-tag');
+  if (teamTitle) teamTitle.innerText = `UYDU ANALİZİ: ${myTeam.toUpperCase()}`;
 });
 
-// 3. Canlı Skor ve Sektör Takibi
 const scoreRef = ref(db, `operasyon/skorlar/${myTeam}`);
 onValue(scoreRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        // Puan ve Sektör bilgilerini HTML'deki ilgili yerlere bas
-        const scoreEl = document.getElementById("current-score");
-        if(scoreEl) scoreEl.innerText = data.puan;
-    }
+  const data = snapshot.val();
+  if (!data) return;
+
+  if (scoreEl) scoreEl.innerText = data.puan ?? '---';
+  if (sectorEl) sectorEl.innerText = data.sektor ?? '---';
 });
 
-// 4. Takım Kadrosunu Firebase'den Çek (Senin Dashboard'dan gelen liste)
-const kadroRef = ref(db, "operasyon/kadro");
+const kadroRef = ref(db, 'operasyon/kadro');
 onValue(kadroRef, (snapshot) => {
-    const allStudents = snapshot.val() || [];
-    const myMembers = allStudents.filter(s => s["Takım Adı"] === myTeam);
-    
-    const listEl = document.getElementById("terminal-output"); // Veya özel bir div
-    if(listEl && myMembers.length > 0) {
-        let memberNames = myMembers.map(m => m["Adı Soyadı"]).join(", ");
-        console.log("Tim Üyeleri:", memberNames);
-        // İstersen terminalin en başına "Hoş geldin" mesajı yazdırabilirsin
-    }
+  const allStudents = snapshot.val() || [];
+  const myMembers = allStudents.filter((s) => s['Takım Adı'] === myTeam);
+
+  if (teamMembersEl) {
+    teamMembersEl.innerHTML = '';
+    myMembers.forEach((member) => {
+      const li = document.createElement('li');
+      li.textContent = `${member['Adı Soyadı'] || 'İsimsiz Personel'} (${member['Görev'] || 'Analist'})`;
+      teamMembersEl.appendChild(li);
+    });
+  }
+
+  if (myMembers.length > 0) {
+    const memberNames = myMembers.map((m) => m['Adı Soyadı']).filter(Boolean).join(', ');
+    appendTerminalMessage(`[TİM]: ${memberNames}`);
+  }
 });
 
-// 5. Kripto Doğrulama (Sektör 2A: 200^2 = 40000)
-window.verifyMission = function() {
-    const val = document.getElementById("kripto-val").value;
-    
-    if (val === "40000") {
-        alert("KRİPTO ÇÖZÜLDÜ! Sektör 2B'ye intikal ediliyor...");
-        update(scoreRef, {
-            puan: 1200, // 200 puan ödül
-            sektor: "2B",
-            durum: "İntikalde"
-        });
-        // Haritayı değiştirme kodunu buraya ekleyeceğiz
-    } else {
-        alert("HATALI ANALİZ! Enerji kaybı yaşanıyor.");
-        update(scoreRef, {
-            puan: 950 // 50 puan ceza
-        });
+function verifyMission() {
+  if (!cryptoInput) return;
+  const val = cryptoInput.value;
+
+  if (val === '40000') {
+    appendTerminalMessage('[MERKEZ]: KRİPTO ÇÖZÜLDÜ! Sektör 2B\'ye intikal ediliyor...');
+    update(scoreRef, {
+      puan: 1200,
+      sektor: '2B',
+      durum: 'İntikalde'
+    });
+  } else {
+    appendTerminalMessage('[MERKEZ]: HATALI ANALİZ! Enerji kaybı yaşanıyor.');
+    update(scoreRef, {
+      puan: 950
+    });
+  }
+}
+
+if (verifyBtn) {
+  verifyBtn.addEventListener('click', verifyMission);
+}
+
+if (cryptoInput) {
+  cryptoInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      verifyMission();
     }
-};
+  });
+}
