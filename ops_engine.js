@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.13
- * 8. Görev (Delta ve Falez) Entegrasyonu & Tam Hafıza Modülü
+/* * ops_engine.js - Sürüm: v3.5.14
+ * Hasbi Erdoğmuş | Görev 1-9 Tam Entegrasyon & Final Operasyon Protokolü
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -57,6 +57,12 @@ const hint_library = {
         "A noktasına bak; akarsuyun denize döküldüğü yerdeki biriktirme şeklini hatırla.",
         "B noktasına odaklan; dalga aşındırması sonucu oluşan dik uçurumları düşün.",
         "Akarsu biriktirmesi (A) ve dalga aşındırması (B) sonucu oluşan bu kıyı şekillerini birleştir."
+    ],
+    9: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "İzohipslerin birbirine en yakın olduğu noktada eğim en fazladır.",
+        "Çizgilerin arası açıldıkça eğim azalır; bu kuralı V, Y ve Z noktaları için uygula.",
+        "Sıralamayı yaparken 'büyüktür' (>) işaretini kullanarak en dikten en düze doğru ilerle."
     ]
 };
 
@@ -92,14 +98,13 @@ function triggerBriefing(gorevNo) {
         logBox("[SİSTEM]: Yeni veri paketi tanımlandı.", "success");
         
         if (gorevNo === 1) {
-            logBox("[MERKEZ]: Haritadaki konumun yükseltisini tespit et.", "");
-            logBox("<span style='color:#ff3e3e; font-weight:bold;'>DİKKAT:</span> 1. Görev için şifreleme (h²) protokolü uygulanmalıdır!", "warning");
+            logBox("[MERKEZ]: Haritadaki konumun yükseltisini h² olarak tespit et.", "warning");
         } else if (gorevNo === 2) {
-            logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerlerde hangi yeryüzü şekli bulunmaktadır?", "hint");
+            logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerdeki yeryüzü şekli nedir?", "hint");
         } else if (gorevNo === 3) {
             logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 4) {
-            logBox("[MERKEZ]: Yeşil oklar ile gösterilen X ve Y noktaları kaç metre yükseltiyi göstermektedir?", "hint");
+            logBox("[MERKEZ]: Yeşil oklar ile gösterilen X ve Y noktaları kaç metredir?", "hint");
         } else if (gorevNo === 5) {
             logBox("[MERKEZ]: Haritada sarı daire ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 6) {
@@ -108,6 +113,10 @@ function triggerBriefing(gorevNo) {
             logBox("[MERKEZ]: Haritada Z ve Y ile gösterilen alanlara ne denir? (Z=... Y=...)", "hint");
         } else if (gorevNo === 8) {
             logBox("[MERKEZ]: Haritada sarı daire ile gösterilen A ve B alanlarına ne denir?", "hint");
+        } else if (gorevNo === 9) {
+            logBox("[MERKEZ]: V, Y ve Z oklarını eğimin en çok olduğu yerden en aza doğru sırala.", "hint");
+        } else if (gorevNo >= 10) {
+            logBox("TEBRİKLER! Operasyon başarıyla tamamlandı. Tüm harita analiz edildi.", "success");
         }
         
         lastGorevNo = gorevNo;
@@ -129,10 +138,10 @@ function initOperation() {
         const bolge = data.bolge || "2A";
         
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
-        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev}. Görev ${bolge} Bölgesi`;
+        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 9 ? 'OPERASYON BİTTİ' : gorev + '. Görev ' + bolge}`;
         
         const mapImg = document.getElementById('active-map');
-        if (mapImg) mapImg.src = `assets/img/soru${gorev}.jpg`;
+        if (mapImg) mapImg.src = `assets/img/soru${gorev > 9 ? 9 : gorev}.jpg`;
 
         triggerBriefing(gorev);
 
@@ -157,7 +166,7 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
     const currentGorev = data.gorevNo || 1;
     const activeHints = hint_library[currentGorev] || [];
 
-    if (count === 0) {
+    if (count === 0 && activeHints.length > 0) {
         logBox(activeHints[0], "hint");
         await update(scoreRef, { ipucuSayisi: 1, durum: "Kılavuz Kontrol Edildi" });
     } else if (count < activeHints.length) {
@@ -175,7 +184,8 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
 
 // --- 6. ONAYLA (CEVAP KONTROL) ---
 document.getElementById('btn-verify').addEventListener('click', async () => {
-    const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr');
+    // Boşlukları silip küçük harfe çevirerek matematiksel sıralamayı garantiye alıyoruz
+    const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
     const snap = await get(scoreRef);
     const data = snap.val();
     const currentGorev = data.gorevNo || 1;
@@ -211,6 +221,10 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     else if (currentGorev === 8 && rawInput.includes("delta") && rawInput.includes("falez")) {
         await update(scoreRef, { gorevNo: 9, bolge: "2I", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MÜKEMMEL TESPİT! Kıyı morfolojisi analiz edildi. 9. Görev aktif.", "success");
+    }
+    else if (currentGorev === 9 && rawInput === "y>z>v") {
+        await update(scoreRef, { gorevNo: 10, bolge: "BİTTİ", puan: (data.puan || 1000) + 200, durum: "OPERASYON TAMAM", ipucuSayisi: 0 });
+        logBox("FİNAL ANALİZİ DOĞRULANDI! Tebrikler Analist.", "success");
     }
     else {
         if (data.ipucuSayisi >= 4) {
