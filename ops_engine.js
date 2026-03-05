@@ -1,6 +1,6 @@
-/* * ops_engine.js - Sürüm: v3.5.11
- * Hasbi Erdoğmuş | Görev 1-6 Tam Entegrasyon & Kesin Çözüm Protokolü
- * [Mülakat Hazırlık Protokolü - Görev 6: Eğim Eklendi]
+/* * ops_engine.js - Sürüm: v3.5.12
+ * Hasbi Erdoğmuş | Görev 1-7 Tam Entegrasyon & Kesin Çözüm Protokolü
+ * [Mülakat Hazırlık Protokolü - Görev 7: Plato ve Ova Eklendi]
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -46,6 +46,12 @@ const hint_library = {
         "İzohipslerin birbirine çok yaklaştığı, çizgilerin sıkıştığı bölgelere odaklan.",
         "Çizgilerin sık olması arazinin yapısı hakkında ne söyler?",
         "Bu bölge bir yol çalışması için düz bir zemin mi yoksa dik bir yokuş mu?"
+    ],
+    7: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Z noktasına bak; akarsularla derince yarılmış yüksek düzlükleri hatırla.",
+        "Y noktasına bak; çevresine göre alçakta kalan geniş düzlükleri hatırla.",
+        "Yüksek düzlük (Z) ve alçak düzlük (Y) kavramlarını birleştir."
     ]
 };
 
@@ -93,6 +99,8 @@ function triggerBriefing(gorevNo) {
             logBox("[MERKEZ]: Haritada sarı daire ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 6) {
             logBox("[MERKEZ]: Haritada sarı çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
+        } else if (gorevNo === 7) {
+            logBox("[MERKEZ]: Haritada Z ve Y ile gösterilen alanlara ne denir? (Z=... Y=...)", "hint");
         }
         
         lastGorevNo = gorevNo;
@@ -165,30 +173,42 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const data = snap.val();
     const currentGorev = data.gorevNo || 1;
 
+    // GÖREV 1
     if (currentGorev === 1 && Number(rawInput) === 360000) {
         await update(scoreRef, { gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
     } 
+    // GÖREV 2
     else if (currentGorev === 2 && rawInput === "vadi") {
         await update(scoreRef, { gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
     } 
+    // GÖREV 3
     else if (currentGorev === 3 && rawInput.includes("eğim")) {
         await update(scoreRef, { gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("HARİKA! 2C bölgesi analiz edildi. 4. Görev aktif.", "success");
     }
+    // GÖREV 4
     else if (currentGorev === 4 && rawInput.includes("200")) {
         await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı. 5. Görev aktif.", "success");
     }
+    // GÖREV 5
     else if (currentGorev === 5 && rawInput.includes("tepe")) {
         await update(scoreRef, { gorevNo: 6, bolge: "2F", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("ANALİZ DOĞRULANDI! Zirveye ulaşıldı. 6. Görev aktif.", "success");
     }
+    // GÖREV 6
     else if (currentGorev === 6 && rawInput.includes("eğim")) {
         await update(scoreRef, { gorevNo: 7, bolge: "2G", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MÜKEMMEL ANALİZ! Arazi yapısı çözüldü. 7. Görev aktif.", "success");
     }
+    // GÖREV 7
+    else if (currentGorev === 7 && rawInput.includes("plato") && rawInput.includes("ova")) {
+        await update(scoreRef, { gorevNo: 8, bolge: "2H", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
+        logBox("OPERASYONEL BAŞARI! Plato ve Ova ayrımı doğrulandı. 8. Görev aktif.", "success");
+    }
+    // HATA DURUMU
     else {
         if (data.ipucuSayisi >= 4) {
             await update(scoreRef, { durum: `${currentGorev}. Soruyu Bilemedi!` });
