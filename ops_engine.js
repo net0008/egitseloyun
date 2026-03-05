@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * ops_engine.js - Sürüm: v3.5.17                                              *
+ * ops_engine.js - Sürüm: v3.5.18                                              *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Görev 1-10 Tam Senkronizasyon | Arazi Profili ve Matematiksel Sıralama     *
+ * Görev 1-10 Tam Senkronizasyon | Bergama-Dikili AI Profil Analiz Motoru     *
  * *************************************************************************** */
 
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
@@ -69,10 +69,10 @@ const hint_library = {
         "V, Y ve Z doğrultularını buna göre kıyasla ve MATEMATİKSEL sıralama yap."
     ],
     10: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "A ve B noktaları arasındaki yükselti profilini zihninde canlandır.",
-        "Haritadaki her izohips kesişimini dikey eksene taşıdığında çıkan şekle odaklan.",
-        "Profilin zirve ve çukur noktalarını (akarsu geçişi gibi) kontrol et."
+        "Saha kılavuzunu dikkatlice oku. Hata yaparsanız sayfayı yenileyin.",
+        "Tam Dikili yazısı üzerine tıklayın.",
+        "Tam Bergama yazısı üzerine tıklayın.",
+        "Koordinatları yapıştırdıktan sonra AI analizini onaylayın."
     ]
 };
 
@@ -126,7 +126,27 @@ function triggerBriefing(gorevNo) {
         } else if (gorevNo === 9) {
             logBox("[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre MATEMATİKSEL sırala (Örn: A>B>C).", "warning");
         } else if (gorevNo === 10) {
-            logBox("[MERKEZ]: Haritadaki A-B hattı boyunca çıkarılan arazi profilini analiz et.", "hint");
+            logBox("[MERKEZ]: Dikili-Bergama arası profil çıkarma operasyonu aktif.", "warning");
+            logBox("Rehber videoyu izleyerek hattı oluşturun ve AI alanına mühürleyin.", "");
+            
+            // --- GÖREV 10: DİNAMİK ARAYÜZ ENJEKSİYONU ---
+            const taskUI = document.createElement('div');
+            taskUI.id = "task10-interaktif-panel";
+            taskUI.style = "margin-top:15px; padding:10px; border:1px dashed #00ff41; background:rgba(0,40,0,0.5);";
+            taskUI.innerHTML = `
+                <div style="margin-bottom:10px;">
+                    <button onclick="window.open('asset/video/10_gorev.mp4', '_blank')" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:5px; width:100%;">🎥 EĞİTİM VİDEOSUNU AÇ</button>
+                </div>
+                <div style="margin-bottom:10px; border-top:1px solid #004400; padding-top:5px;">
+                    <label style="color:#00ff41; font-size:12px;">PROFİLİ YÜKLE:</label>
+                    <input type="file" id="fake-upload" style="color:#fff; font-size:11px;">
+                </div>
+                <div>
+                    <label style="color:#00ff41; font-size:12px;">YAPAY ZEKA ANALİZ ALANI (Koordinatları Yapıştır):</label>
+                    <textarea id="ai-coord-input" placeholder="Örn: 39.1211° N 27.1796° E" style="width:100%; height:50px; background:#000; color:#00ff41; border:1px solid #00ff41; font-family:monospace; font-size:12px;"></textarea>
+                </div>
+            `;
+            terminal.appendChild(taskUI);
         } else if (gorevNo > 10) {
             logBox("OPERASYON TAMAMLANDI. Tüm veriler mühürlendi.", "success");
         }
@@ -157,7 +177,9 @@ function initOperation() {
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev ' + bolge}`;
         
         const mapImg = document.getElementById('active-map');
-        if (mapImg) mapImg.src = `assets/img/soru${gorev > 10 ? 10 : gorev}.jpg`;
+        if (mapImg) {
+            if (gorev <= 10) mapImg.src = `assets/img/soru${gorev}.jpg`;
+        }
 
         triggerBriefing(gorev);
 
@@ -200,33 +222,55 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
 
 // --- 6. ONAYLA (DOĞRULAMA PANELİ - ANALİZ MOTORU) ---
 document.getElementById('btn-verify').addEventListener('click', async () => {
-    // rawInput: Boşlukları temizle ve küçük harfe çevir
-    const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
     const snap = await get(scoreRef);
     const data = snap.val();
     const cur = data.gorevNo || 1;
-
     let isCorrect = false;
 
-    // MATEMATİKSEL VE METİNSEL KONTROL ZİNCİRİ
-    if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
-    else if (cur === 2 && rawInput === "vadi") isCorrect = true;
-    else if (cur === 3 && rawInput.includes("eğim")) isCorrect = true;
-    else if (cur === 4 && rawInput.includes("200")) isCorrect = true;
-    else if (cur === 5 && rawInput.includes("tepe")) isCorrect = true;
-    else if (cur === 6 && rawInput.includes("eğim")) isCorrect = true;
-    else if (cur === 7 && rawInput.includes("plato") && rawInput.includes("ova")) isCorrect = true;
-    else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
-    
-    // --- GÖREV 9: MATEMATİKSEL SIRALAMA KONTROLÜ ---
-    else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
-    
-    // --- GÖREV 10: ARAZİ PROFİLİ ANALİZİ ---
-    else if (cur === 10 && rawInput === "profil") isCorrect = true;
+    // --- GÖREV 1-9: KLASİK METİNSEL KONTROL ---
+    if (cur < 10) {
+        const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
+        if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
+        else if (cur === 2 && rawInput === "vadi") isCorrect = true;
+        else if (cur === 3 && rawInput.includes("eğim")) isCorrect = true;
+        else if (cur === 4 && rawInput.includes("200")) isCorrect = true;
+        else if (cur === 5 && rawInput.includes("tepe")) isCorrect = true;
+        else if (cur === 6 && rawInput.includes("eğim")) isCorrect = true;
+        else if (cur === 7 && rawInput.includes("plato") && rawInput.includes("ova")) isCorrect = true;
+        else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
+        else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
+    } 
+    // --- GÖREV 10: YAPAY ZEKA KOORDİNAT DOĞRULAMA ---
+    else if (cur === 10) {
+        const aiField = document.getElementById('ai-coord-input');
+        const aiValue = aiField ? aiField.value.trim() : "";
+        
+        // Hasbi Hocamın Belirlediği Referans Koordinatlar
+        const refLat = 39.121138;
+        const refLon = 27.179661;
+        
+        // Düzenli ifade ile input içindeki sayısal koordinatları ayıkla
+        const coords = aiValue.match(/\d+\.\d+/g);
+        
+        if (coords && coords.length >= 2) {
+            const userLat = parseFloat(coords[0]);
+            const userLon = parseFloat(coords[1]);
+            
+            // Hata Payı Toleransı: 0.005 Derece
+            if (Math.abs(userLat - refLat) < 0.005 && Math.abs(userLon - refLon) < 0.005) {
+                isCorrect = true;
+                logBox("AI ANALİZİ: Koordinat uyumu başarılı. Dikili-Bergama hattı doğrulandı.", "success");
+            } else {
+                logBox("AI ANALİZİ: Hatalı koordinat! Sapma miktarı güvenli bölge dışında.", "warning");
+            }
+        } else {
+            logBox("HATA: AI Analiz alanına geçerli koordinat verisi girilmedi!", "warning");
+        }
+    }
 
     if (isCorrect) {
         const nextG = cur + 1;
-        const bolgeKodu = nextG > 10 ? "TAMAMLANDI" : "2" + String.fromCharCode(74 + (cur - 9));
+        const bolgeKodu = nextG > 10 ? "TAMAMLANDI" : "2J";
         
         await update(scoreRef, { 
             gorevNo: nextG, 
@@ -236,9 +280,8 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
             ipucuSayisi: 0 
         });
         
-        logBox("VERİ DOĞRULANDI! Mükemmel analiz.", "success");
-    } else {
-        await update(scoreRef, { durum: "Hatalı Giriş Denemesi" });
+        logBox("VERİ DOĞRULANDI! Bir sonraki aşamaya geçiliyor.", "success");
+    } else if (cur < 10) {
         logBox("HATA: Gönderilen analiz verisi geçersiz.", "warning");
     }
     
