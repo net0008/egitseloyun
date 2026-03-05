@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.5
- * Hasbi Erdoğmuş | Görev 1-4 Tam Entegrasyon & Kesin Çözüm
+/* * ops_engine.js - Sürüm: v3.5.6
+ * Hasbi Erdoğmuş | Görev 1-5 Tam Entegrasyon & Kesin Çözüm
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -33,6 +33,12 @@ const hint_library = {
         "Aralarından akarsu geçse bile, akarsuyun her iki yanındaki ilk izohips çizgilerinin yükseltisi ortaktır.",
         "Birbirini çevrelemeyen ama yan yana duran iki izohips eğrisi arasındaki kuralı hatırla: Yükseltileri eşittir!",
         "Kıyıdan (0m) itibaren saymaya başla. X ve Y'nin bulunduğu bu çizgiler kaçıncı basamakta?"
+    ],
+    5: [
+        "Saha kılavuzunu dikkatlice okudun mu?",
+        "İzohipslerin oluşturduğu en içteki kapalı halkalara odaklan.",
+        "Çevresine göre daha yüksekte kalan, zirveye en yakın noktaları temsil ederler.",
+        "Haritada genelde bir 'nokta' ile doruk noktaları gösterilen yer şekli nedir?"
     ]
 };
 
@@ -76,6 +82,8 @@ function triggerBriefing(gorevNo) {
             logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 4) {
             logBox("[MERKEZ]: Yeşil oklar ile gösterilen X ve Y noktaları kaç metre yükseltiyi göstermektedir?", "hint");
+        } else if (gorevNo === 5) {
+            logBox("[MERKEZ]: Haritada sarı daire ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         }
         
         lastGorevNo = gorevNo;
@@ -167,6 +175,11 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     else if (currentGorev === 4 && rawInput.includes("200")) {
         await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı. 5. Görev aktif.", "success");
+    }
+    // GÖREV 5
+    else if (currentGorev === 5 && rawInput.includes("tepe")) {
+        await update(scoreRef, { gorevNo: 6, bolge: "2F", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
+        logBox("ANALİZ DOĞRULANDI! Zirveye ulaşıldı. 6. Görev aktif.", "success");
     }
     // HATA DURUMU
     else {
