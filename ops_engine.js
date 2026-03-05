@@ -1,14 +1,18 @@
-/* * ops_engine.js - Sürüm: v3.5.14
- * Hasbi Erdoğmuş | Görev 1-9 Tam Entegrasyon & Final Operasyon Protokolü
- */
+/* *****************************************************************************
+ * ops_engine.js - Sürüm: v3.5.17                                              *
+ * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
+ * Görev 1-10 Tam Senkronizasyon | Arazi Profili ve Matematiksel Sıralama     *
+ * *************************************************************************** */
+
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
+// --- 0. BAĞLANTI PARAMETRELERİ VE SABİTLER ---
 const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
 
-// --- 1. İPUCU KÜTÜPHANESİ ---
+// --- 1. İPUCU KÜTÜPHANESİ (HİNT REPOSITORY - KADEMELİ SİSTEM) ---
 const hint_library = {
     1: [
         "Saha kılavuzunu dikkatlice oku.",
@@ -60,9 +64,15 @@ const hint_library = {
     ],
     9: [
         "Saha kılavuzunu dikkatlice oku.",
-        "İzohipslerin birbirine en yakın olduğu noktada eğim en fazladır.",
-        "Çizgilerin arası açıldıkça eğim azalır; bu kuralı V, Y ve Z noktaları için uygula.",
-        "Sıralamayı yaparken 'büyüktür' (>) işaretini kullanarak en dikten en düze doğru ilerle."
+        "Çizgilerin en sık olduğu yerde eğim en fazladır.",
+        "En seyrek olduğu yerde eğim en azdır.",
+        "V, Y ve Z doğrultularını buna göre kıyasla ve MATEMATİKSEL sıralama yap."
+    ],
+    10: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "A ve B noktaları arasındaki yükselti profilini zihninde canlandır.",
+        "Haritadaki her izohips kesişimini dikey eksene taşıdığında çıkan şekle odaklan.",
+        "Profilin zirve ve çukur noktalarını (akarsu geçişi gibi) kontrol et."
     ]
 };
 
@@ -89,7 +99,7 @@ function logBox(message, type = "") {
     saveTerminal();
 }
 
-// --- 3. DİNAMİK BRİFİNG TETİKLEYİCİ ---
+// --- 3. DİNAMİK BRİFİNG TETİKLEYİCİ (TASK BRIEFING) ---
 let lastGorevNo = 0;
 
 function triggerBriefing(gorevNo) {
@@ -98,25 +108,27 @@ function triggerBriefing(gorevNo) {
         logBox("[SİSTEM]: Yeni veri paketi tanımlandı.", "success");
         
         if (gorevNo === 1) {
-            logBox("[MERKEZ]: Haritadaki konumun yükseltisini h² olarak tespit et.", "warning");
+            logBox("[MERKEZ]: Haritadaki konumun yükseltisini h² olarak gir.", "warning");
         } else if (gorevNo === 2) {
-            logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerdeki yeryüzü şekli nedir?", "hint");
+            logBox("[MERKEZ]: Kalın çizgili yeryüzü şeklini analiz et.", "hint");
         } else if (gorevNo === 3) {
-            logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
+            logBox("[MERKEZ]: İzohipslerin sıklaştığı yerin ortak özelliğini bul.", "hint");
         } else if (gorevNo === 4) {
-            logBox("[MERKEZ]: Yeşil oklar ile gösterilen X ve Y noktaları kaç metredir?", "hint");
+            logBox("[MERKEZ]: X ve Y noktalarının yükseltisini hesapla.", "hint");
         } else if (gorevNo === 5) {
-            logBox("[MERKEZ]: Haritada sarı daire ile gösterilen yerlerin ortak özelliği nedir?", "hint");
+            logBox("[MERKEZ]: Sarı daireli yerlerin ortak özelliğini belirle.", "hint");
         } else if (gorevNo === 6) {
-            logBox("[MERKEZ]: Haritada sarı çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
+            logBox("[MERKEZ]: Sarı çizgili bölgelerdeki eğim analizini yap.", "hint");
         } else if (gorevNo === 7) {
-            logBox("[MERKEZ]: Haritada Z ve Y ile gösterilen alanlara ne denir? (Z=... Y=...)", "hint");
+            logBox("[MERKEZ]: Z ve Y alanlarının coğrafi isimlerini mühürle.", "hint");
         } else if (gorevNo === 8) {
-            logBox("[MERKEZ]: Haritada sarı daire ile gösterilen A ve B alanlarına ne denir?", "hint");
+            logBox("[MERKEZ]: A ve B alanlarının yer şekli adlarını bul.", "hint");
         } else if (gorevNo === 9) {
-            logBox("[MERKEZ]: V, Y ve Z oklarını eğimin en çok olduğu yerden en aza doğru sırala.", "hint");
-        } else if (gorevNo >= 10) {
-            logBox("TEBRİKLER! Operasyon başarıyla tamamlandı. Tüm harita analiz edildi.", "success");
+            logBox("[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre MATEMATİKSEL sırala (Örn: A>B>C).", "warning");
+        } else if (gorevNo === 10) {
+            logBox("[MERKEZ]: Haritadaki A-B hattı boyunca çıkarılan arazi profilini analiz et.", "hint");
+        } else if (gorevNo > 10) {
+            logBox("OPERASYON TAMAMLANDI. Tüm veriler mühürlendi.", "success");
         }
         
         lastGorevNo = gorevNo;
@@ -124,11 +136,15 @@ function triggerBriefing(gorevNo) {
     }
 }
 
-// --- 4. BAĞLANTI VE CANLI SENKRONİZASYON ---
+// --- 4. BAĞLANTI VE CANLI SENKRONİZASYON (FIREBASE INIT) ---
 function initOperation() {
-    if (!teamName) return;
+    if (!teamName) {
+        console.error("Takım adı parametresi eksik! URL kontrolü yapın.");
+        return;
+    }
+    
     loadTerminal(); 
-    update(scoreRef, { durum: "Bağlantı Kuruldu" });
+    update(scoreRef, { durum: "Aktif Bağlantı", sonSinyal: new Date().toISOString() });
 
     onValue(scoreRef, (snapshot) => {
         const data = snapshot.val();
@@ -138,10 +154,10 @@ function initOperation() {
         const bolge = data.bolge || "2A";
         
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
-        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 9 ? 'OPERASYON BİTTİ' : gorev + '. Görev ' + bolge}`;
+        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev ' + bolge}`;
         
         const mapImg = document.getElementById('active-map');
-        if (mapImg) mapImg.src = `assets/img/soru${gorev > 9 ? 9 : gorev}.jpg`;
+        if (mapImg) mapImg.src = `assets/img/soru${gorev > 10 ? 10 : gorev}.jpg`;
 
         triggerBriefing(gorev);
 
@@ -151,14 +167,14 @@ function initOperation() {
             if (gorev >= 3 && i === 0) star.classList.add('filled');
             if (gorev >= 6 && i <= 1) star.classList.add('filled');
             if (gorev >= 9 && i <= 2) star.classList.add('filled');
-            if (gorev >= 10 && i <= 3) star.classList.add('filled');
+            if (gorev >= 11 && i <= 3) star.classList.add('filled');
         });
     });
 }
 
 initOperation();
 
-// --- 5. İPUCU TALEBİ ---
+// --- 5. İPUCU TALEBİ PANELİ ---
 document.getElementById('btn-hint').addEventListener('click', async () => {
     const snap = await get(scoreRef);
     const data = snap.val();
@@ -174,66 +190,58 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
         await update(scoreRef, {
             puan: newScore,
             ipucuSayisi: count + 1,
-            durum: `G${currentGorev}-İpucu #${count} Kullanıldı`
+            durum: `G${currentGorev}-İpucu Kullanıldı`
         });
-        logBox(`[İPUCU #${count}]: ${activeHints[count]}`, "hint");
+        logBox(`[VERİ]: ${activeHints[count]}`, "hint");
     } else {
-        logBox("Bu bölge için tüm ipuçları kullanıldı.", "warning");
+        logBox("Bu bölge için tüm veriler deşifre edildi.", "warning");
     }
 });
 
-// --- 6. ONAYLA (CEVAP KONTROL) ---
+// --- 6. ONAYLA (DOĞRULAMA PANELİ - ANALİZ MOTORU) ---
 document.getElementById('btn-verify').addEventListener('click', async () => {
-    // Boşlukları silip küçük harfe çevirerek matematiksel sıralamayı garantiye alıyoruz
+    // rawInput: Boşlukları temizle ve küçük harfe çevir
     const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
     const snap = await get(scoreRef);
     const data = snap.val();
-    const currentGorev = data.gorevNo || 1;
+    const cur = data.gorevNo || 1;
 
-    if (currentGorev === 1 && Number(rawInput) === 360000) {
-        await update(scoreRef, { gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
-    } 
-    else if (currentGorev === 2 && rawInput === "vadi") {
-        await update(scoreRef, { gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
-    } 
-    else if (currentGorev === 3 && rawInput.includes("eğim")) {
-        await update(scoreRef, { gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("HARİKA! 2C bölgesi analiz edildi. 4. Görev aktif.", "success");
+    let isCorrect = false;
+
+    // MATEMATİKSEL VE METİNSEL KONTROL ZİNCİRİ
+    if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
+    else if (cur === 2 && rawInput === "vadi") isCorrect = true;
+    else if (cur === 3 && rawInput.includes("eğim")) isCorrect = true;
+    else if (cur === 4 && rawInput.includes("200")) isCorrect = true;
+    else if (cur === 5 && rawInput.includes("tepe")) isCorrect = true;
+    else if (cur === 6 && rawInput.includes("eğim")) isCorrect = true;
+    else if (cur === 7 && rawInput.includes("plato") && rawInput.includes("ova")) isCorrect = true;
+    else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
+    
+    // --- GÖREV 9: MATEMATİKSEL SIRALAMA KONTROLÜ ---
+    else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
+    
+    // --- GÖREV 10: ARAZİ PROFİLİ ANALİZİ ---
+    else if (cur === 10 && rawInput === "profil") isCorrect = true;
+
+    if (isCorrect) {
+        const nextG = cur + 1;
+        const bolgeKodu = nextG > 10 ? "TAMAMLANDI" : "2" + String.fromCharCode(74 + (cur - 9));
+        
+        await update(scoreRef, { 
+            gorevNo: nextG, 
+            bolge: bolgeKodu,
+            puan: data.puan + 200, 
+            durum: nextG > 10 ? "OPERASYON TAMAM" : "Başarılı Analiz", 
+            ipucuSayisi: 0 
+        });
+        
+        logBox("VERİ DOĞRULANDI! Mükemmel analiz.", "success");
+    } else {
+        await update(scoreRef, { durum: "Hatalı Giriş Denemesi" });
+        logBox("HATA: Gönderilen analiz verisi geçersiz.", "warning");
     }
-    else if (currentGorev === 4 && rawInput.includes("200")) {
-        await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı. 5. Görev aktif.", "success");
-    }
-    else if (currentGorev === 5 && rawInput.includes("tepe")) {
-        await update(scoreRef, { gorevNo: 6, bolge: "2F", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("ANALİZ DOĞRULANDI! Zirveye ulaşıldı. 6. Görev aktif.", "success");
-    }
-    else if (currentGorev === 6 && rawInput.includes("eğim")) {
-        await update(scoreRef, { gorevNo: 7, bolge: "2G", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("MÜKEMMEL ANALİZ! Arazi yapısı çözüldü. 7. Görev aktif.", "success");
-    }
-    else if (currentGorev === 7 && rawInput.includes("plato") && rawInput.includes("ova")) {
-        await update(scoreRef, { gorevNo: 8, bolge: "2H", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("OPERASYONEL BAŞARI! 7. Görev mühürlendi. 8. Görev aktif.", "success");
-    }
-    else if (currentGorev === 8 && rawInput.includes("delta") && rawInput.includes("falez")) {
-        await update(scoreRef, { gorevNo: 9, bolge: "2I", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("MÜKEMMEL TESPİT! Kıyı morfolojisi analiz edildi. 9. Görev aktif.", "success");
-    }
-    else if (currentGorev === 9 && rawInput === "y>z>v") {
-        await update(scoreRef, { gorevNo: 10, bolge: "BİTTİ", puan: (data.puan || 1000) + 200, durum: "OPERASYON TAMAM", ipucuSayisi: 0 });
-        logBox("FİNAL ANALİZİ DOĞRULANDI! Tebrikler Analist.", "success");
-    }
-    else {
-        if (data.ipucuSayisi >= 4) {
-            await update(scoreRef, { durum: `${currentGorev}. Soruyu Bilemedi!` });
-            logBox("ANALİZ BAŞARISIZ: Karargâh desteği bekleniyor!", "warning");
-        } else {
-            await update(scoreRef, { durum: "Hatalı Giriş" });
-            logBox("HATA: Gönderilen analiz verisi geçersiz.", "warning");
-        }
-    }
+    
+    // Giriş alanını temizle
     document.getElementById('kripto-val').value = "";
 });
