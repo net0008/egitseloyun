@@ -1,5 +1,6 @@
-/* * ops_engine.js - Sürüm: v3.5.8
- * Hasbi Erdoğmuş | Görev 2 (Vadi) Güncellemesi & Tam Entegrasyon
+/* * ops_engine.js - Sürüm: v3.5.10
+ * Hasbi Erdoğmuş | Görev 1-5 (Vadi & Tepe) Tam Senkronizasyon 
+ * [Mülakat Hazırlık Protokolü - Kesin Sürüm]
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -17,25 +18,25 @@ const hint_library = {
         "Yükselti farkı 200m. Kıyıdan itibaren izohipsleri say: (Yükseklik = İzohips Sayısı x 200)"
     ],
     2: [
-        "Saha kılavuzunu dikkatlice okudun mu?",
+        "Saha kılavuzunu dikkatlice oku.",
         "İzohips eğrilerinin, yükseltinin arttığı (tepeye doğru) yöne doğru büklüm yaptığı yerlere odaklan.",
-        "Ucu yüksek olan tarafa bakan 'V' şekilleri bu yeryüzü şeklini temsil eder.",
-        "Buradan bir akarsu geçiyor olsaydı, sular bu kavisli yol boyunca akardı. Akarsu yatağına ne denir?"
+        "Ucu yüksekliği fazla olan tarafa bakan 'V' şekilleri vadiyi temsil eder.",
+        "Akarsu yatağının bulunduğu bu derinlikli yer şekli nedir?"
     ],
     3: [
-        "Saha kılavuzunu dikkatlice okudun mu?",
+        "Saha kılavuzunu dikkatlice oku.",
         "İzohips eğrilerinin birbirine çok yaklaştığı yerlere dikkat et.",
         "Bu bölgede bir akarsu olsaydı akış hızı ve aşındırma gücü nasıl olurdu?",
         "Eğriler arasındaki mesafenin azalması, yükseltinin kısa mesafede hızla değiştiği anlamına gelir."
     ],
     4: [
-        "Saha kılavuzunu dikkatlice okudun mu?",
+        "Saha kılavuzunu dikkatlice oku.",
         "Aralarından akarsu geçse bile, akarsuyun her iki yanındaki ilk izohips çizgilerinin yükseltisi ortaktır.",
         "Birbirini çevrelemeyen ama yan yana duran iki izohips eğrisi arasındaki kuralı hatırla: Yükseltileri eşittir!",
         "Kıyıdan (0m) itibaren saymaya başla. X ve Y'nin bulunduğu bu çizgiler kaçıncı basamakta?"
     ],
     5: [
-        "Saha kılavuzunu dikkatlice okudun mu?",
+        "Saha kılavuzunu dikkatlice oku.",
         "İzohipslerin oluşturduğu en içteki kapalı halkalara odaklan.",
         "Çevresine göre daha yüksekte kalan, zirveye en yakın noktaları temsil ederler.",
         "Haritada genelde bir 'nokta' ile doruk noktaları gösterilen yer şekli nedir?"
@@ -78,6 +79,7 @@ function triggerBriefing(gorevNo) {
             logBox("<span style='color:#ff3e3e; font-weight:bold;'>DİKKAT:</span> 1. Görev için şifreleme (h²) protokolü uygulanmalıdır!", "warning");
         } else if (gorevNo === 2) {
             logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerlerde hangi yeryüzü şekli bulunmaktadır?", "hint");
+            logBox("Not: Bu bölgede şifreleme protokolü devre dışıdır.", "");
         } else if (gorevNo === 3) {
             logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 4) {
@@ -104,14 +106,17 @@ function initOperation() {
         const gorev = data.gorevNo || 1;
         const bolge = data.bolge || "2A";
         
+        // Arayüz Veri Senkronizasyonu
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev}. Görev ${bolge} Bölgesi`;
         
+        // Harita Senkronizasyonu
         const mapImg = document.getElementById('active-map');
         if (mapImg) mapImg.src = `assets/img/soru${gorev}.jpg`;
 
         triggerBriefing(gorev);
 
+        // Yıldız Boyama Sistemi
         const stars = document.querySelectorAll('.star');
         stars.forEach((star, i) => {
             star.classList.remove('filled');
@@ -161,22 +166,22 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         await update(scoreRef, { gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
     } 
-    // GÖREV 2: Vadi Güncellemesi
+    // GÖREV 2: Vadi (Kesin Cevap)
     else if (currentGorev === 2 && rawInput === "vadi") {
         await update(scoreRef, { gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
     } 
-    // GÖREV 3
+    // GÖREV 3: Eğim
     else if (currentGorev === 3 && rawInput.includes("eğim")) {
         await update(scoreRef, { gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("HARİKA! 2C bölgesi analiz edildi. 4. Görev aktif.", "success");
     }
-    // GÖREV 4
+    // GÖREV 4: 200m
     else if (currentGorev === 4 && rawInput.includes("200")) {
         await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı. 5. Görev aktif.", "success");
+        logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı.", "success");
     }
-    // GÖREV 5
+    // GÖREV 5: Tepe
     else if (currentGorev === 5 && rawInput.includes("tepe")) {
         await update(scoreRef, { gorevNo: 6, bolge: "2F", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("ANALİZ DOĞRULANDI! Zirveye ulaşıldı. 6. Görev aktif.", "success");
