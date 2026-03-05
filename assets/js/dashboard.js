@@ -39,10 +39,11 @@ function canonicalHeader(header = "") {
 
 // --- 2. GÖRSELLEŞTİRME MOTORU ---
 function getStatusColor(status) {
+    if (!status) return "#888";
     if (status === "Bağlantı Kuruldu" || status === "Başarılı") return "#39FF14";
-    if (status && status.includes("İpucu")) return "#00d4ff";
-    if (status && (status.includes("Hata") || status.includes("Hatalı") || status.includes("Bilemedi") || status.includes("Destek"))) return "#ff3e3e";
-    return "#888";
+    if (status.includes("İpucu")) return "#00d4ff"; // İpucu durumunda mavi yanar
+    if (status.includes("Hata") || status.includes("Hatalı") || status.includes("Bilemedi") || status.includes("Destek")) return "#ff3e3e";
+    return "#39FF14"; // Diğer aktif durumlar için yeşil
 }
 
 function renderDashboard(liveScores = {}) {
