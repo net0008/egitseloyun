@@ -1,18 +1,20 @@
 /* *****************************************************************************
- * ops_engine.js - Sürüm: v3.5.18                                              *
+ * ops_engine.js - Sürüm: v3.5.20                                              *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Görev 1-10 Tam Senkronizasyon | Bergama-Dikili AI Profil Analiz Motoru     *
+ * Görev 1-10 Tam Entegrasyon | Bergama-Dikili İnteraktif Profil & AI Motoru  *
  * *************************************************************************** */
 
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
 // --- 0. BAĞLANTI PARAMETRELERİ VE SABİTLER ---
+// URL üzerinden gelen takım ismini yakalayarak karargah senkronizasyonunu sağlar.
 const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
 
 // --- 1. İPUCU KÜTÜPHANESİ (HİNT REPOSITORY - KADEMELİ SİSTEM) ---
+// Her görev için Coğrafya ve Teknik odaklı ipuçlarını içerir.
 const hint_library = {
     1: [
         "Saha kılavuzunu dikkatlice oku.",
@@ -70,13 +72,14 @@ const hint_library = {
     ],
     10: [
         "Saha kılavuzunu dikkatlice oku. Hata yaparsanız sayfayı yenileyin.",
-        "Tam Dikili yazısı üzerine tıklayın.",
-        "Tam Bergama yazısı üzerine tıklayın.",
-        "Koordinatları yapıştırdıktan sonra AI analizini onaylayın."
+        "Profiler ekranında tam Dikili yazısı üzerine tıklayın.",
+        "Profiler ekranında tam Bergama yazısı üzerine tıklayın.",
+        "Oluşturduğunuz profilin koordinatlarını AI analiz alanına yapıştırın."
     ]
 };
 
 // --- 2. TERMİNAL HAFIZA VE MESAJ MOTORU ---
+// Terminaldeki verilerin oturum boyunca korunmasını sağlar.
 function saveTerminal() { 
     if (teamName && terminal) sessionStorage.setItem(`log_${teamName}`, terminal.innerHTML); 
 }
@@ -99,7 +102,7 @@ function logBox(message, type = "") {
     saveTerminal();
 }
 
-// --- 3. DİNAMİK BRİFİNG TETİKLEYİCİ (TASK BRIEFING) ---
+// --- 3. DİNAMİK BRİFİNG VE GÖREV 10 ARAYÜZ YÖNETİMİ ---
 let lastGorevNo = 0;
 
 function triggerBriefing(gorevNo) {
@@ -107,6 +110,7 @@ function triggerBriefing(gorevNo) {
         terminal.innerHTML = "";
         logBox("[SİSTEM]: Yeni veri paketi tanımlandı.", "success");
         
+        // Standart Brifing Metinleri
         if (gorevNo === 1) {
             logBox("[MERKEZ]: Haritadaki konumun yükseltisini h² olarak gir.", "warning");
         } else if (gorevNo === 2) {
@@ -126,27 +130,34 @@ function triggerBriefing(gorevNo) {
         } else if (gorevNo === 9) {
             logBox("[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre MATEMATİKSEL sırala (Örn: A>B>C).", "warning");
         } else if (gorevNo === 10) {
-            logBox("[MERKEZ]: Dikili-Bergama arası profil çıkarma operasyonu aktif.", "warning");
-            logBox("Rehber videoyu izleyerek hattı oluşturun ve AI alanına mühürleyin.", "");
+            logBox("[MERKEZ]: Dikili-Bergama hattı profil operasyonu aktif.", "warning");
+            logBox("Hangi adımları izlemen gerektiğini sol taraftaki panelden 'VİDEO' ile öğrenebilirsin.", "");
             
-            // --- GÖREV 10: DİNAMİK ARAYÜZ ENJEKSİYONU ---
-            const taskUI = document.createElement('div');
-            taskUI.id = "task10-interaktif-panel";
-            taskUI.style = "margin-top:15px; padding:10px; border:1px dashed #00ff41; background:rgba(0,40,0,0.5);";
-            taskUI.innerHTML = `
-                <div style="margin-bottom:10px;">
-                    <button onclick="window.open('asset/video/10_gorev.mp4', '_blank')" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:5px; width:100%;">🎥 EĞİTİM VİDEOSUNU AÇ</button>
-                </div>
-                <div style="margin-bottom:10px; border-top:1px solid #004400; padding-top:5px;">
-                    <label style="color:#00ff41; font-size:12px;">PROFİLİ YÜKLE:</label>
-                    <input type="file" id="fake-upload" style="color:#fff; font-size:11px;">
-                </div>
-                <div>
-                    <label style="color:#00ff41; font-size:12px;">YAPAY ZEKA ANALİZ ALANI (Koordinatları Yapıştır):</label>
-                    <textarea id="ai-coord-input" placeholder="Örn: 39.1211° N 27.1796° E" style="width:100%; height:50px; background:#000; color:#00ff41; border:1px solid #00ff41; font-family:monospace; font-size:12px;"></textarea>
-                </div>
-            `;
-            terminal.appendChild(taskUI);
+            // --- GÖREV 10: VISUAL PANEL (HARİTA ALANI) YENİDEN YAPILANDIRMA ---
+            // Sıkışmayı önlemek için UI elementlerini geniş harita alanına taşıyoruz.
+            const visualPanel = document.querySelector('.map-frame'); 
+            if (visualPanel) {
+                visualPanel.innerHTML = `
+                    <div id="task10-interaktif-panel" style="padding:25px; background:rgba(0,25,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; gap:20px; box-shadow: 0 0 20px rgba(0,255,65,0.2);">
+                        <h2 style="font-size:1.4rem; border-bottom:1px solid #00ff41; padding-bottom:10px; text-shadow: 0 0 5px #00ff41;">🛰️ PROFİL ANALİZ LABORATUVARI</h2>
+                        
+                        <div style="flex: 1; display: flex; flex-direction: column; gap:15px;">
+                            <button onclick="window.open('asset/video/10_gorev.mp4', '_blank')" class="cyber-btn" style="width:100%; padding:15px; background:#00ff41; color:#000; font-weight:bold; border:none; cursor:pointer;">🎥 EĞİTİM VİDEOSUNU BAŞLAT</button>
+                            
+                            <div style="border:1px dashed #00ff41; padding:15px; background:rgba(0,40,0,0.5);">
+                                <label style="display:block; margin-bottom:10px; font-weight:bold;">📤 PROFİLİ YÜKLE (Analiz İçin):</label>
+                                <input type="file" id="fake-upload" style="color:#fff; font-size:0.9rem;">
+                            </div>
+                            
+                            <div style="flex-grow:1; display:flex; flex-direction:column;">
+                                <label style="display:block; margin-bottom:10px; font-weight:bold;">🤖 YAPAY ZEKA KOORDİNAT ANALİZİ:</label>
+                                <textarea id="ai-coord-input" placeholder="Profiler koordinatlarını buraya yapıştırın: Örn: 39.121138° N 27.179661° E" style="flex-grow:1; background:#000; color:#00ff41; border:1px solid #00ff41; padding:15px; font-family:monospace; resize:none; font-size:1rem;"></textarea>
+                                <p style="font-size:0.8rem; color:#888; margin-top:8px;">[DİKKAT]: HeyWhatsThat üzerindeki tam koordinat verisini kullanın.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
         } else if (gorevNo > 10) {
             logBox("OPERASYON TAMAMLANDI. Tüm veriler mühürlendi.", "success");
         }
@@ -164,7 +175,10 @@ function initOperation() {
     }
     
     loadTerminal(); 
-    update(scoreRef, { durum: "Aktif Bağlantı", sonSinyal: new Date().toISOString() });
+    
+    // Bağlantı durumunu karargaha bildirir.
+    update(scoreRef, { durum: "Aktif Bağlantı", sonSinyal: new Date().toISOString() })
+        .catch(err => console.error("Firebase Update Hatası:", err));
 
     onValue(scoreRef, (snapshot) => {
         const data = snapshot.val();
@@ -173,16 +187,25 @@ function initOperation() {
         const gorev = data.gorevNo || 1;
         const bolge = data.bolge || "2A";
         
+        // Puan ve Sektör bilgilerini günceller.
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev ' + bolge}`;
         
+        // Görsel paneli yönetir.
         const mapImg = document.getElementById('active-map');
         if (mapImg) {
-            if (gorev <= 10) mapImg.src = `assets/img/soru${gorev}.jpg`;
+            if (gorev <= 9) {
+                mapImg.src = `assets/img/soru${gorev}.jpg`;
+                mapImg.style.display = "block";
+            } else if (gorev === 10) {
+                // Görev 10'da statik resmi gizleyip interaktif paneli gösteriyoruz.
+                mapImg.style.display = "none";
+            }
         }
 
         triggerBriefing(gorev);
 
+        // Yıldız ilerleme sistemini günceller.
         const stars = document.querySelectorAll('.star');
         stars.forEach((star, i) => {
             star.classList.remove('filled');
@@ -206,10 +229,10 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
 
     if (count === 0 && activeHints.length > 0) {
         logBox(activeHints[0], "hint");
-        await update(scoreRef, { ipucuSayisi: 1, durum: "Kılavuz Kontrol Edildi" });
+        update(scoreRef, { ipucuSayisi: 1, durum: "Kılavuz Kontrol Edildi" });
     } else if (count < activeHints.length) {
         const newScore = Math.max(0, (data.puan || 1000) - 50);
-        await update(scoreRef, {
+        update(scoreRef, {
             puan: newScore,
             ipucuSayisi: count + 1,
             durum: `G${currentGorev}-İpucu Kullanıldı`
@@ -227,7 +250,7 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const cur = data.gorevNo || 1;
     let isCorrect = false;
 
-    // --- GÖREV 1-9: KLASİK METİNSEL KONTROL ---
+    // --- GÖREV 1-9: METİNSEL VE MATEMATİKSEL KONTROL ---
     if (cur < 10) {
         const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
         if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
@@ -240,28 +263,31 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
         else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
     } 
-    // --- GÖREV 10: YAPAY ZEKA KOORDİNAT DOĞRULAMA ---
+    // --- GÖREV 10: YAPAY ZEKA KOORDİNAT DOĞRULAMA MOTORU ---
     else if (cur === 10) {
         const aiField = document.getElementById('ai-coord-input');
         const aiValue = aiField ? aiField.value.trim() : "";
         
-        // Hasbi Hocamın Belirlediği Referans Koordinatlar
+        // Referans Koordinatlar: Bergama - Dikili Hattı
         const refLat = 39.121138;
         const refLon = 27.179661;
         
-        // Düzenli ifade ile input içindeki sayısal koordinatları ayıkla
+        // Düzenli ifade (Regex) ile input içindeki sayısal değerleri ayıklar.
         const coords = aiValue.match(/\d+\.\d+/g);
         
         if (coords && coords.length >= 2) {
             const userLat = parseFloat(coords[0]);
             const userLon = parseFloat(coords[1]);
             
-            // Hata Payı Toleransı: 0.005 Derece
-            if (Math.abs(userLat - refLat) < 0.005 && Math.abs(userLon - refLon) < 0.005) {
+            // Hata Payı Toleransı: 0.005 Derece (Yaklaşık 500m sapma payı)
+            const latDiff = Math.abs(userLat - refLat);
+            const lonDiff = Math.abs(userLon - refLon);
+            
+            if (latDiff < 0.005 && lonDiff < 0.005) {
                 isCorrect = true;
                 logBox("AI ANALİZİ: Koordinat uyumu başarılı. Dikili-Bergama hattı doğrulandı.", "success");
             } else {
-                logBox("AI ANALİZİ: Hatalı koordinat! Sapma miktarı güvenli bölge dışında.", "warning");
+                logBox("AI ANALİZİ: Sapma payı çok yüksek! Koordinatları kontrol edin.", "warning");
             }
         } else {
             logBox("HATA: AI Analiz alanına geçerli koordinat verisi girilmedi!", "warning");
@@ -272,15 +298,19 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         const nextG = cur + 1;
         const bolgeKodu = nextG > 10 ? "TAMAMLANDI" : "2J";
         
-        await update(scoreRef, { 
+        // Firebase güncellemesini takip eden ve kullanıcıya geri bildirim veren blok.
+        update(scoreRef, { 
             gorevNo: nextG, 
             bolge: bolgeKodu,
             puan: data.puan + 200, 
             durum: nextG > 10 ? "OPERASYON TAMAM" : "Başarılı Analiz", 
             ipucuSayisi: 0 
+        }).then(() => {
+            logBox("VERİ DOĞRULANDI! Karargah senkronize edildi.", "success");
+        }).catch(err => {
+            logBox("KRİTİK HATA: Veri karargaha gönderilemedi!", "warning");
         });
         
-        logBox("VERİ DOĞRULANDI! Bir sonraki aşamaya geçiliyor.", "success");
     } else if (cur < 10) {
         logBox("HATA: Gönderilen analiz verisi geçersiz.", "warning");
     }
