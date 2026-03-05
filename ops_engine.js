@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.6
- * Hasbi Erdoğmuş | Görev 1-5 Tam Entegrasyon & Kesin Çözüm
+/* * ops_engine.js - Sürüm: v3.5.8
+ * Hasbi Erdoğmuş | Görev 2 (Vadi) Güncellemesi & Tam Entegrasyon
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -18,9 +18,9 @@ const hint_library = {
     ],
     2: [
         "Saha kılavuzunu dikkatlice okudun mu?",
-        "Eğrilerin, yükseltinin azaldığı yöne doğru yaptığı büklümlerdir.",
-        "Ucu dışarı doğru bakan 'V' şeklindedirler.",
-        "Bilgisayar başında çok fazla oturduğun zaman omurganın en çok neresi ağrır?"
+        "İzohips eğrilerinin, yükseltinin arttığı (tepeye doğru) yöne doğru büklüm yaptığı yerlere odaklan.",
+        "Ucu yüksek olan tarafa bakan 'V' şekilleri bu yeryüzü şeklini temsil eder.",
+        "Buradan bir akarsu geçiyor olsaydı, sular bu kavisli yol boyunca akardı. Akarsu yatağına ne denir?"
     ],
     3: [
         "Saha kılavuzunu dikkatlice okudun mu?",
@@ -161,8 +161,8 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         await update(scoreRef, { gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
     } 
-    // GÖREV 2
-    else if (currentGorev === 2 && rawInput === "sırt") {
+    // GÖREV 2: Vadi Güncellemesi
+    else if (currentGorev === 2 && rawInput === "vadi") {
         await update(scoreRef, { gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
     } 
