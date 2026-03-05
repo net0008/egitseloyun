@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.4
- * Hasbi Erdoğmuş | Görev 4 (200m) Entegrasyonu & Kesin Çözüm
+/* * ops_engine.js - Sürüm: v3.5.5
+ * Hasbi Erdoğmuş | Görev 1-4 Tam Entegrasyon & Kesin Çözüm
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -30,9 +30,9 @@ const hint_library = {
     ],
     4: [
         "Saha kılavuzunu dikkatlice okudun mu?",
-        "Kıyı çizgisinin 0 metre olduğunu ve eküidistansın her yerde sabit olduğunu hatırla.",
-        "Bir çizgiden diğerine geçerken kaçar kaçar sayman gerektiğini buldun mu?",
-        "Aynı izohips eğrisi üzerindeki tüm noktaların yükselti değeri aynıdır. X ve Y'nin hangi çizgide olduğuna bak."
+        "Aralarından akarsu geçse bile, akarsuyun her iki yanındaki ilk izohips çizgilerinin yükseltisi ortaktır.",
+        "Birbirini çevrelemeyen ama yan yana duran iki izohips eğrisi arasındaki kuralı hatırla: Yükseltileri eşittir!",
+        "Kıyıdan (0m) itibaren saymaya başla. X ve Y'nin bulunduğu bu çizgiler kaçıncı basamakta?"
     ]
 };
 
@@ -75,7 +75,7 @@ function triggerBriefing(gorevNo) {
         } else if (gorevNo === 3) {
             logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
         } else if (gorevNo === 4) {
-            logBox("[MERKEZ]: Haritadaki X ve Y noktaları kaç metre yükseltiyi göstermektedir?", "hint");
+            logBox("[MERKEZ]: Yeşil oklar ile gösterilen X ve Y noktaları kaç metre yükseltiyi göstermektedir?", "hint");
         }
         
         lastGorevNo = gorevNo;
@@ -163,12 +163,12 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         await update(scoreRef, { gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("HARİKA! 2C bölgesi analiz edildi. 4. Görev aktif.", "success");
     }
-    // GÖREV 4 (Buraya taşındı!)
+    // GÖREV 4
     else if (currentGorev === 4 && rawInput.includes("200")) {
         await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
-        logBox("ANALİZ TAMAMLANDI! X ve Y doğrulandı. 5. Görev aktif.", "success");
+        logBox("ANALİZ TAMAMLANDI! X ve Y yükseltileri doğrulandı. 5. Görev aktif.", "success");
     }
-    // HATA DURUMU (Her zaman en sonda)
+    // HATA DURUMU
     else {
         if (data.ipucuSayisi >= 4) {
             await update(scoreRef, { durum: `${currentGorev}. Soruyu Bilemedi!` });
