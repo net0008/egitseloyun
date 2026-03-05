@@ -80,4 +80,76 @@ function renderDashboard(liveScores = {}) {
 onValue(ref(db, "operasyon/kadro"), (snapshot) => {
     if (snapshot.exists()) {
         localStudents = snapshot.val();
-        localStorage.removeItem("rosterDraft
+        localStorage.removeItem("rosterDraft"); // Veritabanında varsa taslağa gerek yok
+        console.log("[SİSTEM]: Canlı kadro veritabanından yüklendi.");
+        onValue(ref(db, "operasyon/skorlar"), (scoreSnap) => {
+            renderDashboard(scoreSnap.val() || {});
+        });
+    } else {
+        // Veritabanı boşsa ama hafızada taslak varsa onu render et
+        renderDashboard();
+    }
+});
+
+// --- 4. ETKİLEŞİM VE DOSYA YÖNETİMİ ---
+
+// CSV Yükleme
+document.getElementById("csv-input").addEventListener("change", function (e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: "UTF-8",
+        transformHeader: canonicalHeader,
+        complete: function (results) {
+            localStudents = results.data.map(row => {
+                const clean = {};
+                Object.entries(row).forEach(([k, v]) => {
+                    clean[canonicalHeader(k)] = String(v || "").trim();
+                });
+                return clean;
+            }).filter(s => s["Okul No"] && s["Takım Adı"]);
+
+            // KRİTİK: Yüklenen veriyi tarayıcı hafızasına (taslak olarak) kaydet
+            localStorage.setItem("rosterDraft", JSON.stringify(localStudents));
+            
+            renderDashboard();
+            if (localStudents.length > 0) alert(`BAŞARILI: ${localStudents.length} personel taslak olarak yüklendi.`);
+        }
+    });
+});
+
+// Operasyonu Başlat
+document.getElementById("btn-init-op").addEventListener("click", () => {
+    if (localStudents.length === 0) return alert("Önce CSV yüklemelisiniz!");
+
+    const teams = [...new Set(localStudents.map(s => s["Takım Adı"]))].filter(Boolean);
+    const initialScores = {};
+    teams.forEach(t => initialScores[t] = { 
+        puan: 1000, 
+        bolge: "2A", 
+        gorevNo: 1, 
+        durum: "Sinyal Bekleniyor",
+        ipucuSayisi: 0 
+    });
+
+    set(ref(db, "operasyon/skorlar"), initialScores);
+    set(ref(db, "operasyon/kadro"), localStudents).then(() => {
+        localStorage.removeItem("rosterDraft"); // Başarıyla yüklendiği için taslağı silebiliriz
+        alert("OPERASYON BAŞLATILDI: Tüm birimlere görev emri gönderildi.");
+    });
+});
+
+// --- 5. KRİTİK: SUNUCU SIFIRLAMA ---
+document.getElementById("btn-reset-db").addEventListener("click", () => {
+    if (confirm("DİKKAT: Sunucudaki ve hafızadaki tüm veriler silinecek. Emin misiniz?")) {
+        set(ref(db, "operasyon"), null).then(() => {
+            localStudents = [];
+            localStorage.removeItem("rosterDraft"); // Hafızayı da temizle
+            renderDashboard();
+            alert("SİSTEM SIFIRLANDI: Hafıza ve Sunucu temizlendi.");
+        });
+    }
+});
