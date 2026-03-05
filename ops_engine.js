@@ -1,70 +1,91 @@
-/* * ops_engine.js - Sürüm: v2.7.0 (Mülakat Sürümü)
- * Not: Bağlantı sinyali garantili ve gecikmeli ateşleme ile güçlendirildi.
+/* * ops_engine.js - Sürüm: v3.0
+ * Hasbi Erdoğmuş | Coğrafya Operasyonu
  */
-import { db, ref, onValue, update } from './assets/js/firebase-config.js';
+import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
-// 1. URL'den Takım İsmini TERTEMİZ Al
 const params = new URLSearchParams(window.location.search);
-let rawTeamName = params.get('team');
+const teamName = decodeURIComponent(params.get('team') || "");
 
-if (!rawTeamName) {
-    alert("Takım seçilmedi! index.html sayfasına yönlendiriliyorsunuz.");
-    window.location.href = "index.html";
-}
+if (!teamName) { window.location.href = "index.html"; }
 
-const teamName = decodeURIComponent(rawTeamName);
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
+let currentTaskData = {};
 
-console.log(`Birim Aktif: ${teamName}`);
-
-// --- KRİTİK: BAĞLANTIYI GARANTİLE ---
-function connectToHQ() {
-    update(scoreRef, { 
-        durum: "Bağlantı Kuruldu",
-        zaman: new Date().toLocaleTimeString() 
-    }).then(() => {
-        console.log("HQ Bağlantısı Başarılı.");
-    }).catch(() => {
-        // Bağlanamazsa 1 saniye sonra tekrar dene
-        setTimeout(connectToHQ, 1000);
+// --- 1. YILDIZ MOTORU ---
+function updateStars(taskNo) {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        star.classList.remove('filled');
+        if (taskNo >= 3 && index === 0) star.classList.add('filled');
+        if (taskNo >= 6 && index <= 1) star.classList.add('filled');
+        if (taskNo >= 9 && index <= 2) star.classList.add('filled');
+        if (taskNo >= 10 && index <= 3) star.classList.add('filled');
+        // 5. Yıldız Google Form sonrası manuel tetiklenecek
     });
 }
 
-// Sayfa yüklendikten 1 saniye sonra HQ'ya sinyal çak
-setTimeout(connectToHQ, 1000);
-
-// 2. CANLI VERİ DİNLE (Puan/Sektör)
+// --- 2. CANLI VERİ TAKİBİ ---
 onValue(scoreRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan;
-        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = data.sektor;
-    }
+    currentTaskData = snapshot.val() || {};
+    document.getElementById('current-score').innerText = currentTaskData.puan || 1000;
+    
+    // Terminoloji Güncelleme: 1. Görev 2A Bölgesi
+    const taskText = `${currentTaskData.gorevNo || 1}. Görev ${currentTaskData.bolge || "2A"} Bölgesi`;
+    document.getElementById('current-sector').innerText = taskText;
+    
+    updateStars(currentTaskData.gorevNo || 1);
 });
 
-// 3. ONAYLA BUTONU (200^2 = 40000)
-const verifyBtn = document.getElementById('btn-verify');
-if (verifyBtn) {
-    verifyBtn.addEventListener('click', () => {
-        const val = document.getElementById('kripto-val').value.trim();
-        if (val === '40000') {
-            update(scoreRef, { puan: 1200, sektor: "2B", durum: "Başarılı" });
-            if(terminal) terminal.innerHTML += `<p style="color:#39FF14">> [SİSTEM]: Doğrulama Başarılı. Sektör 2B açıldı.</p>`;
-        } else {
-            update(scoreRef, { durum: "Hatalı Giriş" });
-            if(terminal) terminal.innerHTML += `<p style="color:#ff3e3e">> [HATA]: Yanlış analiz!</p>`;
-        }
-        terminal.scrollTop = terminal.scrollHeight;
-    });
-}
+// --- 3. İPUCU VE CEZA SİSTEMİ ---
+document.getElementById('btn-hint').addEventListener('click', async () => {
+    const snap = await get(scoreRef);
+    const data = snap.val();
+    const newHintCount = (data.ipucuSayisi || 0) + 1;
+    const newScore = Math.max(0, (data.puan || 1000) - 50);
 
-// 4. İPUCU BUTONU
-const hintBtn = document.getElementById('btn-hint');
-if (hintBtn) {
-    hintBtn.addEventListener('click', () => {
-        update(scoreRef, { durum: "İpucu Aldı" });
-        if(terminal) terminal.innerHTML += `<p style="color:#00d4ff">> [MERKEZ]: 200 sayısının karesini ($x^2$) hesaplayın.</p>`;
-        terminal.scrollTop = terminal.scrollHeight;
+    await update(scoreRef, {
+        puan: newScore,
+        ipucuSayisi: newHintCount,
+        durum: `${newHintCount}. İpucu Kullanıldı`
     });
+
+    logTerminal(`${newHintCount}. İpucu Alındı. (-50 Puan)`, "info-msg");
+});
+
+// --- 4. DOĞRULAMA VE KARARGAH YARDIMI ---
+document.getElementById('btn-verify').addEventListener('click', async () => {
+    const input = document.getElementById('kripto-val').value.trim();
+    const snap = await get(scoreRef);
+    const data = snap.val();
+    
+    // ÖRNEK: 1. Görev (2A Bölgesi) Kodu: 40000
+    if (data.gorevNo === 1 && input === "40000") {
+        await update(scoreRef, {
+            gorevNo: 2,
+            bolge: "2B",
+            puan: data.puan + 200,
+            durum: "Başarılı",
+            ipucuSayisi: 0
+        });
+        logTerminal("BAŞARILI! 2. Görev 2B Bölgesi Aktif.", "success-msg");
+    } else {
+        // YANLIŞ CEVAP VE YARDIM PROTOKOLÜ
+        if (data.ipucuSayisi >= 3) {
+            await update(scoreRef, { 
+                durum: `${data.gorevNo}. Görevi yapamadı. Destek Bekleniyor!` 
+            });
+            logTerminal("KRİTİK HATA: Karargah desteği talep edildi!", "error-msg");
+        } else {
+            await update(scoreRef, { durum: "Hatalı Analiz" });
+            logTerminal("HATA: Kripto geçersiz.", "error-msg");
+        }
+    }
+    document.getElementById('kripto-val').value = "";
+});
+
+function logTerminal(msg, cls) {
+    if (!terminal) return;
+    terminal.innerHTML += `<p class="${cls}">> ${msg}</p>`;
+    terminal.scrollTop = terminal.scrollHeight;
 }

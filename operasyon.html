@@ -3,48 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operasyon Terminali | Analiz</title>
+    <title>Operasyon Terminali | Saha Analizi v3.1</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* Yıldız Sistemi ve Modal için Ekstra Hızlı Stil */
+        .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
+        .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
+        .modal-content { background: #111; margin: 5% auto; padding: 20px; border: 1px solid #39FF14; width: 80%; height: 80%; position: relative; }
+        .close-btn { position: absolute; right: 20px; top: 10px; color: #ff3e3e; font-size: 2rem; cursor: pointer; }
+    </style>
 </head>
 <body class="op-screen">
     <div id="header-placeholder"></div>
 
-
     <main class="operation-layout">
         <section class="visual-panel">
-            <div class="panel-tag">UYDU ANALİZİ: AKTİF</div>
-               <p class="sys-msg">Puan: <span id="current-score">1000</span> | Sektör: <span id="current-sector">2A</span></p>
-            <ul id="team-members-list"></ul>
+            <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
+            
+            <div class="star-rating" id="star-container">
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+                <span class="star">★</span>
+            </div>
+
+            <p class="sys-msg">
+                Puan: <span id="current-score" class="neon-text">1000</span> | 
+                <span id="current-sector">1. Görev 2A Bölgesi</span>
+            </p>
+
             <div class="map-frame">
-                <img id="active-map" src="assets/img/soru1.jpg" alt="Harita Bekleniyor...">
+                <img id="active-map" src="assets/img/soru1.png" alt="Analiz Bekleniyor...">
                 <div class="scan-line"></div>
             </div>
+            
+            <ul id="team-members-list" class="team-roster"></ul>
         </section>
 
         <section class="command-panel">
             <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
             <div class="terminal-log" id="terminal-output">
                 <p class="sys-msg">> [SİSTEM]: Güvenli bağlantı sağlandı.</p>
-                <p>> [MERKEZ]: Sektör 2A'daki irtifa verisi kriptolandı. x² protokolünü uygulayın.</p>
+                <p class="info-msg">> [MERKEZ]: Bölge 2A verileri kriptolandı. İrtifa analizi için x² protokolünü uygulayın.</p>
             </div>
             
             <div class="mission-input">
                 <label>$ ANALİST_GİRİŞİ: </label>
-                <input type="number" id="kripto-val" placeholder="Kod..." autocomplete="off">
-                <button class="cyber-btn" id="btn-verify">ONAYLA</button>
+                <input type="number" id="kripto-val" placeholder="Kodu Giriniz..." autocomplete="off">
+                <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
             </div>
 
             <div class="extra-tools">
-                <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ</button>
-                <a href="kilavuz.html" class="cyber-btn secondary">SAHA REHBERİ</a>
+                <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 Puan)</button>
+                <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
             </div>
         </section>
     </main>
+
+    <div id="manual-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="btn-close-manual">&times; Kapat</span>
+            <iframe id="pdf-viewer" src="assets/pdf/saha_kilavuzu.pdf" width="100%" height="90%" frameborder="0"></iframe>
+        </div>
+    </div>
 
     <div id="footer-placeholder"></div>
 
     <script type="module" src="ops_engine.js"></script>
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
+
+    <script>
+        // Modal Kontrol Scripti (Hızlı Entegrasyon)
+        const modal = document.getElementById("manual-modal");
+        const openBtn = document.getElementById("btn-open-manual");
+        const closeBtn = document.getElementById("btn-close-manual");
+
+        openBtn.onclick = () => modal.style.display = "block";
+        closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (event) => { if (event == modal) modal.style.display = "none"; }
+    </script>
 </body>
 </html>
