@@ -1,11 +1,13 @@
-/* * dashboard.js - Sürüm: v2.8.0
+/* * dashboard.js - Sürüm: v2.9.0
  * Karargâh Canlı İzleme ve Veri Yönetim Sistemi
- * [Hasbi Erdoğmuş - Sistem Temizlik Protokolü eklendi]
+ * [Hasbi Erdoğmuş - Sistem Temizlik & Taslak Hafızası Protokolü]
  */
 
 import { db, ref, set, onValue } from "./firebase-config.js";
 
-let localStudents = [];
+// --- 0. HAFIZA BAŞLATICI ---
+// Sayfa açıldığında tarayıcıda yarım kalmış bir CSV yüklemesi var mı kontrol et
+let localStudents = JSON.parse(localStorage.getItem("rosterDraft") || "[]");
 
 // --- 1. VERİ NORMALİZASYON SİSTEMİ ---
 const HEADER_ALIASES = {
@@ -36,11 +38,10 @@ function canonicalHeader(header = "") {
 }
 
 // --- 2. GÖRSELLEŞTİRME MOTORU ---
-
 function getStatusColor(status) {
     if (status === "Bağlantı Kuruldu" || status === "Başarılı") return "#39FF14";
-    if (status === "İpucu Aldı") return "#00d4ff";
-    if (status && (status.includes("Hata") || status.includes("Hatalı"))) return "#ff3e3e";
+    if (status && status.includes("İpucu")) return "#00d4ff";
+    if (status && (status.includes("Hata") || status.includes("Hatalı") || status.includes("Bilemedi") || status.includes("Destek"))) return "#ff3e3e";
     return "#888";
 }
 
@@ -62,7 +63,7 @@ function renderDashboard(liveScores = {}) {
             <tr>
                 <td><span class="id-tag">${student["Okul No"] || "---"}</span></td>
                 <td>${teamName || "Bilinmiyor"}</td>
-                <td><span class="sector-tag">${stats.sektor || "2A"}</span></td>
+                <td><span class="sector-tag">${stats.sektor || stats.bolge || "2A"}</span></td>
                 <td class="neon-text">${stats.puan || 1000}</td>
                 <td>
                     <strong>${student["Adı Soyadı"]}</strong>
@@ -75,67 +76,8 @@ function renderDashboard(liveScores = {}) {
 }
 
 // --- 3. FİREBASE SENKRONİZASYONU ---
-
+// Veritabanında hali hazırda bir kadro varsa, yerel taslağı ezer ve orayı dinler
 onValue(ref(db, "operasyon/kadro"), (snapshot) => {
     if (snapshot.exists()) {
         localStudents = snapshot.val();
-        console.log("[SİSTEM]: Kadro yüklendi.");
-        onValue(ref(db, "operasyon/skorlar"), (scoreSnap) => {
-            renderDashboard(scoreSnap.val() || {});
-        });
-    } else {
-        localStudents = [];
-        renderDashboard();
-    }
-});
-
-// --- 4. ETKİLEŞİM VE DOSYA YÖNETİMİ ---
-
-// CSV Yükleme
-document.getElementById("csv-input").addEventListener("change", function (e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        encoding: "UTF-8",
-        transformHeader: canonicalHeader,
-        complete: function (results) {
-            localStudents = results.data.map(row => {
-                const clean = {};
-                Object.entries(row).forEach(([k, v]) => {
-                    clean[canonicalHeader(k)] = String(v || "").trim();
-                });
-                return clean;
-            }).filter(s => s["Okul No"] && s["Takım Adı"]);
-
-            renderDashboard();
-            if (localStudents.length > 0) alert(`BAŞARILI: ${localStudents.length} personel yüklendi.`);
-        }
-    });
-});
-
-// Operasyonu Başlat
-document.getElementById("btn-init-op").addEventListener("click", () => {
-    if (localStudents.length === 0) return alert("Önce CSV!");
-
-    const teams = [...new Set(localStudents.map(s => s["Takım Adı"]))].filter(Boolean);
-    const initialScores = {};
-    teams.forEach(t => initialScores[t] = { puan: 1000, sektor: "2A", durum: "Sinyal Bekleniyor" });
-
-    set(ref(db, "operasyon/skorlar"), initialScores);
-    set(ref(db, "operasyon/kadro"), localStudents).then(() => alert("Operasyon Başlatıldı."));
-});
-
-// --- 5. KRİTİK: SUNUCU SIFIRLAMA ---
-document.getElementById("btn-reset-db").addEventListener("click", () => {
-    if (confirm("DİKKAT: Firebase üzerindeki tüm veriler (kadro ve skorlar) silinecek. Emin misiniz?")) {
-        // 'operasyon' düğümünü tamamen boşaltır
-        set(ref(db, "operasyon"), null).then(() => {
-            localStudents = [];
-            renderDashboard();
-            alert("SUNUCU TEMİZLENDİ: Tüm hayalet veriler silindi. Yeni CSV yükleyebilirsiniz.");
-        });
-    }
-});
+        localStorage.removeItem("rosterDraft
