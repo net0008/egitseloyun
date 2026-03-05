@@ -301,3 +301,37 @@ th { background: rgba(57, 255, 20, 0.2); }
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+/* --- 8. TERMİNAL MESAJ KUTULARI --- */
+.terminal-msg {
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    background: rgba(0, 30, 0, 0.5);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--neon-green);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    border-radius: 2px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.terminal-msg.warning {
+    border-color: #ff3e3e;
+    border-left-color: #ff3e3e;
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.terminal-msg.hint {
+    border-color: #00d4ff;
+    border-left-color: #00d4ff;
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.terminal-msg.success {
+    border-color: var(--neon-green);
+    background: rgba(57, 255, 20, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

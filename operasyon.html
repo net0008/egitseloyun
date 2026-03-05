@@ -39,24 +39,20 @@
         </section>
 
         <section class="command-panel">
-            <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
-            <div class="terminal-log" id="terminal-output">
-                <p class="error-msg">> [SİSTEM]: Bağlantı güvenli değil.</p>
-                <p class="info-msg">> [MERKEZ]: Görevin, harita üzerinde konum ikonu ile belirtilen yerin yükseltisini tespit ederek aşağıdaki Analist Girişi kutusuna yazmaktır.</p>
-                <p>> <span class="warning-text">DİKKAT:</span> Bağlantı güvenli değil! 2A bölgesindeki noktanın yükselti değerini, karşıt unsurların eline geçmemesi için şifreli göndermelisin. Bunun için bulduğun yükselti değerinin karesini ($h^2$) hesaplayıp sisteme iletmelisin.</p>
-            </div>
-            
-            <div class="mission-input">
-                <label>$ ANALİST_GİRİŞİ: </label>
-                <input type="number" id="kripto-val" placeholder="Şifreli Kod..." autocomplete="off">
-                <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
-            </div>
+    <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
+    <div class="terminal-log" id="terminal-output"></div>
+    
+    <div class="mission-input">
+        <label>$ ANALİST_GİRİŞİ: </label>
+        <input type="number" id="kripto-val" placeholder="Şifreli Kod..." autocomplete="off">
+        <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
+    </div>
 
-            <div class="extra-tools">
-                <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 Puan)</button>
-                <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
-            </div>
-        </section>
+    <div class="extra-tools">
+        <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 PUAN)</button>
+        <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
+    </div>
+</section>
     </main>
 
     <div id="manual-modal" class="modal">
