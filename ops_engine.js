@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.1
- * Hasbi Erdoğmuş | Karargâh Senkronizasyonu & Hata Onarımı
+/* * ops_engine.js - Sürüm: v3.5.2
+ * Hasbi Erdoğmuş | Kesin Senkronizasyon ve Çoklu Giriş Desteği
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -24,14 +24,17 @@ const hint_library = {
     ]
 };
 
-// --- 2. TERMİNAL VE MESAJ MOTORU ---
+// --- 2. TERMİNAL HAFIZA VE MESAJ MOTORU ---
 function saveTerminal() { 
     if (teamName && terminal) sessionStorage.setItem(`log_${teamName}`, terminal.innerHTML); 
 }
 
 function loadTerminal() { 
     const saved = sessionStorage.getItem(`log_${teamName}`);
-    if (saved && terminal) terminal.innerHTML = saved;
+    if (saved && terminal) {
+        terminal.innerHTML = saved;
+        terminal.scrollTop = terminal.scrollHeight;
+    }
 }
 
 function logBox(message, type = "") {
@@ -44,17 +47,24 @@ function logBox(message, type = "") {
     saveTerminal();
 }
 
-// --- 3. DİNAMİK BRİFİNG ---
-function showBriefing(gorevNo) {
-    // Sadece terminal boşsa brifing ver
-    if (terminal.innerHTML.trim() !== "") return;
+// --- 3. DİNAMİK BRİFİNG TETİKLEYİCİ ---
+let lastGorevNo = 0;
 
-    logBox("[SİSTEM]: Güvenli bağlantı mühürlendi.", "success");
-    if (gorevNo === 1) {
-        logBox("[MERKEZ]: Haritadaki konumun yükseltisini tespit et ve Analist Girişi'ne ilet.", "");
-        logBox("<span style='color:#ff3e3e; font-weight:bold;'>DİKKAT:</span> Güvenlik protokolü gereği yükselti değerinin karesini (h²) girmelisin!", "warning");
-    } else if (gorevNo === 2) {
-        logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerlerde hangi yeryüzü şekli bulunmaktadır?", "hint");
+function triggerBriefing(gorevNo) {
+    // Eğer görev numarası değiştiyse terminali temizle ve yeni brifingi ver
+    if (lastGorevNo !== gorevNo) {
+        terminal.innerHTML = "";
+        logBox("[SİSTEM]: Yeni görev bölgesi tanımlandı.", "success");
+        
+        if (gorevNo === 1) {
+            logBox("[MERKEZ]: Haritadaki konumun yükseltisini tespit et ve Analist Girişi'ne ilet.", "");
+            logBox("<span style='color:#ff3e3e; font-weight:bold;'>DİKKAT:</span> Güvenlik protokolü gereği yükselti değerinin karesini (h²) girmelisin!", "warning");
+        } else if (gorevNo === 2) {
+            logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerlerde hangi yeryüzü şekli bulunmaktadır?", "hint");
+            logBox("Not: Bu bölgede şifreleme protokolü devre dışıdır. Cevabı direkt yazın.", "");
+        }
+        lastGorevNo = gorevNo;
+        saveTerminal();
     }
 }
 
@@ -63,7 +73,7 @@ function initOperation() {
     if (!teamName) return;
     loadTerminal(); 
 
-    // KRİTİK: HQ'ya anında haber ver (HQ artık tıkır tıkır görecek)
+    // KRİTİK: HQ'ya bağlantı sinyali (Gecikmesiz)
     update(scoreRef, { durum: "Bağlantı Kuruldu" });
 
     onValue(scoreRef, (snapshot) => {
@@ -73,14 +83,18 @@ function initOperation() {
         const gorev = data.gorevNo || 1;
         const bolge = data.bolge || "2A";
         
+        // Arayüz Veri Senkronizasyonu
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev}. Görev ${bolge} Bölgesi`;
         
+        // Harita Senkronizasyonu
         const mapImg = document.getElementById('active-map');
         if (mapImg) mapImg.src = `assets/img/soru${gorev}.jpg`;
 
-        showBriefing(gorev); // Her veri değişiminde brifing kontrolü yap
+        // Brifing Kontrolü
+        triggerBriefing(gorev);
 
+        // Yıldız Boyama Sistemi
         const stars = document.querySelectorAll('.star');
         stars.forEach((star, i) => {
             star.classList.remove('filled');
@@ -125,19 +139,19 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const data = snap.val();
     const currentGorev = data.gorevNo || 1;
 
+    // GÖREV 1: 360000 (Sayısal Giriş)
     if (currentGorev === 1 && Number(rawInput) === 360000) {
         await update(scoreRef, {
             gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0
         });
-        terminal.innerHTML = ""; // Terminali temizle, showBriefing(2) otomatik tetiklenecek
-        saveTerminal();
+        logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
     } 
+    // GÖREV 2: Sırt (Metin Girişi)
     else if (currentGorev === 2 && rawInput === "sırt") {
         await update(scoreRef, {
             gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0
         });
-        terminal.innerHTML = "";
-        saveTerminal();
+        logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
     } 
     else {
         if (data.ipucuSayisi >= 4) {
