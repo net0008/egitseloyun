@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operasyon Terminali | Saha Analizi v3.1</title>
+    <title>Operasyon Terminali | Saha Analizi v3.2</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Yıldız Sistemi ve Modal için Ekstra Hızlı Stil */
+        /* Yıldız Sistemi ve Modal Tasarımı */
         .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
         .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
         .modal-content { background: #111; margin: 5% auto; padding: 20px; border: 1px solid #39FF14; width: 80%; height: 80%; position: relative; }
-        .close-btn { position: absolute; right: 20px; top: 10px; color: #ff3e3e; font-size: 2rem; cursor: pointer; }
+        .close-btn { position: absolute; right: 20px; top: 10px; color: #ff3e3e; font-size: 1.5rem; cursor: pointer; border: 1px solid #ff3e3e; padding: 5px 10px; }
+        .warning-text { color: #ff3e3e; font-weight: bold; }
     </style>
 </head>
 <body class="op-screen">
@@ -45,13 +46,14 @@
         <section class="command-panel">
             <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
             <div class="terminal-log" id="terminal-output">
-                <p class="sys-msg">> [SİSTEM]: Güvenli bağlantı sağlandı.</p>
-                <p class="info-msg">> [MERKEZ]: Bölge 2A verileri kriptolandı. İrtifa analizi için x² protokolünü uygulayın.</p>
+                <p class="error-msg">> [SİSTEM]: Bağlantı güvenli değil.</p>
+                <p class="info-msg">> [MERKEZ]: Görevin harita üzerinde konum ikonu ile gösterilen konumun yüksekliğini bulup, aşağıdaki analist girişi kutucuğuna yaz.</p>
+                <p>> <span class="warning-text">DİKKAT:</span> Bağlantı güvenli değil. 2A bölgesindeki noktanın yükselti değerini, karşıt unsurların eline geçmemesi için şifreli göndermelisin. Bunun için bulduğun yükseklik değerinin karesini almalısın yani $h^2$</p>
             </div>
             
             <div class="mission-input">
                 <label>$ ANALİST_GİRİŞİ: </label>
-                <input type="number" id="kripto-val" placeholder="Kodu Giriniz..." autocomplete="off">
+                <input type="number" id="kripto-val" placeholder="Şifreli Kod..." autocomplete="off">
                 <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
             </div>
 
@@ -64,7 +66,7 @@
 
     <div id="manual-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" id="btn-close-manual">&times; Kapat</span>
+            <span class="close-btn" id="btn-close-manual">X KAPAT</span>
             <iframe id="pdf-viewer" src="assets/pdf/saha_kilavuzu.pdf" width="100%" height="90%" frameborder="0"></iframe>
         </div>
     </div>
@@ -76,14 +78,14 @@
     <script src="components/footer.js"></script>
 
     <script>
-        // Modal Kontrol Scripti (Hızlı Entegrasyon)
+        // Modal Kontrolü
         const modal = document.getElementById("manual-modal");
         const openBtn = document.getElementById("btn-open-manual");
         const closeBtn = document.getElementById("btn-close-manual");
 
-        openBtn.onclick = () => modal.style.display = "block";
-        closeBtn.onclick = () => modal.style.display = "none";
-        window.onclick = (event) => { if (event == modal) modal.style.display = "none"; }
+        openBtn.onclick = () => { modal.style.display = "block"; }
+        closeBtn.onclick = () => { modal.style.display = "none"; }
+        window.onclick = (event) => { if (event == modal) { modal.style.display = "none"; } }
     </script>
 </body>
 </html>
