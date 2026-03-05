@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operasyon Terminali | Saha Analizi v3.2</title>
+    <title>Operasyon Terminali | Saha Analizi v3.3</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        /* Yıldız Sistemi ve Modal Tasarımı */
         .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
         .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
@@ -23,11 +22,7 @@
             <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
             
             <div class="star-rating" id="star-container">
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
-                <span class="star">★</span>
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
             </div>
 
             <p class="sys-msg">
@@ -36,7 +31,7 @@
             </p>
 
             <div class="map-frame">
-                <img id="active-map" src="assets/img/soru1.jpg" alt="Analiz Bekleniyor...">
+                <img id="active-map" src="assets/img/soru1.png" alt="Analiz Bekleniyor...">
                 <div class="scan-line"></div>
             </div>
             
@@ -47,8 +42,8 @@
             <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
             <div class="terminal-log" id="terminal-output">
                 <p class="error-msg">> [SİSTEM]: Bağlantı güvenli değil.</p>
-                <p class="info-msg">> [MERKEZ]: Görevin harita üzerinde konum ikonu ile gösterilen konumun yüksekliğini bulup, aşağıdaki analist girişi kutucuğuna yaz.</p>
-                <p>> <span class="warning-text">DİKKAT:</span> Bağlantı güvenli değil. 2A bölgesindeki noktanın yükselti değerini, karşıt unsurların eline geçmemesi için şifreli göndermelisin. Bunun için bulduğun yükseklik değerinin karesini almalısın yani $h^2$</p>
+                <p class="info-msg">> [MERKEZ]: Görevin, harita üzerinde konum ikonu ile belirtilen yerin yükseltisini tespit ederek aşağıdaki Analist Girişi kutusuna yazmaktır.</p>
+                <p>> <span class="warning-text">DİKKAT:</span> Bağlantı güvenli değil! 2A bölgesindeki noktanın yükselti değerini, karşıt unsurların eline geçmemesi için şifreli göndermelisin. Bunun için bulduğun yükselti değerinin karesini ($h^2$) hesaplayıp sisteme iletmelisin.</p>
             </div>
             
             <div class="mission-input">
@@ -78,14 +73,12 @@
     <script src="components/footer.js"></script>
 
     <script>
-        // Modal Kontrolü
         const modal = document.getElementById("manual-modal");
         const openBtn = document.getElementById("btn-open-manual");
         const closeBtn = document.getElementById("btn-close-manual");
-
-        openBtn.onclick = () => { modal.style.display = "block"; }
-        closeBtn.onclick = () => { modal.style.display = "none"; }
-        window.onclick = (event) => { if (event == modal) { modal.style.display = "none"; } }
+        openBtn.onclick = () => modal.style.display = "block";
+        closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (e) => { if (e == modal) modal.style.display = "none"; }
     </script>
 </body>
 </html>
