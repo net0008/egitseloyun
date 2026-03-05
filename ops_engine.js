@@ -1,5 +1,5 @@
-/* * ops_engine.js - Sürüm: v3.5.3
- * Hasbi Erdoğmuş | Görev 3 (Eğim) Entegrasyonu ve Hata Onarımı
+/* * ops_engine.js - Sürüm: v3.5.4
+ * Hasbi Erdoğmuş | Görev 4 (200m) Entegrasyonu & Kesin Çözüm
  */
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
@@ -8,7 +8,7 @@ const teamName = decodeURIComponent(params.get('team') || "");
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
 
-// --- 1. İPUCU KÜTÜPHANESİ (DÜZELTİLDİ) ---
+// --- 1. İPUCU KÜTÜPHANESİ ---
 const hint_library = {
     1: [
         "Saha kılavuzunu dikkatlice oku.",
@@ -27,6 +27,12 @@ const hint_library = {
         "İzohips eğrilerinin birbirine çok yaklaştığı yerlere dikkat et.",
         "Bu bölgede bir akarsu olsaydı akış hızı ve aşındırma gücü nasıl olurdu?",
         "Eğriler arasındaki mesafenin azalması, yükseltinin kısa mesafede hızla değiştiği anlamına gelir."
+    ],
+    4: [
+        "Saha kılavuzunu dikkatlice okudun mu?",
+        "Kıyı çizgisinin 0 metre olduğunu ve eküidistansın her yerde sabit olduğunu hatırla.",
+        "Bir çizgiden diğerine geçerken kaçar kaçar sayman gerektiğini buldun mu?",
+        "Aynı izohips eğrisi üzerindeki tüm noktaların yükselti değeri aynıdır. X ve Y'nin hangi çizgide olduğuna bak."
     ]
 };
 
@@ -68,6 +74,8 @@ function triggerBriefing(gorevNo) {
             logBox("[MERKEZ]: Haritada kalın çizgi ile gösterilen yerlerde hangi yeryüzü şekli bulunmaktadır?", "hint");
         } else if (gorevNo === 3) {
             logBox("[MERKEZ]: Haritada çizgi ile gösterilen yerlerin ortak özelliği nedir?", "hint");
+        } else if (gorevNo === 4) {
+            logBox("[MERKEZ]: Haritadaki X ve Y noktaları kaç metre yükseltiyi göstermektedir?", "hint");
         }
         
         lastGorevNo = gorevNo;
@@ -79,7 +87,6 @@ function triggerBriefing(gorevNo) {
 function initOperation() {
     if (!teamName) return;
     loadTerminal(); 
-
     update(scoreRef, { durum: "Bağlantı Kuruldu" });
 
     onValue(scoreRef, (snapshot) => {
@@ -141,27 +148,27 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const data = snap.val();
     const currentGorev = data.gorevNo || 1;
 
-    // GÖREV 1: 360000
+    // GÖREV 1
     if (currentGorev === 1 && Number(rawInput) === 360000) {
-        await update(scoreRef, {
-            gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0
-        });
+        await update(scoreRef, { gorevNo: 2, bolge: "2B", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("BAŞARILI! 1. Görev tamamlandı.", "success");
     } 
-    // GÖREV 2: Sırt
+    // GÖREV 2
     else if (currentGorev === 2 && rawInput === "sırt") {
-        await update(scoreRef, {
-            gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0
-        });
+        await update(scoreRef, { gorevNo: 3, bolge: "2C", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("MUHTEŞEM ANALİZ! 2B bölgesi temizlendi.", "success");
     } 
-    // GÖREV 3: Eğim (rawInput içinde 'eğim' kelimesini arar)
+    // GÖREV 3
     else if (currentGorev === 3 && rawInput.includes("eğim")) {
-        await update(scoreRef, {
-            gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0
-        });
+        await update(scoreRef, { gorevNo: 4, bolge: "2D", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
         logBox("HARİKA! 2C bölgesi analiz edildi. 4. Görev aktif.", "success");
     }
+    // GÖREV 4 (Buraya taşındı!)
+    else if (currentGorev === 4 && rawInput.includes("200")) {
+        await update(scoreRef, { gorevNo: 5, bolge: "2E", puan: (data.puan || 1000) + 200, durum: "Başarılı", ipucuSayisi: 0 });
+        logBox("ANALİZ TAMAMLANDI! X ve Y doğrulandı. 5. Görev aktif.", "success");
+    }
+    // HATA DURUMU (Her zaman en sonda)
     else {
         if (data.ipucuSayisi >= 4) {
             await update(scoreRef, { durum: `${currentGorev}. Soruyu Bilemedi!` });
