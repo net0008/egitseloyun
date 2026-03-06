@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * style.css - Sürüm: v3.5.26                                                *
+ * style.css - Sürüm: v3.5.28                                                *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Karargâh (Admin) ve Saha (Operasyon) Tam Uyumlu Görsel Protokol           *
+ * Karargâh & Saha Tam Uyumlu - Sabit Footer ve Kristal Netlik Protokolü     *
  * *************************************************************************** */
 
 /* --- 1. DEĞİŞKENLER VE TEMEL SIFIRLAMA --- */
@@ -21,12 +21,21 @@
     padding: 0;
 }
 
+/* STICKY FOOTER MANTIĞI */
 body {
     background-color: var(--dark-bg);
     color: var(--neon-green);
     font-family: 'Courier New', Courier, monospace;
     overflow-x: hidden;
     line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* İçeriği yayarak footer'ı aşağı iten konteynerlar */
+main, .operation-layout, .dashboard-container, .login-frame {
+    flex: 1; 
 }
 
 /* --- 2. ÜST VE ALT BİLGİ PANELLERİ --- */
@@ -42,17 +51,6 @@ body {
     z-index: 100;
 }
 
-/* --- FOOTER SABİTLEME VE GÖRSEL DÜZENLEME --- */
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* Sayfayı ekran boyuna zorlar */
-}
-
-main, .operation-layout {
-    flex: 1; /* İçeriği yayarak footer'ı aşağı iter */
-}
-
 .cyber-footer {
     padding: 1.2rem;
     border-top: 1px solid var(--border-color);
@@ -61,8 +59,9 @@ main, .operation-layout {
     font-size: 0.9rem;
     color: var(--neon-green);
     letter-spacing: 1px;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5); /* Hafif derinlik */
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
     width: 100%;
+    margin-top: auto; /* Mühürleme: Her zaman en altta kalır */
 }
 
 .cyber-footer-content p {
@@ -73,8 +72,6 @@ main, .operation-layout {
 
 /* --- 3. GİRİŞ (INDEX) EKRANI --- */
 .login-screen {
-    height: 100vh;
-    display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
@@ -104,6 +101,8 @@ main, .operation-layout {
     box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
     text-align: center;
     backdrop-filter: blur(5px);
+    max-width: 500px;
+    margin: auto;
 }
 
 .team-grid {
@@ -119,7 +118,6 @@ main, .operation-layout {
     grid-template-columns: 1fr 400px;
     gap: 25px;
     padding: 25px;
-    height: calc(100vh - 120px);
 }
 
 .visual-panel, .command-panel {
@@ -146,29 +144,24 @@ main, .operation-layout {
     max-width: 100%;
     height: auto;
     display: block;
-   filter: none !important; 
+    /* KRİTİK: Yeşil pus ve saydamlık kaldırıldı */
+    filter: none !important; 
     opacity: 1 !important; 
 }
 
-/* --- 6. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ (GERİ YÜKLENDİ) --- */
-.ops-instructions {
-    margin-bottom: 30px;
-}
-
+/* --- 6. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ --- */
 .instruction-box {
     border: 1px solid var(--neon-green);
     background: rgba(0, 40, 0, 0.2);
     padding: 20px;
-    box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.1);
+    margin-bottom: 25px;
 }
 
 .instruction-box h3 {
-    margin-top: 0;
     color: var(--neon-green);
     border-bottom: 1px solid var(--neon-green);
     padding-bottom: 10px;
     margin-bottom: 15px;
-    font-size: 1.2rem;
     text-transform: uppercase;
 }
 
@@ -180,33 +173,12 @@ main, .operation-layout {
 
 .inst-item h4 {
     color: #fff;
-    font-size: 1rem;
     margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-}
-
-.inst-item h4::before {
-    content: '▶';
-    font-size: 0.7rem;
-    margin-right: 8px;
-    color: var(--neon-green);
 }
 
 .inst-item p {
     font-size: 0.9rem;
-    line-height: 1.4;
     color: #ccc;
-}
-
-.inst-item.warning {
-    border: 1px dashed var(--warning-red);
-    padding: 12px;
-    background: rgba(255, 0, 0, 0.05);
-}
-
-.inst-item.warning h4 {
-    color: var(--warning-red);
 }
 
 /* --- 7. VERİ TABLOLARI VE DASHBOARD --- */
@@ -214,7 +186,6 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
 }
 
 th, td {
@@ -227,12 +198,6 @@ th {
     background: rgba(57, 255, 20, 0.15);
     color: #fff;
     text-transform: uppercase;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-}
-
-tr:hover {
-    background: rgba(57, 255, 20, 0.05);
 }
 
 .id-tag {
@@ -240,17 +205,6 @@ tr:hover {
     border: 1px solid #333;
     padding: 3px 8px;
     color: var(--info-blue);
-    font-family: monospace;
-    font-size: 0.85rem;
-}
-
-.sector-tag {
-    background: rgba(57, 255, 20, 0.1);
-    border: 1px solid var(--neon-green);
-    padding: 3px 10px;
-    border-radius: 3px;
-    font-weight: bold;
-    color: #fff;
 }
 
 .neon-text {
@@ -258,44 +212,7 @@ tr:hover {
     font-weight: bold;
 }
 
-/* --- 8. ETKİLEŞİM, BUTONLAR VE FORMLAR --- */
-.cyber-btn {
-    background: transparent;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 12px 24px;
-    cursor: pointer;
-    font-family: inherit;
-    text-transform: uppercase;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    letter-spacing: 1px;
-}
-
-.cyber-btn:hover {
-    background: var(--neon-green);
-    color: #000;
-    box-shadow: 0 0 15px var(--neon-green);
-}
-
-input[type="text"], input[type="number"], textarea, select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--border-color);
-    padding: 12px;
-    font-family: inherit;
-    outline: none;
-}
-
-.cyber-select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 8px;
-    cursor: pointer;
-}
-
-/* --- 9. TERMİNAL VE LOG SİSTEMİ --- */
+/* --- 8. TERMİNAL VE LOG SİSTEMİ --- */
 .terminal-msg {
     border: 1px solid rgba(57, 255, 20, 0.2);
     background: rgba(0, 20, 0, 0.6);
@@ -303,25 +220,13 @@ input[type="text"], input[type="number"], textarea, select {
     margin-bottom: 12px;
     border-left: 4px solid var(--neon-green);
     font-size: 0.9rem;
-    animation: slideIn 0.3s ease-out;
 }
 
-.terminal-msg.warning {
-    border-color: var(--warning-red);
-    border-left-color: var(--warning-red);
-}
+.terminal-msg.warning { border-color: var(--warning-red); border-left-color: var(--warning-red); }
+.terminal-msg.hint { border-color: var(--info-blue); border-left-color: var(--info-blue); }
+.terminal-msg.success { border-color: var(--neon-green); }
 
-.terminal-msg.hint {
-    border-color: var(--info-blue);
-    border-left-color: var(--info-blue);
-}
-
-.terminal-msg.success {
-    border-color: var(--neon-green);
-    background: rgba(57, 255, 20, 0.1);
-}
-
-/* --- 10. ANİMASYONLAR VE EFEKTLER --- */
+/* --- 9. ANİMASYONLAR VE EFEKTLER --- */
 .scan-line {
     width: 100%;
     height: 4px;
@@ -329,11 +234,8 @@ input[type="text"], input[type="number"], textarea, select {
     opacity: 0.4;
     position: absolute;
     top: 0;
-    left: 0;
-    box-shadow: 0 0 15px var(--neon-green);
-    animation: scan 6s linear infinite;
-    pointer-events: none;
     z-index: 10;
+    animation: scan 6s linear infinite;
 }
 
 @keyframes scan {
@@ -341,14 +243,4 @@ input[type="text"], input[type="number"], textarea, select {
     100% { top: 100%; }
 }
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateX(-10px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* EOF: v3.5.26 - Karargah & Saha Tam Kapasite Mühürlendi. */
+/* EOF: v3.5.28 - Karargah & Saha Tam Kapasite Mühürlendi. */
