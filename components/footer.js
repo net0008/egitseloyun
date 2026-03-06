@@ -1,15 +1,19 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const footerHTML = `
-        <footer class="cyber-footer">
-            <div class="footer-content">
-                <p>&copy; 2026 Bergama 2050 Operasyonu | Maarif Modeli Milli Teknoloji Projesi</p>
-                <div class="footer-links">
-                    <a href="kilavuz.html">SAHA KILAVUZU</a>
-                    <a href="index.html">ANA TERMİNAL</a>
-                </div>
+/* *****************************************************************************
+ * footer.js - Sürüm: v1.2.0                                                   *
+ * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
+ * Operasyonel Alt Bilgi (Footer) Protokolü                                   *
+ * *************************************************************************** */
+
+export function loadFooter() {
+    const footer = document.querySelector('footer');
+    if (footer) {
+        footer.innerHTML = `
+            <div class="cyber-footer-content">
+                <p>© 2026 Bergama 2050 Operasyonu | Hasbi ERDOĞMUŞ</p>
             </div>
-        </footer>
-    `;
-    const footerElement = document.getElementById('footer-placeholder');
-    if (footerElement) footerElement.innerHTML = footerHTML;
-});
+        `;
+    }
+}
+
+// Sayfa yüklendiğinde otomatik başlat
+document.addEventListener('DOMContentLoaded', loadFooter);
