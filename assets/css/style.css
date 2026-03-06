@@ -338,3 +338,14 @@ th {
 }
 
 /* EOF: v3.5.30 - Takım Sayfası ve Footer Kurtarıldı. */
+
+/* --- 11. YILDIZ BİLDİRİM ANİMASYONU --- */
+.star-pulse {
+    animation: starPulse 1s ease-in-out 3;
+}
+
+@keyframes starPulse {
+    0% { transform: scale(1); text-shadow: 0 0 0px var(--neon-green); }
+    50% { transform: scale(1.2); text-shadow: 0 0 20px var(--neon-green), 0 0 40px #fff; }
+    100% { transform: scale(1); text-shadow: 0 0 0px var(--neon-green); }
+}

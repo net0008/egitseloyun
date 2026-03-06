@@ -228,14 +228,27 @@ function initOperation() {
         }
         triggerBriefing(gorev);
         
+        // Yıldız Hesaplama ve Bildirim Mantığı
         const stars = document.querySelectorAll('.star');
+        let currentStarCount = 0;
+
         stars.forEach((star, i) => {
             star.classList.remove('filled');
             if (gorev >= 3 && i === 0) star.classList.add('filled');
             if (gorev >= 6 && i <= 1) star.classList.add('filled');
             if (gorev >= 9 && i <= 2) star.classList.add('filled');
             if (gorev >= 11 && i <= 3) star.classList.add('filled');
+            
+            if (star.classList.contains('filled')) currentStarCount++;
         });
+
+        // Eğer önceki durum hafızada varsa (-1 değilse) ve yeni yıldız sayısı arttıysa:
+        if (window.lastStarCount !== undefined && window.lastStarCount !== -1 && currentStarCount > window.lastStarCount) {
+            logBox(`🎖️ TEBRİKLER! RÜTBE ATLADINIZ: ${currentStarCount} YILDIZ`, "success");
+            const starContainer = document.getElementById('star-container');
+            if(starContainer) { starContainer.classList.add('star-pulse'); setTimeout(() => starContainer.classList.remove('star-pulse'), 3000); }
+        }
+        window.lastStarCount = currentStarCount; // Mevcut durumu kaydet
     });
 }
 initOperation();
