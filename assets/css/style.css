@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * style.css - Sürüm: v3.5.28                                                *
+ * style.css - Sürüm: v3.5.29                                                *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Karargâh & Saha Tam Uyumlu - Sabit Footer ve Kristal Netlik Protokolü     *
+ * Karargâh & Saha Tam Uyumlu - Tüm Bileşenlerin Kesin Restorasyonu           *
  * *************************************************************************** */
 
 /* --- 1. DEĞİŞKENLER VE TEMEL SIFIRLAMA --- */
@@ -21,7 +21,7 @@
     padding: 0;
 }
 
-/* STICKY FOOTER MANTIĞI */
+/* --- FOOTER SABİTLEME MANTIĞI: TÜM SAYFALAR İÇİN --- */
 body {
     background-color: var(--dark-bg);
     color: var(--neon-green);
@@ -30,15 +30,15 @@ body {
     line-height: 1.5;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 100vh; /* Sayfayı tam ekran boyuna zorlar */
 }
 
-/* İçeriği yayarak footer'ı aşağı iten konteynerlar */
+/* Önemli: İçeriği yayarak footer'ı aşağı iten ana konteynerlar */
 main, .operation-layout, .dashboard-container, .login-frame {
-    flex: 1; 
+    flex: 1 0 auto; 
 }
 
-/* --- 2. ÜST VE ALT BİLGİ PANELLERİ --- */
+/* --- 2. ÜST VE ALT BİLGİ PANELLERİ (HEADER & FOOTER) --- */
 .cyber-header {
     display: flex;
     justify-content: space-between;
@@ -52,16 +52,17 @@ main, .operation-layout, .dashboard-container, .login-frame {
 }
 
 .cyber-footer {
-    padding: 1.2rem;
+    padding: 1.5rem;
     border-top: 1px solid var(--border-color);
     background: var(--panel-bg);
     text-align: center;
     font-size: 0.9rem;
     color: var(--neon-green);
     letter-spacing: 1px;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.7);
     width: 100%;
-    margin-top: auto; /* Mühürleme: Her zaman en altta kalır */
+    margin-top: auto; /* Mühür: Her zaman en altta kalır */
+    flex-shrink: 0;
 }
 
 .cyber-footer-content p {
@@ -72,9 +73,11 @@ main, .operation-layout, .dashboard-container, .login-frame {
 
 /* --- 3. GİRİŞ (INDEX) EKRANI --- */
 .login-screen {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    position: relative;
 }
 
 .video-background {
@@ -101,7 +104,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
     box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
     text-align: center;
     backdrop-filter: blur(5px);
-    max-width: 500px;
+    max-width: 550px;
     margin: auto;
 }
 
@@ -112,7 +115,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
     margin-top: 2.5rem;
 }
 
-/* --- 4. ANA PANEL VE OPERASYON DÜZENİ --- */
+/* --- 4. OPERASYON VE PANEL DÜZENLERİ --- */
 .operation-layout {
     display: grid;
     grid-template-columns: 1fr 400px;
@@ -128,7 +131,6 @@ main, .operation-layout, .dashboard-container, .login-frame {
     box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.05);
 }
 
-/* --- 5. HARİTA LABORATUVARI (GÜNCELLENDİ: NET GÖRÜNÜM) --- */
 .map-frame {
     position: relative;
     overflow: hidden;
@@ -137,60 +139,133 @@ main, .operation-layout, .dashboard-container, .login-frame {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 300px;
+    min-height: 400px;
 }
 
 .map-frame img {
     max-width: 100%;
     height: auto;
     display: block;
-    /* KRİTİK: Yeşil pus ve saydamlık kaldırıldı */
+    /* HASBİ HOCAM İÇİN: Kristal Netlik */
     filter: none !important; 
     opacity: 1 !important; 
 }
 
-/* --- 6. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ --- */
+/* --- 5. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ (KESİN RESTORASYON) --- */
+.ops-instructions {
+    margin-bottom: 30px;
+}
+
 .instruction-box {
     border: 1px solid var(--neon-green);
     background: rgba(0, 40, 0, 0.2);
-    padding: 20px;
-    margin-bottom: 25px;
+    padding: 25px;
+    box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.1);
 }
 
 .instruction-box h3 {
+    margin-top: 0;
     color: var(--neon-green);
     border-bottom: 1px solid var(--neon-green);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
     text-transform: uppercase;
 }
 
 .instruction-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    gap: 25px;
 }
 
 .inst-item h4 {
     color: #fff;
-    margin-bottom: 8px;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.inst-item h4::before {
+    content: '▶';
+    font-size: 0.8rem;
+    margin-right: 10px;
+    color: var(--neon-green);
 }
 
 .inst-item p {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
     color: #ccc;
+}
+
+.inst-item.warning {
+    border: 1px dashed var(--warning-red);
+    padding: 15px;
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.inst-item.warning h4 {
+    color: var(--warning-red);
+}
+
+/* --- 6. ETKİLEŞİM, BUTONLAR VE FORMLAR (OPERASYON & ADMIN) --- */
+.input-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.cyber-btn {
+    background: transparent;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 12px 24px;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    display: inline-block;
+    text-align: center;
+}
+
+.cyber-btn:hover {
+    background: var(--neon-green);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon-green);
+}
+
+input[type="text"], input[type="number"], textarea, select {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    font-family: inherit;
+    outline: none;
+}
+
+.cyber-select {
+    background: #000;
+    color: var(--neon-green);
+    border: 1px solid var(--neon-green);
+    padding: 10px;
+    cursor: pointer;
 }
 
 /* --- 7. VERİ TABLOLARI VE DASHBOARD --- */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 th, td {
     border: 1px solid var(--border-color);
-    padding: 15px;
+    padding: 18px;
     text-align: left;
 }
 
@@ -198,13 +273,22 @@ th {
     background: rgba(57, 255, 20, 0.15);
     color: #fff;
     text-transform: uppercase;
+    font-size: 0.95rem;
 }
 
 .id-tag {
     background: #111;
     border: 1px solid #333;
-    padding: 3px 8px;
+    padding: 4px 10px;
     color: var(--info-blue);
+    font-family: monospace;
+}
+
+.sector-tag {
+    background: rgba(57, 255, 20, 0.1);
+    border: 1px solid var(--neon-green);
+    padding: 4px 12px;
+    border-radius: 4px;
 }
 
 .neon-text {
@@ -212,14 +296,15 @@ th {
     font-weight: bold;
 }
 
-/* --- 8. TERMİNAL VE LOG SİSTEMİ --- */
+/* --- 8. TERMİNAL VE GÖREV GÜNLÜĞÜ MESAJLARI --- */
 .terminal-msg {
     border: 1px solid rgba(57, 255, 20, 0.2);
     background: rgba(0, 20, 0, 0.6);
-    padding: 12px;
-    margin-bottom: 12px;
-    border-left: 4px solid var(--neon-green);
-    font-size: 0.9rem;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 5px solid var(--neon-green);
+    font-size: 0.95rem;
+    animation: slideIn 0.3s ease-out;
 }
 
 .terminal-msg.warning { border-color: var(--warning-red); border-left-color: var(--warning-red); }
@@ -236,11 +321,10 @@ th {
     top: 0;
     z-index: 10;
     animation: scan 6s linear infinite;
+    pointer-events: none;
 }
 
-@keyframes scan {
-    0% { top: 0; }
-    100% { top: 100%; }
-}
+@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-/* EOF: v3.5.28 - Karargah & Saha Tam Kapasite Mühürlendi. */
+/* EOF: v3.5.29 - Tam Restorasyon Mühürlendi. */
