@@ -318,4 +318,23 @@ th {
 @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
+/* --- 10. GLITCH EFEKTİ (EKLENDİ) --- */
+.glitch-title {
+    position: relative;
+    color: var(--neon-green);
+    font-size: 2rem;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px var(--warning-red);
+    animation: glitch-skew 1s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-skew {
+    0% { transform: skew(0deg); }
+    20% { transform: skew(-2deg); }
+    40% { transform: skew(2deg); }
+    60% { transform: skew(0deg); }
+    80% { transform: skew(1deg); }
+    100% { transform: skew(0deg); }
+}
+
 /* EOF: v3.5.30 - Takım Sayfası ve Footer Kurtarıldı. */

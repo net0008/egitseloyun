@@ -12,7 +12,7 @@ document.addEventListener('click', function(e) {
         if (teamName) {
             // Parametreyi ekle ve operasyon sayfasına fırlat
             const targetURL = `operasyon.html?team=${encodeURIComponent(teamName)}`;
-            window.location.href = targetURL;
+            window.location.replace(targetURL);
         }
     }
 });
