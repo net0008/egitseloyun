@@ -244,7 +244,11 @@ function initOperation() {
 
         // Eğer önceki durum hafızada varsa (-1 değilse) ve yeni yıldız sayısı arttıysa:
         if (window.lastStarCount !== undefined && window.lastStarCount !== -1 && currentStarCount > window.lastStarCount) {
-            logBox(`🎖️ TEBRİKLER! RÜTBE ATLADINIZ: ${currentStarCount} YILDIZ`, "success");
+            if (currentStarCount === 4) {
+                logBox(`🎖️ TEBRİKLER! RÜTBE ATLADINIZ: 4 YILDIZ. 5. YILDIZI RAPORUNUZ İNCELENDİKTEN SONRA KAZANACAKSINIZ`, "success");
+            } else {
+                logBox(`🎖️ TEBRİKLER! RÜTBE KAZANDINIZ: ${currentStarCount} YILDIZ`, "success");
+            }
             const starContainer = document.getElementById('star-container');
             if(starContainer) { starContainer.classList.add('star-pulse'); setTimeout(() => starContainer.classList.remove('star-pulse'), 3000); }
         }
