@@ -75,24 +75,24 @@ function renderDashboard(liveScores = {}) {
     localStudents.forEach((student) => {
         const teamName = student["Takım Adı"];
         // Sahadan gelen canlı verileri yakala, yoksa varsayılan değerleri ata.
-        const stats = liveScores[teamName] || { puan: 1000, bolge: "2A", durum: "Sinyal Bekleniyor", ipucuSayisi: 0, hataSayisi: 0 };
+        const stats = liveScores[teamName] || { puan: 1000, bolge: "2A", gorevNo: 1, durum: "Sinyal Bekleniyor", ipucuSayisi: 0, hataSayisi: 0 };
 
         rowsHTML += `
-            <tr style="border-bottom: 1px solid #222;">
-                <td style="padding:12px;"><span class="id-tag">${student["Okul No"] || "---"}</span></td>
-                <td><span style="color:#00d4ff; font-weight:bold;">${teamName || "Bilinmiyor"}</span></td>
-                <td><span class="sector-tag">${stats.bolge || stats.sektor || "2A"}</span></td>
-                <td class="neon-text" style="font-size:1.1rem;">${stats.puan || 1000}</td>
-                <td style="padding:10px;">
-                    <div style="font-weight:bold; color:#fff;">${student["Adı Soyadı"]}</div>
-                    <div style="font-size:0.85rem; margin-top:4px;">
-                        <span style="color:${getStatusColor(stats.durum)};">[${stats.durum}]</span>
-                        <span style="color:#00d4ff; margin-left:8px;">İ:${stats.ipucuSayisi || 0}</span>
-                        <span style="color:#ff3e3e; margin-left:8px;">H:${stats.hataSayisi || 0}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
+    <tr style="border-bottom: 1px solid #222;">
+        <td style="padding:12px;"><span class="id-tag">${student["Okul No"] || "---"}</span></td>
+        <td><span style="color:#00d4ff; font-weight:bold;">${teamName || "Bilinmiyor"}</span></td>
+        <td><span class="sector-tag">${stats.bolge || stats.sektor || "2A"}</span></td>
+        <td><span class="neon-text" style="font-weight:bold;">#${stats.gorevNo || 1}</span></td> <td class="neon-text" style="font-size:1.1rem;">${stats.puan || 1000}</td>
+        <td style="padding:10px;">
+            <div style="font-weight:bold; color:#fff;">${student["Adı Soyadı"]}</div>
+            <div style="font-size:0.85rem; margin-top:4px;">
+                <span style="color:${getStatusColor(stats.durum)};">[${stats.durum}]</span>
+                <span style="color:#00d4ff; margin-left:8px;">İ:${stats.ipucuSayisi || 0}</span>
+                <span style="color:#ff3e3e; margin-left:8px;">H:${stats.hataSayisi || 0}</span>
+            </div>
+        </td>
+    </tr>
+`;
     });
     tbody.innerHTML = rowsHTML;
 }
