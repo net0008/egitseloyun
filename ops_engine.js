@@ -130,7 +130,7 @@ window.executeAIAnaliz = async function() {
                 visualPanel.innerHTML = `
                     <div id="rapor-ekrani" style="padding:25px; background:rgba(0,30,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
                         <h2 style="margin-bottom:20px; font-size:1.5rem;">📁 OPERASYON RAPORU BEKLENİYOR</h2>
-                        <p style="margin-bottom:30px;">Analiz doğrulandı. Nihai raporu mühürlemek için butona basınız.</p>
+                        <p style="margin-bottom:30px;">Analiz doğrulandı. Nihai raporu göndermek için butona basınız.</p>
                         <button onclick="window.finishMission()" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:20px 40px; border:none; font-size:1.2rem; box-shadow: 0 0 15px #00ff41;">RAPOR YAZ</button>
                     </div>
                 `;
@@ -171,15 +171,15 @@ function triggerBriefing(gorevNo) {
 
         if (gorevNo <= 9) {
             const brifingler = [
-                "", "[MERKEZ]: Konumun yükseltisini h² protokolü ile gir.",
-                "[MERKEZ]: Kalın çizgili bölgedeki yer şeklini analiz et.",
-                "[MERKEZ]: İzohipslerin sıklaştığı yerin ortak özelliğini bul.",
+                "", "[MERKEZ]: Konum ikonu ile gösterilen yerin yükseltisini bul. Karşıt unsurların eline geçmemesi için (h²) gerekli matematiksel işlemde bulduğun değeri gir.",
+                "[MERKEZ]: Kalın çizgili bölgedeki yer şeklini adı nedir?.",
+                "[MERKEZ]: İzohipslerin sıklaştığı yerin ortak özelliğini nedir?.",
                 "[MERKEZ]: X ve Y noktalarının gerçek yükseltisini hesapla.",
                 "[MERKEZ]: Sarı daireli yerlerin ortak özelliği belirlenmeli.",
-                "[MERKEZ]: Sarı çizgili sahalardaki eğim durumunu analiz et.",
-                "[MERKEZ]: Z ve Y alanlarının morfolojik adlarını mühürle.",
-                "[MERKEZ]: A ve B kıyı yer şekli tiplerini belirle.",
-                "[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre sırala."
+                "[MERKEZ]: Sarı çizgili sahalardaki ortak özellik nedir?",
+                "[MERKEZ]: Z ve Y alanlarının morfolojik adlarını yaz. Örnek: dağ, obruk.",
+                "[MERKEZ]: A ve B kıyı yer şeklinin adı nedir? Örnek: lagün, kıyı oku.",
+                "[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre matematiksel kurala göre sıralayın. Örnek: A > B > C gibi."
             ];
             logBox(brifingler[gorevNo], "warning");
         } else if (gorevNo === 10) {
