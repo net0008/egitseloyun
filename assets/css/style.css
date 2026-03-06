@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * style.css - Sürüm: v3.5.29                                                *
+ * style.css - Sürüm: v3.5.30                                                *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Karargâh & Saha Tam Uyumlu - Tüm Bileşenlerin Kesin Restorasyonu           *
+ * Karargâh & Saha Tam Uyumlu - Kesin Footer ve Sayfa Düzeni Protokolü        *
  * *************************************************************************** */
 
 /* --- 1. DEĞİŞKENLER VE TEMEL SIFIRLAMA --- */
@@ -21,7 +21,7 @@
     padding: 0;
 }
 
-/* --- FOOTER SABİTLEME MANTIĞI: TÜM SAYFALAR İÇİN --- */
+/* STICKY FOOTER VE GENEL DÜZEN */
 body {
     background-color: var(--dark-bg);
     color: var(--neon-green);
@@ -33,8 +33,8 @@ body {
     min-height: 100vh; /* Sayfayı tam ekran boyuna zorlar */
 }
 
-/* Önemli: İçeriği yayarak footer'ı aşağı iten ana konteynerlar */
-main, .operation-layout, .dashboard-container, .login-frame {
+/* İçeriği yayarak footer'ı aşağı iten ana konteynerlar */
+main, .operation-layout, .dashboard-container {
     flex: 1 0 auto; 
 }
 
@@ -54,7 +54,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
 .cyber-footer {
     padding: 1.5rem;
     border-top: 1px solid var(--border-color);
-    background: var(--panel-bg);
+    background: #000; /* Kesin siyah arka plan */
     text-align: center;
     font-size: 0.9rem;
     color: var(--neon-green);
@@ -63,6 +63,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
     width: 100%;
     margin-top: auto; /* Mühür: Her zaman en altta kalır */
     flex-shrink: 0;
+    z-index: 100;
 }
 
 .cyber-footer-content p {
@@ -71,13 +72,14 @@ main, .operation-layout, .dashboard-container, .login-frame {
     text-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
 }
 
-/* --- 3. GİRİŞ (INDEX) EKRANI --- */
+/* --- 3. GİRİŞ (INDEX) EKRANI - RESTORASYON --- */
 .login-screen {
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    flex: 1; /* Ortadaki boşluğu doldurur */
 }
 
 .video-background {
@@ -106,6 +108,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
     backdrop-filter: blur(5px);
     max-width: 550px;
     margin: auto;
+    z-index: 10;
 }
 
 .team-grid {
@@ -146,12 +149,12 @@ main, .operation-layout, .dashboard-container, .login-frame {
     max-width: 100%;
     height: auto;
     display: block;
-    /* HASBİ HOCAM İÇİN: Kristal Netlik */
+    /* KRİSTAL NETLİK PROTOKOLÜ */
     filter: none !important; 
     opacity: 1 !important; 
 }
 
-/* --- 5. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ (KESİN RESTORASYON) --- */
+/* --- 5. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ --- */
 .ops-instructions {
     margin-bottom: 30px;
 }
@@ -210,7 +213,7 @@ main, .operation-layout, .dashboard-container, .login-frame {
     color: var(--warning-red);
 }
 
-/* --- 6. ETKİLEŞİM, BUTONLAR VE FORMLAR (OPERASYON & ADMIN) --- */
+/* --- 6. ETKİLEŞİM VE BUTONLAR --- */
 .input-group {
     display: flex;
     gap: 12px;
@@ -247,14 +250,6 @@ input[type="text"], input[type="number"], textarea, select {
     outline: none;
 }
 
-.cyber-select {
-    background: #000;
-    color: var(--neon-green);
-    border: 1px solid var(--neon-green);
-    padding: 10px;
-    cursor: pointer;
-}
-
 /* --- 7. VERİ TABLOLARI VE DASHBOARD --- */
 table {
     width: 100%;
@@ -273,7 +268,6 @@ th {
     background: rgba(57, 255, 20, 0.15);
     color: #fff;
     text-transform: uppercase;
-    font-size: 0.95rem;
 }
 
 .id-tag {
@@ -281,14 +275,6 @@ th {
     border: 1px solid #333;
     padding: 4px 10px;
     color: var(--info-blue);
-    font-family: monospace;
-}
-
-.sector-tag {
-    background: rgba(57, 255, 20, 0.1);
-    border: 1px solid var(--neon-green);
-    padding: 4px 12px;
-    border-radius: 4px;
 }
 
 .neon-text {
@@ -327,4 +313,4 @@ th {
 @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-/* EOF: v3.5.29 - Tam Restorasyon Mühürlendi. */
+/* EOF: v3.5.30 - Takım Sayfası ve Footer Kurtarıldı. */
