@@ -50,6 +50,11 @@ main, .operation-layout, .dashboard-container {
     position: relative;
     z-index: 100;
 }
+#footer-placeholder {
+    width: 100%;
+    margin-top: auto;
+    flex-shrink: 0;
+}
 
 .cyber-footer {
     padding: 1.5rem;
@@ -61,7 +66,7 @@ main, .operation-layout, .dashboard-container {
     letter-spacing: 1px;
     box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.7);
     width: 100%;
-    margin-top: auto; /* Mühür: Her zaman en altta kalır */
+    margin-top: 0;
     flex-shrink: 0;
     z-index: 100;
 }
