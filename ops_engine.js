@@ -19,13 +19,51 @@ const terminal = document.getElementById('terminal-output');
 // --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
 // Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
 let globalMissionData = {};
+let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
+
+// Görsel Güncelleme Motoru (CMS verisi gelince veya görev değişince çalışır)
+function updateMapVisuals(gorev) {
+    const mapImg = document.getElementById('active-map');
+    const mapFrame = document.getElementById('active-frame');
+
+    if (mapImg && mapFrame) {
+        if (gorev <= 9) { 
+            // CMS'den gelen veriyi al
+            let cmsContent = globalMissionData[gorev]?.image;
+            
+            // Iframe temizliği (Eğer veritabanında raw iframe kodu varsa)
+            if (cmsContent && cmsContent.startsWith("<iframe")) {
+                const srcMatch = cmsContent.match(/src="([^"]+)"/);
+                if (srcMatch && srcMatch[1]) cmsContent = srcMatch[1];
+            }
+
+            // Google Maps kontrolü ve dönüşümü
+            if (cmsContent && cmsContent.includes("google.com/maps")) {
+                if (cmsContent.includes("/edit")) cmsContent = cmsContent.replace("/edit", "/embed");
+                
+                mapFrame.src = cmsContent;
+                mapFrame.style.display = "block";
+                mapImg.style.display = "none";
+            } else {
+                // Normal resim
+                mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
+                mapImg.style.display = "block";
+                mapFrame.style.display = "none";
+            }
+        }
+        else { 
+            mapImg.style.display = "none"; 
+            mapFrame.style.display = "none";
+        }
+    }
+}
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
     if (snapshot.exists()) {
         globalMissionData = snapshot.val();
         console.log("[CMS]: Oyun içeriği güncellendi.");
-        // Eğer sayfa açıksa ve veri geldiyse brifingi yenilemek gerekebilir
-        // Ancak initOperation içindeki akış bunu zaten yönetecektir.
+        // Veri geldiği anda görseli yenile (Gecikme sorununu çözer)
+        updateMapVisuals(currentGorevNo);
     }
 });
 
@@ -155,45 +193,15 @@ function initOperation() {
         const data = snapshot.val();
         if (!data) return;
         const gorev = data.gorevNo || 1;
+        currentGorevNo = gorev; // Global değişkeni güncelle
         const bolge = data.bolge || "2A";
         
         if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev'} ${bolge}`;
         
-        const mapImg = document.getElementById('active-map');
-        const mapFrame = document.getElementById('active-frame');
-
-        if (mapImg && mapFrame) {
-            if (gorev <= 9) { 
-                // CMS'den gelen veriyi al
-                let cmsContent = globalMissionData[gorev]?.image;
-                
-                // Iframe temizliği (Eğer veritabanında raw iframe kodu varsa)
-                if (cmsContent && cmsContent.startsWith("<iframe")) {
-                    const srcMatch = cmsContent.match(/src="([^"]+)"/);
-                    if (srcMatch && srcMatch[1]) cmsContent = srcMatch[1];
-                }
-
-                // Google Maps kontrolü ve dönüşümü
-                if (cmsContent && cmsContent.includes("google.com/maps")) {
-                    // Edit linkini Embed linkine çevir (Otomatik düzeltme)
-                    if (cmsContent.includes("/edit")) cmsContent = cmsContent.replace("/edit", "/embed");
-                    
-                    mapFrame.src = cmsContent;
-                    mapFrame.style.display = "block";
-                    mapImg.style.display = "none";
-                } else {
-                    // Normal resim
-                    mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
-                    mapImg.style.display = "block";
-                    mapFrame.style.display = "none";
-                }
-            }
-            else { 
-                mapImg.style.display = "none"; 
-                mapFrame.style.display = "none";
-            }
-        }
+        // Görseli güncelle (Merkezi fonksiyon kullanımı)
+        updateMapVisuals(gorev);
+        
         triggerBriefing(gorev);
         
         // Yıldız Hesaplama ve Bildirim Mantığı
