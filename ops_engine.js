@@ -239,10 +239,21 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     let isCorrect = false;
     
     if (requireAll) {
-        // KOMBİNASYON MODU: Girilen kelimelerin HEPSİ öğrencinin cevabında geçmeli.
-        // Örn: Cevaplar ["plato", "ova"]. Öğrenci "ovaveplato" yazdı.
-        // "ovaveplato" içinde "plato" var mı? EVET. "ova" var mı? EVET. -> DOĞRU.
-        if (correctAnswers.length > 0 && correctAnswers.every(ans => rawInput.includes(ans))) {
+        // SIRALI KOMBİNASYON MODU: Kelimeler hem var olmalı hem de sırayla gelmeli.
+        let lastIndex = -1;
+        let sequenceMatch = true;
+
+        for (const ans of correctAnswers) {
+            // Bir önceki kelimenin bittiği yerden sonrasını ara
+            const idx = rawInput.indexOf(ans, lastIndex + 1);
+            if (idx === -1) {
+                sequenceMatch = false;
+                break;
+            }
+            lastIndex = idx;
+        }
+
+        if (sequenceMatch && correctAnswers.length > 0) {
             isCorrect = true;
         }
     } else {
