@@ -72,7 +72,6 @@
                     <div class="mission-card">
                         <div class="card-header">
                             <h3>GÖREV ${i}</h3>
-                            <span style="font-size:0.8rem; color:#666;">ID: M-${i}</span>
                         </div>
 
                         <div class="form-row">
@@ -95,6 +94,14 @@
                             <label>🔑 Doğru Cevaplar (Virgülle ayırın):</label>
                             <input type="text" id="a-${i}" value="${mission.answers || ""}" placeholder="örn: vadi, akarsu yatağı, dere">
                             <div class="helper-text">Büyük/küçük harf fark etmez. Öğrenci bunlardan birini yazarsa kabul edilir.</div>
+                        </div>
+
+                        <div class="form-row" style="background: #1a1a1a; padding: 10px; border-radius: 4px; border: 1px dashed #444;">
+                            <label style="display:flex; align-items:center; cursor:pointer; margin:0; color: #39FF14;">
+                                <input type="checkbox" id="mode-${i}" ${mission.requireAll ? "checked" : ""} style="width:auto; margin-right:10px;">
+                                🔗 KOMBİNASYON MODU (Girilen kelimelerin HEPSİ cevapta geçmeli)
+                            </label>
+                            <div class="helper-text">Örn: "plato, ova" yazdıysanız, öğrenci ikisini de bilmek zorundadır (Sırası fark etmez).</div>
                         </div>
                         
                         <div class="form-row">
@@ -122,7 +129,8 @@
                     question: document.getElementById(`q-${i}`).value,
                     answers: document.getElementById(`a-${i}`).value,
                     hints: document.getElementById(`h-${i}`).value,
-                    image: document.getElementById(`img-${i}`).value
+                    image: document.getElementById(`img-${i}`).value,
+                    requireAll: document.getElementById(`mode-${i}`).checked
                 };
             }
             

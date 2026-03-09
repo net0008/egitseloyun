@@ -231,14 +231,25 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     
     // CMS'den gelen doğru cevapları al
     const correctAnswersRaw = globalMissionData[cur]?.answers || "";
+    const requireAll = globalMissionData[cur]?.requireAll || false; // Kombinasyon modu açık mı?
+
     // Virgülle ayrılmış cevapları diziye çevir ve temizle
     const correctAnswers = correctAnswersRaw.split(',').map(a => a.trim().toLocaleLowerCase('tr').replace(/\s/g, ""));
 
     let isCorrect = false;
     
-    // Girilen değer, doğru cevaplar listesinde var mı kontrol et
-    if (correctAnswers.includes(rawInput)) {
-        isCorrect = true;
+    if (requireAll) {
+        // KOMBİNASYON MODU: Girilen kelimelerin HEPSİ öğrencinin cevabında geçmeli.
+        // Örn: Cevaplar ["plato", "ova"]. Öğrenci "ovaveplato" yazdı.
+        // "ovaveplato" içinde "plato" var mı? EVET. "ova" var mı? EVET. -> DOĞRU.
+        if (correctAnswers.length > 0 && correctAnswers.every(ans => rawInput.includes(ans))) {
+            isCorrect = true;
+        }
+    } else {
+        // STANDART MOD: Listeden HERHANGİ BİRİ tam eşleşirse doğru.
+        if (correctAnswers.includes(rawInput)) {
+            isCorrect = true;
+        }
     }
 
     if (isCorrect) {
