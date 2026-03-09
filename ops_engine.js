@@ -63,6 +63,8 @@ function updateMapVisuals(gorev) {
                 mapImg.style.display = 'none';   // Resim gizle
                 loader.style.display = 'none';
                 if(zoomControls) zoomControls.style.display = 'none'; // Leaflet kendi zoom'unu kullanır
+                if(scanLine) scanLine.style.display = 'none'; // Tarama çizgisini gizle
+                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'none'; // Bariyeri gizle
 
                 // Koordinatları ayrıştır
                 const coords = cmsContent.replace("leaflet:", "").split(",");
