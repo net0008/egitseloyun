@@ -34,6 +34,7 @@ function updateMapVisuals(gorev) {
     const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
     const zoomControls = document.querySelector('.zoom-controls');
     const zoomSlider = document.getElementById('zoom-slider');
+    const zoomValueDisplay = document.getElementById('zoom-value');
 
     // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
     if (mapContentWrapper && mapImg && mapFrame && loader) {
@@ -72,8 +73,11 @@ function updateMapVisuals(gorev) {
 
                 // Zoom Slider Ayarı
                 if (zoomControls && zoomSlider) {
-                    const zMatch = embedUrl.match(/z=(\d+)/);
-                    if (zMatch) zoomSlider.value = zMatch[1];
+                    const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
+                    const currentZoom = zMatch ? zMatch[1] : '18'; // Bulamazsan varsayılan 18
+                    zoomSlider.value = currentZoom;
+                    if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
+
                     zoomControls.style.display = 'flex';
                 }
 
@@ -120,9 +124,12 @@ function updateMapVisuals(gorev) {
 
 // Zoom Slider Olay Dinleyicisi
 const zoomSliderElement = document.getElementById('zoom-slider');
-if (zoomSliderElement) {
-    zoomSliderElement.addEventListener('change', (e) => {
+const zoomValueDisplayElement = document.getElementById('zoom-value');
+if (zoomSliderElement && zoomValueDisplayElement) {
+    // 'input' olayı, fareyi kaydırırken anlık güncelleme yapar
+    zoomSliderElement.addEventListener('input', (e) => {
         const newVal = e.target.value;
+        zoomValueDisplayElement.textContent = `${newVal}x`;
         const iframe = document.getElementById('active-frame');
         if (iframe && iframe.src && iframe.style.display !== 'none') {
             let url = iframe.src;
