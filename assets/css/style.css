@@ -159,6 +159,14 @@ main, .operation-layout, .dashboard-container {
     opacity: 1 !important; 
 }
 
+/* Harita iframe'i için eklenen stil */
+.map-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    filter: hue-rotate(10deg); /* Temaya uyum için renk filtresi */
+}
+
 /* --- 5. KARARGÂH (ADMIN) ÖZEL BİLEŞENLERİ --- */
 .ops-instructions {
     margin-bottom: 30px;

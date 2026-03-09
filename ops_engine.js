@@ -42,10 +42,22 @@ function updateMapVisuals(gorev) {
 
             // Google Maps kontrolü ve dönüşümü
             if (cmsContent && cmsContent.includes("google.com/maps")) {
-                if (cmsContent.includes("/edit")) cmsContent = cmsContent.replace("/edit", "/embed");
-                if (cmsContent.includes("/viewer")) cmsContent = cmsContent.replace("/viewer", "/embed");
-                
-                mapFrame.src = cmsContent;
+                let embedUrl = cmsContent;
+
+                // "My Maps" linkleri (/d/)
+                if (embedUrl.includes("/d/")) {
+                    if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
+                    if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
+                } 
+                // Standart harita linkleri (henüz embed değilse)
+                else if (!embedUrl.includes("/embed")) {
+                    // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
+                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q=")) && !embedUrl.includes("output=")) {
+                        embedUrl += "&output=embed";
+                    }
+                }
+
+                mapFrame.src = embedUrl;
                 mapFrame.style.display = "block";
                 mapImg.style.display = "none";
             } else {

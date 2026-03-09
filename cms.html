@@ -130,9 +130,22 @@
             }
             
             if (url.includes("google.com/maps")) {
-                if (url.includes("/edit")) url = url.replace("/edit", "/embed");
-                if (url.includes("/viewer")) url = url.replace("/viewer", "/embed");
-                iframe.src = url;
+                let embedUrl = url;
+
+                // "My Maps" linkleri (/d/)
+                if (embedUrl.includes("/d/")) {
+                    if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
+                    if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
+                }
+                // Standart harita linkleri (henüz embed değilse)
+                else if (!embedUrl.includes("/embed")) {
+                    // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
+                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q=")) && !embedUrl.includes("output=")) {
+                        embedUrl += "&output=embed";
+                    }
+                }
+
+                iframe.src = embedUrl;
                 iframe.style.display = "block";
                 img.style.display = "none";
                 txt.style.display = "none";
