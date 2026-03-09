@@ -50,7 +50,7 @@
     </div>
 
     <script type="module">
-        import { db, ref, set, onValue } from './assets/js/firebase-config.js';
+        import { db, ref, set, onValue, storage, storageRef, uploadBytes, getDownloadURL } from './assets/js/firebase-config.js';
 
         const missionContainer = document.getElementById('mission-forms');
 
@@ -82,8 +82,12 @@
 
                         <div class="form-row">
                             <label>🖼️ Görev Görseli (Dosya Yolu veya URL):</label>
-                            <input type="text" id="img-${i}" value="${currentImg}" oninput="updatePreview(${i})">
-                            <div class="helper-text">Örn: <code>assets/img/soru1.jpg</code> veya internetten bir resim linki.</div>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <input type="text" id="img-${i}" value="${currentImg}" oninput="updatePreview(${i})" style="flex-grow:1;">
+                                <label for="file-${i}" style="cursor:pointer; background:#333; padding:10px; border:1px solid #555; margin:0; white-space:nowrap;">📂 Yükle</label>
+                                <input type="file" id="file-${i}" accept="image/*" style="display:none;" onchange="uploadImage(${i})">
+                            </div>
+                            <div class="helper-text" id="status-${i}">Örn: <code>assets/img/soru1.jpg</code> veya "Yükle" butonu ile resim seçin.</div>
                             
                             <div class="preview-area">
                                 <span class="preview-text" id="prev-txt-${i}">Görsel Önizleme</span>
@@ -113,6 +117,36 @@
             const img = document.getElementById(`prev-img-${id}`);
             const txt = document.getElementById(`prev-txt-${id}`);
             img.src = url;
+        };
+
+        // Resim Yükleme Fonksiyonu
+        window.uploadImage = async function(id) {
+            const fileInput = document.getElementById(`file-${id}`);
+            const statusText = document.getElementById(`status-${id}`);
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            statusText.innerHTML = "⏳ Resim sunucuya yükleniyor, lütfen bekleyin...";
+            statusText.style.color = "#39FF14";
+
+            try {
+                // Dosya yolu: gorev_resimleri/gorev_1_zamandamgasi.jpg
+                const path = `gorev_resimleri/gorev_${id}_${Date.now()}`;
+                const sRef = storageRef(storage, path);
+                
+                const snapshot = await uploadBytes(sRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+
+                document.getElementById(`img-${id}`).value = url;
+                window.updatePreview(id);
+                
+                statusText.innerHTML = "✅ Yükleme tamamlandı! Kaydetmeyi unutmayın.";
+            } catch (error) {
+                console.error(error);
+                statusText.innerHTML = "❌ Hata: " + error.message;
+                statusText.style.color = "red";
+            }
         };
 
         window.saveAllMissions = function() {
