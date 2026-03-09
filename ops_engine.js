@@ -161,14 +161,32 @@ function initOperation() {
         if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev'} ${bolge}`;
         
         const mapImg = document.getElementById('active-map');
-        if (mapImg) {
+        const mapFrame = document.getElementById('active-frame');
+
+        if (mapImg && mapFrame) {
             if (gorev <= 9) { 
-                // CMS'den gelen resmi kullan, yoksa varsayılan yerel dosyayı kullan
-                const cmsImage = globalMissionData[gorev]?.image;
-                mapImg.src = cmsImage || `assets/img/soru${gorev}.jpg`; 
-                mapImg.style.display = "block"; 
+                // CMS'den gelen veriyi al
+                let cmsContent = globalMissionData[gorev]?.image;
+                
+                // Google Maps kontrolü ve dönüşümü
+                if (cmsContent && cmsContent.includes("google.com/maps")) {
+                    // Edit linkini Embed linkine çevir (Otomatik düzeltme)
+                    if (cmsContent.includes("/edit")) cmsContent = cmsContent.replace("/edit", "/embed");
+                    
+                    mapFrame.src = cmsContent;
+                    mapFrame.style.display = "block";
+                    mapImg.style.display = "none";
+                } else {
+                    // Normal resim
+                    mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
+                    mapImg.style.display = "block";
+                    mapFrame.style.display = "none";
+                }
             }
-            else { mapImg.style.display = "none"; }
+            else { 
+                mapImg.style.display = "none"; 
+                mapFrame.style.display = "none";
+            }
         }
         triggerBriefing(gorev);
         
