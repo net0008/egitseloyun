@@ -133,6 +133,8 @@ const zoomValueDisplayElement = document.getElementById('zoom-value');
 const mouseZoomValueDisplayElement = document.getElementById('mouse-zoom-value');
 const mapFrameElement = document.querySelector('.map-frame');
 
+let zoomDebounceTimer = null; // Gecikme zamanlayıcısı
+
 // Ortak Zoom Güncelleme Fonksiyonu
 function updateZoomLevel(newVal) {
     // Değer sınırlarını kontrol et (8-20 arası)
@@ -140,24 +142,30 @@ function updateZoomLevel(newVal) {
     if (val < 8) val = 8;
     if (val > 20) val = 20;
 
-    // Arayüzü güncelle
+    // Arayüzü güncelle (Hemen tepki ver)
     if (zoomSliderElement) zoomSliderElement.value = val;
     if (mouseSliderElement) mouseSliderElement.value = val;
     if (zoomValueDisplayElement) zoomValueDisplayElement.textContent = `${val}x`;
     if (mouseZoomValueDisplayElement) mouseZoomValueDisplayElement.textContent = `${val}x`;
 
-    // Iframe'i güncelle
-    const iframe = document.getElementById('active-frame');
-    if (iframe && iframe.src && iframe.style.display !== 'none') {
-        let url = iframe.src;
-        if (url.includes('z=')) {
-            url = url.replace(/z=\d+/, `z=${val}`);
-        } else {
-            url += `&z=${val}`;
+    // Iframe'i güncelle (Gecikmeli - Debounce)
+    // Eğer kullanıcı hala zoom yapıyorsa önceki işlemi iptal et
+    if (zoomDebounceTimer) clearTimeout(zoomDebounceTimer);
+    
+    // Kullanıcı durduktan 300ms sonra haritayı yenile
+    zoomDebounceTimer = setTimeout(() => {
+        const iframe = document.getElementById('active-frame');
+        if (iframe && iframe.src && iframe.style.display !== 'none') {
+            let url = iframe.src;
+            if (url.includes('z=')) {
+                url = url.replace(/z=\d+/, `z=${val}`);
+            } else {
+                url += `&z=${val}`;
+            }
+            // Sadece URL değiştiyse güncelle (Gereksiz reload önleme)
+            if (iframe.src !== url) iframe.src = url;
         }
-        // Sadece URL değiştiyse güncelle (Gereksiz reload önleme)
-        if (iframe.src !== url) iframe.src = url;
-    }
+    }, 300);
 }
 
 if (zoomSliderElement && zoomValueDisplayElement) {
