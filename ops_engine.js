@@ -16,70 +16,18 @@ const teamName = decodeURIComponent(params.get('team') || "");
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
 
-// --- 1. İPUCU KÜTÜPHANESİ (HİNT REPOSITORY) ---
-// Her görev aşaması için stratejik ipuçlarını ve teknik yönlendirmeleri içerir.
-const hint_library = {
-    1: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "Deniz seviyesi (kıyı çizgisi) her yerde 0 metredir.",
-        "Deniz kıyı çizgisi ile ilk izohips arasındaki fark eküidistans değeridir.",
-        "Yükselti farkı 200m. Hesaplama: (İzohips Sayısı x 200)"
-    ],
-    2: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "İzohipslerin yükseltinin arttığı yöne büklüm yapması vadileri gösterir.",
-        "Ucu yüksek tarafa bakan 'V' şekillerine odaklanın.",
-        "Akarsuyun yatağını oluşturan bu yer şeklinin adı nedir?"
-    ],
-    3: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "İzohips eğrilerinin birbirine çok yaklaştığı bölgeleri inceleyin.",
-        "Bu bölgede akarsu olsaydı akış hızı ve aşındırma gücü yüksek olurdu.",
-        "Eğrilerin sıklaşması yükseltinin kısa mesafede değiştiği anlamına gelir."
-    ],
-    4: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "Akarsuyun her iki yanındaki ilk izohipslerin yükseltisi ortaktır.",
-        "Birbirini çevrelemeyen komşu izohipslerin yükseltileri eşittir.",
-        "Kıyıdan (0m) itibaren basamakları tek tek sayarak ilerle."
-    ],
-    5: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "İzohipslerin oluşturduğu en içteki kapalı halkalara odaklanın.",
-        "Çevresine göre daha yüksekte kalan zirve noktalarını temsil ederler.",
-        "Nokta veya üçgen ile gösterilen bu doruk noktasına ne denir?"
-    ],
-    6: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "İzohipslerin birbirine değecek kadar yaklaştığı yerleri bulun.",
-        "Çizgilerin sık olması o bölgenin eğim durumu hakkında ne söyler?",
-        "Dik bir yamaç veya yokuş yapısını temsil eden kavram nedir?"
-    ],
-    7: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "Akarsularla derince yarılmış yüksek düzlüklere plato denir.",
-        "Çevresine göre alçakta kalan geniş düzlük alanlara ova denir.",
-        "Z (Yüksek) ve Y (Alçak) düzlük kavramlarını birleştirin."
-    ],
-    8: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "Akarsu alüvyonlarının denize döküldüğü yerde birikmesiyle oluşur.",
-        "Deniz kıyısındaki çizgilerin sıklaşması uçurumları (falez) gösterir.",
-        "Delta ve Falez kavramlarını uygun noktalarla eşleştirin."
-    ],
-    9: [
-        "Saha kılavuzunu dikkatlice oku.",
-        "Çizgilerin en sık olduğu doğrultuda eğim en yüksek seviyededir.",
-        "Çizgilerin seyrek olduğu doğrultu eğimin en az olduğu yerdir.",
-        "V, Y ve Z oklarını bu matematiksel kurala göre sıralayın."
-    ],
-    10: [
-        "Hata yaparsanız sayfayı yenileyin. (F5 Protokolü)",
-        "Profiler ekranında imleci tam 'Dikili' yazısının üzerine getirin.",
-        "Hattı tamamlamak için tam 'Bergama' yazısının üzerine tıklayın.",
-        "Koordinatları kopyalayıp Yapay Zeka Analiz alanına mühürleyin."
-    ]
-};
+// --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
+// Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
+let globalMissionData = {};
+
+onValue(ref(db, 'gameContent/missions'), (snapshot) => {
+    if (snapshot.exists()) {
+        globalMissionData = snapshot.val();
+        console.log("[CMS]: Oyun içeriği güncellendi.");
+        // Eğer sayfa açıksa ve veri geldiyse brifingi yenilemek gerekebilir
+        // Ancak initOperation içindeki akış bunu zaten yönetecektir.
+    }
+});
 
 // --- 2. TERMİNAL VE HAFIZA YÖNETİMİ ---
 function saveTerminal() { 
@@ -170,18 +118,9 @@ function triggerBriefing(gorevNo) {
         if (inputGroup) inputGroup.style.display = (gorevNo >= 10) ? "none" : "flex";
 
         if (gorevNo <= 9) {
-            const brifingler = [
-                "", "[MERKEZ]: Konum ikonu ile gösterilen yerin yükseltisini bul. Karşıt unsurların eline geçmemesi için (h²) gerekli matematiksel işlemde bulduğun değeri gir.",
-                "[MERKEZ]: Kalın çizgili bölgedeki yer şeklini adı nedir?.",
-                "[MERKEZ]: İzohipslerin sıklaştığı yerin ortak özelliğini nedir?.",
-                "[MERKEZ]: X ve Y noktalarının gerçek yükseltisini hesapla.",
-                "[MERKEZ]: Sarı daireli yerlerin ortak özelliği belirlenmeli.",
-                "[MERKEZ]: Sarı çizgili sahalardaki ortak özellik nedir?",
-                "[MERKEZ]: Z ve Y alanlarının morfolojik adlarını yaz. Örnek: dağ, obruk.",
-                "[MERKEZ]: A ve B kıyı yer şeklinin adı nedir? Örnek: lagün, kıyı oku.",
-                "[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre matematiksel kurala göre sıralayın. Örnek: A > B > C gibi."
-            ];
-            logBox(brifingler[gorevNo], "warning");
+            // CMS'den gelen soruyu yazdır, yoksa varsayılan bir mesaj göster.
+            const missionText = globalMissionData[gorevNo]?.question || "[MERKEZ]: Veri paketi indiriliyor... Lütfen bekleyin.";
+            logBox(`[MERKEZ]: ${missionText}`, "warning");
         } else if (gorevNo === 10) {
             logBox("[MERKEZ]: Bergama-Dikili hattı profil operasyonu aktif.", "warning");
             const mapFrame = document.querySelector('.map-frame');
@@ -223,7 +162,12 @@ function initOperation() {
         
         const mapImg = document.getElementById('active-map');
         if (mapImg) {
-            if (gorev <= 9) { mapImg.src = `assets/img/soru${gorev}.jpg`; mapImg.style.display = "block"; }
+            if (gorev <= 9) { 
+                // CMS'den gelen resmi kullan, yoksa varsayılan yerel dosyayı kullan
+                const cmsImage = globalMissionData[gorev]?.image;
+                mapImg.src = cmsImage || `assets/img/soru${gorev}.jpg`; 
+                mapImg.style.display = "block"; 
+            }
             else { mapImg.style.display = "none"; }
         }
         triggerBriefing(gorev);
@@ -262,7 +206,10 @@ document.getElementById('btn-hint').addEventListener('click', async () => {
     const snap = await get(scoreRef);
     const data = snap.val();
     const count = data.ipucuSayisi || 0, currentGorev = data.gorevNo || 1;
-    const activeHints = hint_library[currentGorev] || [];
+    
+    // CMS'den gelen ipuçlarını al (Newline ile ayrılmış string olabilir, array'e çevir)
+    const rawHints = globalMissionData[currentGorev]?.hints || "";
+    const activeHints = rawHints.split('\n').filter(h => h.trim() !== "");
 
     if (count < activeHints.length) {
         const newScore = Math.max(0, (data.puan || 1000) - 50);
@@ -281,17 +228,18 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     if (cur >= 10) return logBox("Lütfen analizi görsel paneldeki butonlar ile tamamlayın.", "warning");
 
     const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
-    let isCorrect = false;
+    
+    // CMS'den gelen doğru cevapları al
+    const correctAnswersRaw = globalMissionData[cur]?.answers || "";
+    // Virgülle ayrılmış cevapları diziye çevir ve temizle
+    const correctAnswers = correctAnswersRaw.split(',').map(a => a.trim().toLocaleLowerCase('tr').replace(/\s/g, ""));
 
-    if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
-    else if (cur === 2 && rawInput === "vadi") isCorrect = true;
-    else if (cur === 3 && rawInput.includes("eğim")) isCorrect = true;
-    else if (cur === 4 && rawInput.includes("200")) isCorrect = true;
-    else if (cur === 5 && rawInput.includes("tepe")) isCorrect = true;
-    else if (cur === 6 && rawInput.includes("eğim")) isCorrect = true;
-    else if (cur === 7 && rawInput.includes("plato") && rawInput.includes("ova")) isCorrect = true;
-    else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
-    else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
+    let isCorrect = false;
+    
+    // Girilen değer, doğru cevaplar listesinde var mı kontrol et
+    if (correctAnswers.includes(rawInput)) {
+        isCorrect = true;
+    }
 
     if (isCorrect) {
         update(scoreRef, { gorevNo: cur + 1, bolge: cur + 1 > 10 ? "TAMAMLANDI" : "2J", puan: (data.puan || 1000) + 200, durum: "Başarılı Analiz", ipucuSayisi: 0, hataSayisi: (data.hataSayisi || 0) });
