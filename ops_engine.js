@@ -33,7 +33,8 @@ function updateMapVisuals(gorev) {
     const scanLine = document.querySelector('.scan-line');
     const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
 
-    if (mapContentWrapper && mapImg && mapFrame && loader && scanLine && mapOverlayBarrier) {
+    // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
+    if (mapContentWrapper && mapImg && mapFrame && loader) {
         mapContentWrapper.style.display = 'none'; // İçeriği başlangıçta gizle
         // Yükleme başladığı için loader'ı göster
         loader.style.display = 'flex';
@@ -66,23 +67,33 @@ function updateMapVisuals(gorev) {
                 }
 
                 mapContentWrapper.style.display = 'block'; // Harita içeriğini göster
-                // Iframe yüklendiğinde loader'ı gizle
-                mapFrame.onload = () => { loader.style.display = 'none'; };
+                
+                // Iframe yüklendiğinde loader'ı gizle (Timeout Korumalı)
+                const hideLoader = () => { loader.style.display = 'none'; };
+                mapFrame.onload = hideLoader;
+                // Güvenlik: 5 saniye içinde yüklenmezse loader'ı zorla kapat
+                setTimeout(hideLoader, 5000);
+
                 mapFrame.src = embedUrl;
                 mapFrame.style.display = "block";
                 mapImg.style.display = "none";
-                scanLine.style.display = 'block';
-                mapOverlayBarrier.style.display = 'block'; // Bariyeri göster
+                
+                if(scanLine) scanLine.style.display = 'block';
+                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'block'; // Bariyeri göster
             } else {
                 // Normal resim
                 mapContentWrapper.style.display = 'block'; // Resim içeriğini göster
                 // Resim yüklendiğinde loader'ı gizle
-                mapImg.onload = () => { loader.style.display = 'none'; };
+                const hideLoader = () => { loader.style.display = 'none'; };
+                mapImg.onload = hideLoader;
+                setTimeout(hideLoader, 5000); // Resim için de güvenlik zaman aşımı
+
                 mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
                 mapImg.style.display = "block";
                 mapFrame.style.display = "none";
-                scanLine.style.display = 'none'; // Resimde scan-line ve bariyer olmasın
-                mapOverlayBarrier.style.display = 'none';
+                
+                if(scanLine) scanLine.style.display = 'none'; // Resimde scan-line ve bariyer olmasın
+                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'none';
             }
         }
         else { 
