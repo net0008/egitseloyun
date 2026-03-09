@@ -41,7 +41,7 @@ function resetMapState() {
         if (el) {
             el.style.display = 'none';
             // Iframe src'sini temizle ki yeni yüklemede onload kesin çalışsın
-            if (el.tagName === 'IFRAME') el.src = 'about:blank';
+            // if (el.tagName === 'IFRAME') el.src = 'about:blank'; // Kaldırıldı: Gereksiz yükleme ve döngü sorunu
         }
     });
 }
@@ -104,10 +104,15 @@ function updateMapVisuals(gorev) {
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
 
-        const hideLoader = () => { if (loader) loader.style.display = 'none'; };
-        mapFrame.onload = hideLoader;
-        mapFrame.src = embedUrl; // Önce listener, sonra kaynak (Race condition önlemi)
-        setTimeout(hideLoader, 5000);
+        // URL değiştiyse yükle, aynıysa sadece loader'ı kapat (Sonsuz döngü önlemi)
+        if (mapFrame.src !== embedUrl) {
+            const hideLoader = () => { if (loader) loader.style.display = 'none'; };
+            mapFrame.onload = hideLoader;
+            mapFrame.src = embedUrl; 
+            setTimeout(hideLoader, 5000);
+        } else {
+            if (loader) loader.style.display = 'none';
+        }
 
         if (embedUrl.includes("google.com/maps")) {
             document.querySelector('.scan-line')?.style.display = 'block';
