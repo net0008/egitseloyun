@@ -177,8 +177,8 @@ main, .operation-layout, .dashboard-container {
     right: 20px;
     z-index: 50; /* En üstte durması için */
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column; /* Alt alta sırala */
+    gap: 5px;
     background: rgba(0, 0, 0, 0.85);
     padding: 8px 15px;
     border: 1px solid var(--neon-green);
@@ -186,17 +186,31 @@ main, .operation-layout, .dashboard-container {
     box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
 }
 
+.zoom-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .zoom-controls label {
     color: var(--neon-green);
     font-weight: bold;
     font-size: 0.8rem;
     letter-spacing: 1px;
+    min-width: 50px; /* Etiketleri hizala */
 }
 
 .zoom-controls input[type=range] {
     width: 100px;
     accent-color: var(--neon-green);
     cursor: pointer;
+}
+
+/* Mouse slider için farklı stil (Pasif görünüm) */
+#mouse-zoom-slider {
+    accent-color: var(--info-blue);
+    cursor: default;
+    opacity: 0.8;
 }
 
 .zoom-value-display {

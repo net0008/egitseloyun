@@ -34,6 +34,7 @@ function updateMapVisuals(gorev) {
     const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
     const zoomControls = document.querySelector('.zoom-controls');
     const zoomSlider = document.getElementById('zoom-slider');
+    const mouseSlider = document.getElementById('mouse-zoom-slider');
     const zoomValueDisplay = document.getElementById('zoom-value');
 
     // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
@@ -76,6 +77,7 @@ function updateMapVisuals(gorev) {
                     const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
                     const currentZoom = zMatch ? zMatch[1] : '11'; // Bulamazsan varsayılan 11
                     zoomSlider.value = currentZoom;
+                    if(mouseSlider) mouseSlider.value = currentZoom;
                     if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
 
                     zoomControls.style.display = 'flex';
@@ -122,26 +124,64 @@ function updateMapVisuals(gorev) {
     }
 }
 
-// Zoom Slider Olay Dinleyicisi
+// --- ZOOM KONTROL MEKANİZMASI ---
 const zoomSliderElement = document.getElementById('zoom-slider');
+const mouseSliderElement = document.getElementById('mouse-zoom-slider');
 const zoomValueDisplayElement = document.getElementById('zoom-value');
+const mapFrameElement = document.querySelector('.map-frame');
+
+// Ortak Zoom Güncelleme Fonksiyonu
+function updateZoomLevel(newVal) {
+    // Değer sınırlarını kontrol et (8-20 arası)
+    let val = parseInt(newVal);
+    if (val < 8) val = 8;
+    if (val > 20) val = 20;
+
+    // Arayüzü güncelle
+    if (zoomSliderElement) zoomSliderElement.value = val;
+    if (mouseSliderElement) mouseSliderElement.value = val;
+    if (zoomValueDisplayElement) zoomValueDisplayElement.textContent = `${val}x`;
+
+    // Iframe'i güncelle
+    const iframe = document.getElementById('active-frame');
+    if (iframe && iframe.src && iframe.style.display !== 'none') {
+        let url = iframe.src;
+        if (url.includes('z=')) {
+            url = url.replace(/z=\d+/, `z=${val}`);
+        } else {
+            url += `&z=${val}`;
+        }
+        // Sadece URL değiştiyse güncelle (Gereksiz reload önleme)
+        if (iframe.src !== url) iframe.src = url;
+    }
+}
+
 if (zoomSliderElement && zoomValueDisplayElement) {
     // 'input' olayı, fareyi kaydırırken anlık güncelleme yapar
     zoomSliderElement.addEventListener('input', (e) => {
-        const newVal = e.target.value;
-        zoomValueDisplayElement.textContent = `${newVal}x`;
-        const iframe = document.getElementById('active-frame');
-        if (iframe && iframe.src && iframe.style.display !== 'none') {
-            let url = iframe.src;
-            // URL içindeki z parametresini güncelle veya ekle
-            if (url.includes('z=')) {
-                url = url.replace(/z=\d+/, `z=${newVal}`);
-            } else {
-                url += `&z=${newVal}`;
-            }
-            iframe.src = url; // Iframe'i yeni zoom ile yeniden yükle
-        }
+        updateZoomLevel(e.target.value);
     });
+}
+
+// Mouse Wheel (Tekerlek) Dinleyicisi
+if (mapFrameElement) {
+    mapFrameElement.addEventListener('wheel', (e) => {
+        // Sadece harita aktifse çalış
+        const iframe = document.getElementById('active-frame');
+        if (!iframe || iframe.style.display === 'none') return;
+
+        e.preventDefault(); // Sayfa kaydırmayı engelle
+
+        // Mevcut zoom değerini al
+        let currentZoom = parseInt(zoomSliderElement ? zoomSliderElement.value : 11);
+        
+        // Yönü belirle (Aşağı yuvarlama: Uzaklaş, Yukarı yuvarlama: Yakınlaş)
+        if (e.deltaY > 0) {
+            updateZoomLevel(currentZoom - 1);
+        } else {
+            updateZoomLevel(currentZoom + 1);
+        }
+    }, { passive: false });
 }
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
