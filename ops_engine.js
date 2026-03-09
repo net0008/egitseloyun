@@ -41,7 +41,7 @@ function resetMapState() {
         if (el) {
             el.style.display = 'none';
             // Iframe src'sini temizle ki yeni yüklemede onload kesin çalışsın
-            if (el.tagName === 'IFRAME') el.removeAttribute('src');
+            if (el.tagName === 'IFRAME') el.src = 'about:blank';
         }
     });
 }

@@ -129,7 +129,7 @@
                 if (srcMatch && srcMatch[1]) url = srcMatch[1];
             }
             
-            if (url.includes("google.com/maps")) {
+            if (url.includes("google.com/maps") || url.includes("umap.openstreetmap.fr")) {
                 let embedUrl = url;
 
                 // "My Maps" linkleri (/d/)
