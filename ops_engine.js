@@ -28,7 +28,6 @@ function resetMapState() {
         mapContentWrapper: document.getElementById('map-content-wrapper'),
         mapImg: document.getElementById('active-map'),
         mapFrame: document.getElementById('active-frame'),
-        loader: document.getElementById('map-loader'),
         scanLine: document.querySelector('.scan-line'),
         mapOverlayBarrier: document.querySelector('.map-overlay-barrier'),
         zoomControls: document.querySelector('.zoom-controls'),
