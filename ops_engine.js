@@ -25,7 +25,6 @@ let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
 // Harita durumunu sıfırlayan yardımcı fonksiyon
 function resetMapState() {
     const elements = {
-        mapContentWrapper: document.getElementById('map-content-wrapper'),
         mapImg: document.getElementById('active-map'),
         mapFrame: document.getElementById('active-frame'),
         scanLine: document.querySelector('.scan-line'),
@@ -63,7 +62,6 @@ function updateMapVisuals(gorev) {
 
     // --- RAW IFRAME MODU ---
     if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
-        mapContentWrapper.style.display = 'block';
         const rawDiv = document.createElement('div');
         rawDiv.id = 'raw-iframe-temp';
         rawDiv.style.cssText = 'width: 100%; height: 100%;';
@@ -98,7 +96,6 @@ function updateMapVisuals(gorev) {
         }
 
         const mapFrame = document.getElementById('active-frame');
-        mapContentWrapper.style.display = 'block';
         mapFrame.style.display = "block";
         mapFrame.src = embedUrl;
 
@@ -121,7 +118,6 @@ function updateMapVisuals(gorev) {
     // --- NORMAL RESİM MODU ---
     else {
         const mapImg = document.getElementById('active-map');
-        mapContentWrapper.style.display = 'block';
         mapImg.style.display = "block";
         mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`;
 
