@@ -147,7 +147,7 @@ main, .operation-layout, .dashboard-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 85vh; /* Yükseklik artırıldı */
+    height: 80vh; /* Yükseklik ayarlandı */
     min-height: 500px; /* Çok küçük ekranlarda harita kaybolmasın */
 }
 
