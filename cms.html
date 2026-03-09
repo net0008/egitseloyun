@@ -131,6 +131,7 @@
             
             if (url.includes("google.com/maps")) {
                 if (url.includes("/edit")) url = url.replace("/edit", "/embed");
+                if (url.includes("/viewer")) url = url.replace("/viewer", "/embed");
                 iframe.src = url;
                 iframe.style.display = "block";
                 img.style.display = "none";

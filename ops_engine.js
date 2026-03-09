@@ -43,6 +43,7 @@ function updateMapVisuals(gorev) {
             // Google Maps kontrolü ve dönüşümü
             if (cmsContent && cmsContent.includes("google.com/maps")) {
                 if (cmsContent.includes("/edit")) cmsContent = cmsContent.replace("/edit", "/embed");
+                if (cmsContent.includes("/viewer")) cmsContent = cmsContent.replace("/viewer", "/embed");
                 
                 mapFrame.src = cmsContent;
                 mapFrame.style.display = "block";
