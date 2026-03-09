@@ -199,6 +199,16 @@ main, .operation-layout, .dashboard-container {
     cursor: pointer;
 }
 
+.zoom-value-display {
+    color: #fff;
+    background: #000;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    min-width: 35px;
+    text-align: center;
+}
+
 /* --- HARİTA GÖZLEM PENCERESİ (VIEWPORT CLIPPING) --- */
 .map-viewport {
     width: 100%;
