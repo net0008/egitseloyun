@@ -315,10 +315,19 @@ if (mapFrameElement) {
 }
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
+    const isInitialLoad = globalMissionData === null;
     globalMissionData = snapshot.val() || {};
     console.log("[CMS]: Oyun içeriği güncellendi.");
     // Veri geldiği anda görseli yenile (Gecikme sorununu çözer)
     updateMapVisuals(currentGorevNo);
+
+    // Eğer bu, sayfa yüklendikten sonra verinin ilk gelişi ise,
+    // brifing muhtemelen geçici bir metinle ("...indiriliyor") gösterilmiştir.
+    // Şimdi gerçek verilerle brifingi yeniden tetikleyerek doğru metnin gösterilmesini sağlıyoruz.
+    if (isInitialLoad && currentGorevNo > 0) {
+        lastGorevNo = 0; // Brifingin yeniden çalışmasını sağlamak için sıfırla
+        triggerBriefing(currentGorevNo);
+    }
 });
 
 // --- 2. TERMİNAL VE HAFIZA YÖNETİMİ ---
