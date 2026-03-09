@@ -22,169 +22,109 @@ let leafletMap = null; // Leaflet harita örneği için global değişken
 let globalMissionData = null; // Veri yüklenene kadar null
 let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
 
+// Harita durumunu sıfırlayan yardımcı fonksiyon
+function resetMapState() {
+    const elements = {
+        mapContentWrapper: document.getElementById('map-content-wrapper'),
+        mapImg: document.getElementById('active-map'),
+        mapFrame: document.getElementById('active-frame'),
+        loader: document.getElementById('map-loader'),
+        scanLine: document.querySelector('.scan-line'),
+        mapOverlayBarrier: document.querySelector('.map-overlay-barrier'),
+        zoomControls: document.querySelector('.zoom-controls'),
+        leafletContainer: document.getElementById('leaflet-map-container'),
+        rawIframe: document.getElementById('raw-iframe-temp')
+    };
+
+    if (elements.leafletMap && leafletMap) { leafletMap.remove(); leafletMap = null; }
+    if (elements.rawIframe) elements.rawIframe.remove();
+
+    Object.values(elements).forEach(el => {
+        if (el) el.style.display = 'none';
+    });
+}
+
 // Görsel Güncelleme Motoru (CMS verisi gelince veya görev değişince çalışır)
 function updateMapVisuals(gorev) {
     // CMS verisi henüz gelmediyse işlem yapma (HTML'de gizli bekler)
     if (globalMissionData === null) return;
-
-    const mapContentWrapper = document.getElementById('map-content-wrapper');
-    const mapImg = document.getElementById('active-map');
-    const mapFrame = document.getElementById('active-frame');
+    
     const loader = document.getElementById('map-loader');
-    const scanLine = document.querySelector('.scan-line');
-    const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
-    const zoomControls = document.querySelector('.zoom-controls');
-    const zoomSlider = document.getElementById('zoom-slider');
-    const mouseSlider = document.getElementById('mouse-zoom-slider');
-    const zoomValueDisplay = document.getElementById('zoom-value');
-    const mouseZoomValueDisplay = document.getElementById('mouse-zoom-value');
+    if (loader) loader.style.display = 'flex';
 
-    // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
-    if (mapContentWrapper && mapImg && mapFrame && loader) {
-        mapContentWrapper.style.display = 'none'; // İçeriği başlangıçta gizle
-        // Yükleme başladığı için loader'ı göster
-        loader.style.display = 'flex';
+    resetMapState(); // Önce tüm harita bileşenlerini temizle/gizle
         
-        if (gorev <= 9) { 
-            // CMS'den gelen veriyi al
-            let cmsContent = globalMissionData[gorev]?.image;
+    if (gorev > 9) {
+        if (loader) loader.style.display = 'none';
+        return; // Görev 10+ için harita alanı boş kalır, briefing fonksiyonu doldurur.
+    }
 
-            // Önceki görevden kalma geçici ham iframe'i temizle
-            const oldRawFrame = document.getElementById('raw-iframe-temp');
-            if (oldRawFrame) oldRawFrame.remove();
+    const cmsContent = globalMissionData[gorev]?.image;
+    const mapContentWrapper = document.getElementById('map-content-wrapper');
 
-            // --- RAW IFRAME MODU ---
-            // Veritabanında tam bir <iframe> etiketi varsa, onu doğrudan işle.
-            if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
-                mapContentWrapper.style.display = 'block';
-                mapImg.style.display = 'none';
-                mapFrame.style.display = 'none'; // Varsayılan iframe'i gizle
-                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
-                const lContainer = document.getElementById('leaflet-map-container');
-                if (lContainer) lContainer.style.display = 'none';
-                if(zoomControls) zoomControls.style.display = 'none';
+    // --- RAW IFRAME MODU ---
+    if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
+        mapContentWrapper.style.display = 'block';
+        const rawDiv = document.createElement('div');
+        rawDiv.id = 'raw-iframe-temp';
+        rawDiv.style.cssText = 'width: 100%; height: 100%;';
+        rawDiv.innerHTML = cmsContent;
+        mapContentWrapper.appendChild(rawDiv);
 
-                // Geçici bir div oluştur ve ham HTML'i içine yerleştir
-                const rawDiv = document.createElement('div');
-                rawDiv.id = 'raw-iframe-temp';
-                rawDiv.style.cssText = 'width: 100%; height: 100%;';
-                rawDiv.innerHTML = cmsContent;
-                mapContentWrapper.appendChild(rawDiv);
+        const injectedIframe = rawDiv.querySelector('iframe');
+        if (injectedIframe) {
+            injectedIframe.style.width = '100%';
+            injectedIframe.style.height = '100%';
+            injectedIframe.style.border = 'none';
+        }
+        if (loader) loader.style.display = 'none';
+    }
+    // --- LEAFLET MODU ---
+    else if (cmsContent && cmsContent.startsWith("leaflet:")) {
+        const coords = cmsContent.replace("leaflet:", "").split(",");
+        if (coords.length === 4) {
+            initLeafletMap(coords);
+        }
+        if (loader) loader.style.display = 'none';
+    }
+    // --- GOOGLE MAPS / UMAP MODU ---
+    else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
+        let embedUrl = cmsContent;
+        if (embedUrl.startsWith('//')) {
+            embedUrl = 'https:' + embedUrl;
+        }
 
-                // İçindeki iframe'in boyutlarını kapsayıcıya uyacak şekilde zorla
-                const injectedIframe = rawDiv.querySelector('iframe');
-                if (injectedIframe) {
-                    injectedIframe.style.width = '100%';
-                    injectedIframe.style.height = '100%';
-                    injectedIframe.style.border = 'none';
-                }
-                loader.style.display = 'none';
-            }
-            // --- LEAFLET MODU (Tam Çerçeve Oturtma) ---
-            // Veritabanı formatı: "leaflet:lat1,lon1,lat2,lon2" (GüneyBatı, KuzeyDoğu)
-            else if (cmsContent && cmsContent.startsWith("leaflet:")) {
-                mapContentWrapper.style.display = 'none'; // Siyah perdeyi kaldır
-                mapFrame.style.display = 'none'; // Iframe gizle
-                mapImg.style.display = 'none';   // Resim gizle
-                loader.style.display = 'none';
-                if(zoomControls) zoomControls.style.display = 'none'; // Leaflet kendi zoom'unu kullanır
-                if(scanLine) scanLine.style.display = 'none'; // Tarama çizgisini gizle
-                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'none'; // Bariyeri gizle
+        const mapFrame = document.getElementById('active-frame');
+        mapContentWrapper.style.display = 'block';
+        mapFrame.style.display = "block";
+        mapFrame.src = embedUrl;
 
-                // Koordinatları ayrıştır
-                const coords = cmsContent.replace("leaflet:", "").split(",");
-                if (coords.length === 4) {
-                    initLeafletMap(coords);
-                }
-            }
-            // --- GOOGLE MAPS MODU ---
-            else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
-                // Eğer Leaflet açıksa kapat
-                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
-                const lContainer = document.getElementById('leaflet-map-container');
-                if (lContainer) lContainer.style.display = 'none';
+        const hideLoader = () => { if (loader) loader.style.display = 'none'; };
+        mapFrame.onload = hideLoader;
+        setTimeout(hideLoader, 5000);
 
-                let embedUrl = cmsContent;
-                
-                // Protokol-göreceli URL'leri düzelt (// ile başlayanlar için)
-                if (embedUrl.startsWith('//')) {
-                    embedUrl = 'https:' + embedUrl;
-                }
-                
-                // Sadece Google Maps linkleri için özel işlem yap
-                if (embedUrl.includes("google.com/maps")) {
-                    // "My Maps" linkleri (/d/)
-                    if (embedUrl.includes("/d/")) {
-                        if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
-                        if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
-                    } 
-                    // Standart harita linkleri (henüz embed değilse)
-                    else if (!embedUrl.includes("/embed")) {
-                        // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
-                        if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
-                            if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
-                            if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
-                            if (!embedUrl.includes("z=")) embedUrl += "&z=16"; // Varsayılan Zoom: 16 (Daha yakın)
-                        }
-                    }
-
-                    // Zoom Slider Ayarı
-                    if (zoomControls && zoomSlider) {
-                        const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
-                        const currentZoom = zMatch ? zMatch[1] : '16'; // Slider varsayılanı da 16 olsun
-                        zoomSlider.value = currentZoom;
-                        if(mouseSlider) mouseSlider.value = currentZoom;
-                        if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
-                        if(mouseZoomValueDisplay) mouseZoomValueDisplay.textContent = `${currentZoom}x`;
-
-                        zoomControls.style.display = 'flex';
-                    }
-                } else {
-                    // Diğer iframe'ler için (uMap vb.) zoom kontrolünü gizle
-                    if(zoomControls) zoomControls.style.display = 'none';
-                }
-                mapContentWrapper.style.display = 'block'; // Harita içeriğini göster
-                
-                // Iframe yüklendiğinde loader'ı gizle (Timeout Korumalı)
-                const hideLoader = () => { loader.style.display = 'none'; };
-                mapFrame.onload = hideLoader;
-                // Güvenlik: 5 saniye içinde yüklenmezse loader'ı zorla kapat
-                setTimeout(hideLoader, 5000);
-
-                mapFrame.src = embedUrl;
-                mapFrame.style.display = "block";
-                mapImg.style.display = "none";
-                
-                if(scanLine) scanLine.style.display = 'block';
-                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'block'; // Bariyeri göster
-            } else {
-                // Normal resim
-                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
-                const lContainer = document.getElementById('leaflet-map-container');
-                if (lContainer) lContainer.style.display = 'none';
-
-                mapContentWrapper.style.display = 'block'; // Resim içeriğini göster
-                // Resim yüklendiğinde loader'ı gizle
-                const hideLoader = () => { loader.style.display = 'none'; };
-                mapImg.onload = hideLoader;
-                setTimeout(hideLoader, 5000); // Resim için de güvenlik zaman aşımı
-
-                mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
-                mapImg.style.display = "block";
-                mapFrame.style.display = "none";
-                
-                if(scanLine) scanLine.style.display = 'none'; // Resimde scan-line ve bariyer olmasın
-                if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'none';
-                if(zoomControls) zoomControls.style.display = 'none'; // Resimde zoom slider gizle
+        if (embedUrl.includes("google.com/maps")) {
+            document.querySelector('.scan-line')?.style.display = 'block';
+            document.querySelector('.map-overlay-barrier')?.style.display = 'block';
+            const zoomControls = document.querySelector('.zoom-controls');
+            if (zoomControls) {
+                zoomControls.style.display = 'flex';
+                const zMatch = embedUrl.match(/z=(\d+)/);
+                const currentZoom = zMatch ? zMatch[1] : '16';
+                updateZoomLevel(currentZoom, false); // Sadece arayüzü güncelle, haritayı yeniden yükleme
             }
         }
-        else { 
-            mapContentWrapper.style.display = 'none'; // Görev 10+ için içeriği gizle
-            mapImg.style.display = "none"; 
-            mapFrame.style.display = "none";
-            loader.style.display = 'none'; // Görev 10+ için loader'ı kapat
-            if(zoomControls) zoomControls.style.display = 'none';
-        }
+    }
+    // --- NORMAL RESİM MODU ---
+    else {
+        const mapImg = document.getElementById('active-map');
+        mapContentWrapper.style.display = 'block';
+        mapImg.style.display = "block";
+        mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`;
+
+        const hideLoader = () => { if (loader) loader.style.display = 'none'; };
+        mapImg.onload = hideLoader;
+        setTimeout(hideLoader, 5000);
     }
 }
 
@@ -254,13 +194,14 @@ const mapFrameElement = document.querySelector('.map-frame');
 let zoomDebounceTimer = null; // Gecikme zamanlayıcısı
 
 // Ortak Zoom Güncelleme Fonksiyonu
-function updateZoomLevel(newVal) {
+function updateZoomLevel(newVal, triggerReload = true) {
     // Değer sınırlarını kontrol et (8-20 arası)
     let val = parseInt(newVal);
     if (val < 8) val = 8;
     if (val > 20) val = 20;
 
     // Arayüzü güncelle (Hemen tepki ver)
+    // Bu elemanlar opsiyonel olabilir, varlıklarını kontrol et
     if (zoomSliderElement) zoomSliderElement.value = val;
     if (mouseSliderElement) mouseSliderElement.value = val;
     if (zoomValueDisplayElement) zoomValueDisplayElement.textContent = `${val}x`;
@@ -268,6 +209,8 @@ function updateZoomLevel(newVal) {
 
     // Iframe'i güncelle (Gecikmeli - Debounce)
     // Eğer kullanıcı hala zoom yapıyorsa önceki işlemi iptal et
+    if (!triggerReload) return;
+
     if (zoomDebounceTimer) clearTimeout(zoomDebounceTimer);
     
     // Kullanıcı durduktan 300ms sonra haritayı yenile
@@ -428,10 +371,9 @@ function triggerBriefing(gorevNo) {
             if (mapFrame) {
                 mapFrame.innerHTML = `
                     <div id="task10-panel" style="padding:20px; background:rgba(0,25,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; gap:12px;">
-                        <h2 style="font-size:1.2rem; border-bottom:1px solid #00ff41; padding-bottom:8px;">📊 PROFİL LABORATUVARI</h2>
+                        <h2 style="font-size:1.2rem; border-bottom:1px solid #00ff41; padding-bottom:8px; margin:0;">📊 PROFİL LABORATUVARI</h2>
                         <button onclick="window.open('https://www.heywhatsthat.com/profiler.html', '_blank')" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:10px; border:none;">PROFİL OLUŞTURMA GÖREVİNİ YAP</button>
                         <button onclick="window.open('assets/video/10_gorev.mp4', '_blank')" style="background:rgba(0,40,0,0.8); color:#00ff41; border:1px solid #00ff41; font-weight:bold; cursor:pointer; padding:10px;">🎥 EĞİTİM VİDEOSUNU İZLE</button>
-                        <div style="border:1px dashed #00ff41; padding:10px; background:rgba(0,0,0,0.5);"><label style="display:block; margin-bottom:5px; font-size:11px;">📤 PROFİL DOSYASI YÜKLE:</label><input type="file" style="color:#fff; font-size:10px; width:100%;"></div>
                         <div style="flex-grow:1; display:flex; flex-direction:column;">
                             <label style="display:block; margin-bottom:5px; font-size:11px;">🤖 YAPAY ZEKA ANALİZ ALANI:</label>
                             <textarea id="ai-coord-input" placeholder="Koordinatları buraya yapıştırın..." style="flex-grow:1; background:#000; color:#00ff41; border:1px solid #00ff41; padding:10px; font-family:monospace; resize:none; font-size:13px;"></textarea>
@@ -535,7 +477,12 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const requireAll = globalMissionData[cur]?.requireAll || false; // Kombinasyon modu açık mı?
 
     // Virgülle ayrılmış cevapları diziye çevir ve temizle
-    const correctAnswers = correctAnswersRaw.split(',').map(a => a.trim().toLocaleLowerCase('tr').replace(/\s/g, ""));
+    const correctAnswers = correctAnswersRaw.split(',')
+        .map(a => a.trim().toLocaleLowerCase('tr').replace(/\s/g, ""))
+        .filter(a => a.length > 0); // Boş cevapları ("") temizle
+
+    // Eğer CMS'de hiç cevap tanımlanmamışsa, boş girişi doğru kabul etme.
+    if (correctAnswers.length === 0) return logBox("HATA: Bu görev için cevap anahtarı bulunamadı.", "warning");
 
     let isCorrect = false;
     

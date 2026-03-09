@@ -131,6 +131,13 @@ main, .operation-layout, .dashboard-container {
     padding: 25px;
 }
 
+/* MOBİL UYUMLULUK: 1024px altındaki ekranlarda tek sütuna geç */
+@media (max-width: 1024px) {
+    .operation-layout {
+        grid-template-columns: 1fr; /* Tek sütunlu yapı */
+    }
+}
+
 .visual-panel, .command-panel {
     border: 1px solid var(--neon-green);
     background: var(--panel-bg);
@@ -159,10 +166,7 @@ main, .operation-layout, .dashboard-container {
 .map-frame img {
     max-width: 100%;
     height: auto;
-    display: block;
-    /* KRİSTAL NETLİK PROTOKOLÜ */
-    filter: none !important; 
-    opacity: 1 !important; 
+    display: block; 
 }
 
 /* Harita iframe'i için eklenen stil */
@@ -237,34 +241,6 @@ main, .operation-layout, .dashboard-container {
     font-size: 0.8rem;
     min-width: 35px;
     text-align: center;
-}
-
-/* --- HARİTA GÖZLEM PENCERESİ (VIEWPORT CLIPPING) --- */
-.map-viewport {
-    width: 100%;
-    height: 100%; /* map-frame'in yüksekliğini kullanır */
-    position: absolute; /* Flexbox içinde yükseklik kaybını önlemek için absolute yapıldı */
-    top: 0;
-    left: 0;
-    overflow: hidden; /* Dışarı taşan menüleri gizler */
-    border: 3px solid #000; /* Siyah çerçeve vurgusu */
-    background: #000;
-    display: none; /* Başlangıçta gizli */
-}
-
-/* Haritayı (Iframe) Kırpma Protokolü */
-.map-viewport iframe {
-    position: absolute;
-    /* Menüleri ve başlığı gizlemek için iframe'i pencereden büyük yapıyoruz */
-    width: 130%; 
-    height: 140%;
-    
-    /* Buradaki değerler haritadaki siyah çerçeveyi merkeze oturtur */
-    top: -20%;  /* Dikeyde tam ortalamak için %20 yukarı çekiyoruz (140% yükseklik için) */
-    left: -15%; /* Yanlardaki boşlukları ve menü butonlarını gizler */
-    
-    border: none;
-    filter: brightness(0.8) contrast(1.2); /* Temaya uyum için renk filtresi */
 }
 
 /* Harita üzerindeki menüleri engellemek için görünmez bariyer */
