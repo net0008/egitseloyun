@@ -191,7 +191,7 @@ main, .operation-layout, .dashboard-container {
     height: 140%;
     
     /* Buradaki değerler haritadaki siyah çerçeveyi merkeze oturtur */
-    top: -65px;  /* Google başlık çubuğunu yukarı iter (gizler) */
+    top: -20%;  /* Dikeyde tam ortalamak için %20 yukarı çekiyoruz (140% yükseklik için) */
     left: -15%; /* Yanlardaki boşlukları ve menü butonlarını gizler */
     
     border: none;
