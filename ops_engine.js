@@ -168,6 +168,12 @@ function initOperation() {
                 // CMS'den gelen veriyi al
                 let cmsContent = globalMissionData[gorev]?.image;
                 
+                // Iframe temizliği (Eğer veritabanında raw iframe kodu varsa)
+                if (cmsContent && cmsContent.startsWith("<iframe")) {
+                    const srcMatch = cmsContent.match(/src="([^"]+)"/);
+                    if (srcMatch && srcMatch[1]) cmsContent = srcMatch[1];
+                }
+
                 // Google Maps kontrolü ve dönüşümü
                 if (cmsContent && cmsContent.includes("google.com/maps")) {
                     // Edit linkini Embed linkine çevir (Otomatik düzeltme)
