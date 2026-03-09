@@ -73,41 +73,51 @@ function updateMapVisuals(gorev) {
                 }
             }
             // --- GOOGLE MAPS MODU ---
-            else if (cmsContent && cmsContent.includes("google.com/maps")) {
+            else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
                 // Eğer Leaflet açıksa kapat
                 if (leafletMap) { leafletMap.remove(); leafletMap = null; }
                 const lContainer = document.getElementById('leaflet-map-container');
                 if (lContainer) lContainer.style.display = 'none';
 
                 let embedUrl = cmsContent;
-
-                // "My Maps" linkleri (/d/)
-                if (embedUrl.includes("/d/")) {
-                    if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
-                    if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
-                } 
-                // Standart harita linkleri (henüz embed değilse)
-                else if (!embedUrl.includes("/embed")) {
-                    // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
-                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
-                        if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
-                        if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
-                        if (!embedUrl.includes("z=")) embedUrl += "&z=16"; // Varsayılan Zoom: 16 (Daha yakın)
+                
+                // Protokol-göreceli URL'leri düzelt (// ile başlayanlar için)
+                if (embedUrl.startsWith('//')) {
+                    embedUrl = 'https:' + embedUrl;
+                }
+                
+                // Sadece Google Maps linkleri için özel işlem yap
+                if (embedUrl.includes("google.com/maps")) {
+                    // "My Maps" linkleri (/d/)
+                    if (embedUrl.includes("/d/")) {
+                        if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
+                        if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
+                    } 
+                    // Standart harita linkleri (henüz embed değilse)
+                    else if (!embedUrl.includes("/embed")) {
+                        // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
+                        if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
+                            if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
+                            if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
+                            if (!embedUrl.includes("z=")) embedUrl += "&z=16"; // Varsayılan Zoom: 16 (Daha yakın)
+                        }
                     }
+
+                    // Zoom Slider Ayarı
+                    if (zoomControls && zoomSlider) {
+                        const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
+                        const currentZoom = zMatch ? zMatch[1] : '16'; // Slider varsayılanı da 16 olsun
+                        zoomSlider.value = currentZoom;
+                        if(mouseSlider) mouseSlider.value = currentZoom;
+                        if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
+                        if(mouseZoomValueDisplay) mouseZoomValueDisplay.textContent = `${currentZoom}x`;
+
+                        zoomControls.style.display = 'flex';
+                    }
+                } else {
+                    // Diğer iframe'ler için (uMap vb.) zoom kontrolünü gizle
+                    if(zoomControls) zoomControls.style.display = 'none';
                 }
-
-                // Zoom Slider Ayarı
-                if (zoomControls && zoomSlider) {
-                    const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
-                    const currentZoom = zMatch ? zMatch[1] : '16'; // Slider varsayılanı da 16 olsun
-                    zoomSlider.value = currentZoom;
-                    if(mouseSlider) mouseSlider.value = currentZoom;
-                    if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
-                    if(mouseZoomValueDisplay) mouseZoomValueDisplay.textContent = `${currentZoom}x`;
-
-                    zoomControls.style.display = 'flex';
-                }
-
                 mapContentWrapper.style.display = 'block'; // Harita içeriğini göster
                 
                 // Iframe yüklendiğinde loader'ı gizle (Timeout Korumalı)
