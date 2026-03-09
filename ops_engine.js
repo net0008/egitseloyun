@@ -393,6 +393,12 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     const snap = await get(scoreRef);
     const data = snap.val();
     const cur = data.gorevNo || 1;
+
+    // Veri güvenliği: CMS verisi henüz yüklenmediyse işlem yapma
+    if (!globalMissionData) {
+        return logBox("SİSTEM: Oyun verileri yükleniyor, lütfen bekleyin...", "warning");
+    }
+
     if (cur >= 10) return logBox("Lütfen analizi görsel paneldeki butonlar ile tamamlayın.", "warning");
 
     const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
