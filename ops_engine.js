@@ -34,11 +34,15 @@ function resetMapState() {
         rawIframe: document.getElementById('raw-iframe-temp')
     };
 
-    if (elements.leafletMap && leafletMap) { leafletMap.remove(); leafletMap = null; }
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
     if (elements.rawIframe) elements.rawIframe.remove();
 
     Object.values(elements).forEach(el => {
-        if (el) el.style.display = 'none';
+        if (el) {
+            el.style.display = 'none';
+            // Iframe src'sini temizle ki yeni yüklemede onload kesin çalışsın
+            if (el.tagName === 'IFRAME') el.removeAttribute('src');
+        }
     });
 }
 
