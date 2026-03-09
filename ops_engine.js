@@ -36,6 +36,7 @@ function updateMapVisuals(gorev) {
     const zoomSlider = document.getElementById('zoom-slider');
     const mouseSlider = document.getElementById('mouse-zoom-slider');
     const zoomValueDisplay = document.getElementById('zoom-value');
+    const mouseZoomValueDisplay = document.getElementById('mouse-zoom-value');
 
     // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
     if (mapContentWrapper && mapImg && mapFrame && loader) {
@@ -79,6 +80,7 @@ function updateMapVisuals(gorev) {
                     zoomSlider.value = currentZoom;
                     if(mouseSlider) mouseSlider.value = currentZoom;
                     if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
+                    if(mouseZoomValueDisplay) mouseZoomValueDisplay.textContent = `${currentZoom}x`;
 
                     zoomControls.style.display = 'flex';
                 }
@@ -128,6 +130,7 @@ function updateMapVisuals(gorev) {
 const zoomSliderElement = document.getElementById('zoom-slider');
 const mouseSliderElement = document.getElementById('mouse-zoom-slider');
 const zoomValueDisplayElement = document.getElementById('zoom-value');
+const mouseZoomValueDisplayElement = document.getElementById('mouse-zoom-value');
 const mapFrameElement = document.querySelector('.map-frame');
 
 // Ortak Zoom Güncelleme Fonksiyonu
@@ -141,6 +144,7 @@ function updateZoomLevel(newVal) {
     if (zoomSliderElement) zoomSliderElement.value = val;
     if (mouseSliderElement) mouseSliderElement.value = val;
     if (zoomValueDisplayElement) zoomValueDisplayElement.textContent = `${val}x`;
+    if (mouseZoomValueDisplayElement) mouseZoomValueDisplayElement.textContent = `${val}x`;
 
     // Iframe'i güncelle
     const iframe = document.getElementById('active-frame');
