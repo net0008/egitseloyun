@@ -48,16 +48,41 @@ function updateMapVisuals(gorev) {
         if (gorev <= 9) { 
             // CMS'den gelen veriyi al
             let cmsContent = globalMissionData[gorev]?.image;
-            
-            // Iframe temizliği (Eğer veritabanında raw iframe kodu varsa)
-            if (cmsContent && cmsContent.startsWith("<iframe")) {
-                const srcMatch = cmsContent.match(/src="([^"]+)"/);
-                if (srcMatch && srcMatch[1]) cmsContent = srcMatch[1];
-            }
 
+            // Önceki görevden kalma geçici ham iframe'i temizle
+            const oldRawFrame = document.getElementById('raw-iframe-temp');
+            if (oldRawFrame) oldRawFrame.remove();
+
+            // --- RAW IFRAME MODU ---
+            // Veritabanında tam bir <iframe> etiketi varsa, onu doğrudan işle.
+            if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
+                mapContentWrapper.style.display = 'block';
+                mapImg.style.display = 'none';
+                mapFrame.style.display = 'none'; // Varsayılan iframe'i gizle
+                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+                const lContainer = document.getElementById('leaflet-map-container');
+                if (lContainer) lContainer.style.display = 'none';
+                if(zoomControls) zoomControls.style.display = 'none';
+
+                // Geçici bir div oluştur ve ham HTML'i içine yerleştir
+                const rawDiv = document.createElement('div');
+                rawDiv.id = 'raw-iframe-temp';
+                rawDiv.style.cssText = 'width: 100%; height: 100%;';
+                rawDiv.innerHTML = cmsContent;
+                mapContentWrapper.appendChild(rawDiv);
+
+                // İçindeki iframe'in boyutlarını kapsayıcıya uyacak şekilde zorla
+                const injectedIframe = rawDiv.querySelector('iframe');
+                if (injectedIframe) {
+                    injectedIframe.style.width = '100%';
+                    injectedIframe.style.height = '100%';
+                    injectedIframe.style.border = 'none';
+                }
+                loader.style.display = 'none';
+            }
             // --- LEAFLET MODU (Tam Çerçeve Oturtma) ---
             // Veritabanı formatı: "leaflet:lat1,lon1,lat2,lon2" (GüneyBatı, KuzeyDoğu)
-            if (cmsContent && cmsContent.startsWith("leaflet:")) {
+            else if (cmsContent && cmsContent.startsWith("leaflet:")) {
                 mapContentWrapper.style.display = 'none'; // Siyah perdeyi kaldır
                 mapFrame.style.display = 'none'; // Iframe gizle
                 mapImg.style.display = 'none';   // Resim gizle
