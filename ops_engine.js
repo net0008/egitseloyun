@@ -68,7 +68,11 @@ function updateMapVisuals(gorev) {
         const rawDiv = document.createElement('div');
         rawDiv.id = 'raw-iframe-temp';
         rawDiv.style.cssText = 'width: 100%; height: 100%;';
-        rawDiv.innerHTML = cmsContent;
+
+        // Protokol-göreceli URL'leri düzelt (src="//" -> src="https://")
+        // Bu, yerel dosya sisteminde (file://) çalışırken haritanın yüklenmesini sağlar.
+        const fixedContent = cmsContent.replace(/src="\/\//g, 'src="https://');
+        rawDiv.innerHTML = fixedContent;
         mapContentWrapper.appendChild(rawDiv);
 
         const injectedIframe = rawDiv.querySelector('iframe');
