@@ -18,11 +18,14 @@ const terminal = document.getElementById('terminal-output');
 
 // --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
 // Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
-let globalMissionData = {};
+let globalMissionData = null; // Veri yüklenene kadar null
 let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
 
 // Görsel Güncelleme Motoru (CMS verisi gelince veya görev değişince çalışır)
 function updateMapVisuals(gorev) {
+    // CMS verisi henüz gelmediyse işlem yapma (HTML'de gizli bekler)
+    if (globalMissionData === null) return;
+
     const mapImg = document.getElementById('active-map');
     const mapFrame = document.getElementById('active-frame');
 
@@ -59,12 +62,10 @@ function updateMapVisuals(gorev) {
 }
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
-    if (snapshot.exists()) {
-        globalMissionData = snapshot.val();
-        console.log("[CMS]: Oyun içeriği güncellendi.");
-        // Veri geldiği anda görseli yenile (Gecikme sorununu çözer)
-        updateMapVisuals(currentGorevNo);
-    }
+    globalMissionData = snapshot.val() || {};
+    console.log("[CMS]: Oyun içeriği güncellendi.");
+    // Veri geldiği anda görseli yenile (Gecikme sorununu çözer)
+    updateMapVisuals(currentGorevNo);
 });
 
 // --- 2. TERMİNAL VE HAFIZA YÖNETİMİ ---
