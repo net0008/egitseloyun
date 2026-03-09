@@ -32,6 +32,8 @@ function updateMapVisuals(gorev) {
     const loader = document.getElementById('map-loader');
     const scanLine = document.querySelector('.scan-line');
     const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
+    const zoomControls = document.querySelector('.zoom-controls');
+    const zoomSlider = document.getElementById('zoom-slider');
 
     // Ana bileşenler varsa çalış (scanLine ve barrier opsiyonel olabilir)
     if (mapContentWrapper && mapImg && mapFrame && loader) {
@@ -68,6 +70,13 @@ function updateMapVisuals(gorev) {
                     }
                 }
 
+                // Zoom Slider Ayarı
+                if (zoomControls && zoomSlider) {
+                    const zMatch = embedUrl.match(/z=(\d+)/);
+                    if (zMatch) zoomSlider.value = zMatch[1];
+                    zoomControls.style.display = 'flex';
+                }
+
                 mapContentWrapper.style.display = 'block'; // Harita içeriğini göster
                 
                 // Iframe yüklendiğinde loader'ı gizle (Timeout Korumalı)
@@ -96,6 +105,7 @@ function updateMapVisuals(gorev) {
                 
                 if(scanLine) scanLine.style.display = 'none'; // Resimde scan-line ve bariyer olmasın
                 if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'none';
+                if(zoomControls) zoomControls.style.display = 'none'; // Resimde zoom slider gizle
             }
         }
         else { 
@@ -103,8 +113,28 @@ function updateMapVisuals(gorev) {
             mapImg.style.display = "none"; 
             mapFrame.style.display = "none";
             loader.style.display = 'none'; // Görev 10+ için loader'ı kapat
+            if(zoomControls) zoomControls.style.display = 'none';
         }
     }
+}
+
+// Zoom Slider Olay Dinleyicisi
+const zoomSliderElement = document.getElementById('zoom-slider');
+if (zoomSliderElement) {
+    zoomSliderElement.addEventListener('change', (e) => {
+        const newVal = e.target.value;
+        const iframe = document.getElementById('active-frame');
+        if (iframe && iframe.src && iframe.style.display !== 'none') {
+            let url = iframe.src;
+            // URL içindeki z parametresini güncelle veya ekle
+            if (url.includes('z=')) {
+                url = url.replace(/z=\d+/, `z=${newVal}`);
+            } else {
+                url += `&z=${newVal}`;
+            }
+            iframe.src = url; // Iframe'i yeni zoom ile yeniden yükle
+        }
+    });
 }
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
