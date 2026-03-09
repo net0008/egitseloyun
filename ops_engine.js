@@ -15,6 +15,7 @@ const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
+let leafletMap = null; // Leaflet harita örneği için global değişken
 
 // --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
 // Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
@@ -54,8 +55,28 @@ function updateMapVisuals(gorev) {
                 if (srcMatch && srcMatch[1]) cmsContent = srcMatch[1];
             }
 
-            // Google Maps kontrolü ve dönüşümü
-            if (cmsContent && cmsContent.includes("google.com/maps")) {
+            // --- LEAFLET MODU (Tam Çerçeve Oturtma) ---
+            // Veritabanı formatı: "leaflet:lat1,lon1,lat2,lon2" (GüneyBatı, KuzeyDoğu)
+            if (cmsContent && cmsContent.startsWith("leaflet:")) {
+                mapContentWrapper.style.display = 'block';
+                mapFrame.style.display = 'none'; // Iframe gizle
+                mapImg.style.display = 'none';   // Resim gizle
+                loader.style.display = 'none';
+                if(zoomControls) zoomControls.style.display = 'none'; // Leaflet kendi zoom'unu kullanır
+
+                // Koordinatları ayrıştır
+                const coords = cmsContent.replace("leaflet:", "").split(",");
+                if (coords.length === 4) {
+                    initLeafletMap(coords);
+                }
+            }
+            // --- GOOGLE MAPS MODU ---
+            else if (cmsContent && cmsContent.includes("google.com/maps")) {
+                // Eğer Leaflet açıksa kapat
+                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+                const lContainer = document.getElementById('leaflet-map-container');
+                if (lContainer) lContainer.style.display = 'none';
+
                 let embedUrl = cmsContent;
 
                 // "My Maps" linkleri (/d/)
@@ -101,6 +122,10 @@ function updateMapVisuals(gorev) {
                 if(mapOverlayBarrier) mapOverlayBarrier.style.display = 'block'; // Bariyeri göster
             } else {
                 // Normal resim
+                if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+                const lContainer = document.getElementById('leaflet-map-container');
+                if (lContainer) lContainer.style.display = 'none';
+
                 mapContentWrapper.style.display = 'block'; // Resim içeriğini göster
                 // Resim yüklendiğinde loader'ı gizle
                 const hideLoader = () => { loader.style.display = 'none'; };
@@ -123,6 +148,62 @@ function updateMapVisuals(gorev) {
             loader.style.display = 'none'; // Görev 10+ için loader'ı kapat
             if(zoomControls) zoomControls.style.display = 'none';
         }
+    }
+}
+
+// --- LEAFLET HARİTA BAŞLATICI ---
+function initLeafletMap(coords) {
+    // Harita konteynerini bul veya oluştur
+    let container = document.getElementById('leaflet-map-container');
+    if (!container) {
+        const frame = document.querySelector('.map-frame');
+        container = document.createElement('div');
+        container.id = 'leaflet-map-container';
+        frame.appendChild(container);
+    }
+    container.style.display = 'block';
+
+    // Harita zaten varsa temizle (tekrar render sorunu olmaması için)
+    if (leafletMap) leafletMap.remove();
+
+    // Haritayı başlat
+    leafletMap = L.map('leaflet-map-container', {
+        zoomControl: false, // Özel zoom butonları kullanıyoruz
+        attributionControl: false
+    });
+
+    // OpenStreetMap Katmanı (Veya Google Hibrit eklenebilir)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(leafletMap);
+
+    // --- FIT BOUNDS: Haritayı verilen koordinatlara tam oturt ---
+    // coords: [lat1, lon1, lat2, lon2] -> [[lat1, lon1], [lat2, lon2]]
+    const southWest = L.latLng(parseFloat(coords[0]), parseFloat(coords[1]));
+    const northEast = L.latLng(parseFloat(coords[2]), parseFloat(coords[3]));
+    const bounds = L.latLngBounds(southWest, northEast);
+
+    leafletMap.fitBounds(bounds);
+
+    // --- ADMIN ARAÇLARI: Çizim Yaparak Koordinat Alma ---
+    // Sadece konsolda görünür, oyuncuyu etkilemez.
+    if (typeof L.Control.Draw !== 'undefined') {
+        const drawControl = new L.Control.Draw({
+            draw: {
+                polygon: false, marker: false, circle: false, circlemarker: false, polyline: false,
+                rectangle: { shapeOptions: { color: '#39FF14' } } // Neon Yeşil Çerçeve
+            },
+            edit: false
+        });
+        leafletMap.addControl(drawControl);
+
+        leafletMap.on('draw:created', function (e) {
+            const layer = e.layer;
+            const b = layer.getBounds();
+            // Veritabanı formatını konsola yaz
+            console.log(`%c[VERİTABANI KODU]: leaflet:${b.getSouthWest().lat},${b.getSouthWest().lng},${b.getNorthEast().lat},${b.getNorthEast().lng}`, "color: #39FF14; font-size: 16px; background: #000; padding: 10px;");
+            leafletMap.addLayer(layer);
+        });
     }
 }
 
