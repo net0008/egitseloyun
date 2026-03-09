@@ -26,11 +26,15 @@ function updateMapVisuals(gorev) {
     // CMS verisi henüz gelmediyse işlem yapma (HTML'de gizli bekler)
     if (globalMissionData === null) return;
 
+    const mapContentWrapper = document.getElementById('map-content-wrapper');
     const mapImg = document.getElementById('active-map');
     const mapFrame = document.getElementById('active-frame');
     const loader = document.getElementById('map-loader');
+    const scanLine = document.querySelector('.scan-line');
+    const mapOverlayBarrier = document.querySelector('.map-overlay-barrier');
 
-    if (mapImg && mapFrame && loader) {
+    if (mapContentWrapper && mapImg && mapFrame && loader && scanLine && mapOverlayBarrier) {
+        mapContentWrapper.style.display = 'none'; // İçeriği başlangıçta gizle
         // Yükleme başladığı için loader'ı göster
         loader.style.display = 'flex';
         
@@ -61,21 +65,28 @@ function updateMapVisuals(gorev) {
                     }
                 }
 
+                mapContentWrapper.style.display = 'block'; // Harita içeriğini göster
                 // Iframe yüklendiğinde loader'ı gizle
                 mapFrame.onload = () => { loader.style.display = 'none'; };
                 mapFrame.src = embedUrl;
                 mapFrame.style.display = "block";
                 mapImg.style.display = "none";
+                scanLine.style.display = 'block';
+                mapOverlayBarrier.style.display = 'block'; // Bariyeri göster
             } else {
                 // Normal resim
+                mapContentWrapper.style.display = 'block'; // Resim içeriğini göster
                 // Resim yüklendiğinde loader'ı gizle
                 mapImg.onload = () => { loader.style.display = 'none'; };
                 mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
                 mapImg.style.display = "block";
                 mapFrame.style.display = "none";
+                scanLine.style.display = 'none'; // Resimde scan-line ve bariyer olmasın
+                mapOverlayBarrier.style.display = 'none';
             }
         }
         else { 
+            mapContentWrapper.style.display = 'none'; // Görev 10+ için içeriği gizle
             mapImg.style.display = "none"; 
             mapFrame.style.display = "none";
             loader.style.display = 'none'; // Görev 10+ için loader'ı kapat

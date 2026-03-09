@@ -170,6 +170,44 @@ main, .operation-layout, .dashboard-container {
     filter: hue-rotate(10deg); /* Temaya uyum için renk filtresi */
 }
 
+/* --- HARİTA GÖZLEM PENCERESİ (VIEWPORT CLIPPING) --- */
+.map-viewport {
+    width: 100%;
+    height: 100%; /* map-frame'in yüksekliğini kullanır */
+    position: relative;
+    overflow: hidden; /* Dışarı taşan menüleri gizler */
+    border: 3px solid #000; /* Siyah çerçeve vurgusu */
+    background: #000;
+    display: none; /* Başlangıçta gizli */
+}
+
+/* Haritayı (Iframe) Kırpma Protokolü */
+.map-viewport iframe {
+    position: absolute;
+    /* Menüleri ve başlığı gizlemek için iframe'i pencereden büyük yapıyoruz */
+    width: 130%; 
+    height: 140%;
+    
+    /* Buradaki değerler haritadaki siyah çerçeveyi merkeze oturtur */
+    top: -65px;  /* Google başlık çubuğunu yukarı iter (gizler) */
+    left: -15%; /* Yanlardaki boşlukları ve menü butonlarını gizler */
+    
+    border: none;
+    filter: brightness(0.8) contrast(1.2); /* Temaya uyum için renk filtresi */
+}
+
+/* Harita üzerindeki menüleri engellemek için görünmez bariyer */
+.map-overlay-barrier {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 18; /* Haritanın üzerinde, scan-line'ın altında */
+    pointer-events: none; /* Tıklamaları haritaya geçirir */
+    /* background: rgba(255,0,0,0.1); /* Hata ayıklama için */ */
+}
+
 /* --- HARİTA YÜKLEME EKRANI (LOADER) --- */
 .map-loader {
     position: absolute;
@@ -358,7 +396,7 @@ th {
     opacity: 0.4;
     position: absolute;
     top: 0;
-    z-index: 10;
+    z-index: 19; /* Haritanın ve bariyerin üzerinde */
     animation: scan 6s linear infinite;
     pointer-events: none;
 }

@@ -35,9 +35,12 @@
                     <div class="loader-spinner"></div>
                     <div class="loader-text">UYDU BAĞLANTISI KURULUYOR...</div>
                 </div>
-                <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
-                <iframe id="active-frame" style="display:none;" allowfullscreen></iframe>
-                <div class="scan-line"></div>
+                <div id="map-content-wrapper" class="map-viewport">
+                    <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
+                    <iframe id="active-frame" allowfullscreen></iframe>
+                    <div class="scan-line"></div>
+                    <div class="map-overlay-barrier"></div>
+                </div>
             </div>
             
             <ul id="team-members-list" class="team-roster"></ul>
