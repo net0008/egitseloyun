@@ -61,8 +61,9 @@ function updateMapVisuals(gorev) {
                 // Standart harita linkleri (henüz embed değilse)
                 else if (!embedUrl.includes("/embed")) {
                     // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
-                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q=")) && !embedUrl.includes("output=")) {
-                        embedUrl += "&output=embed";
+                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
+                        if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
+                        if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
                     }
                 }
 
