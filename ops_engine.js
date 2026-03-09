@@ -67,14 +67,14 @@ function updateMapVisuals(gorev) {
                     if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
                         if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
                         if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
-                        if (!embedUrl.includes("z=")) embedUrl += "&z=18"; // Varsayılan Zoom Ayarı (Buradan değiştirebilirsiniz)
+                        if (!embedUrl.includes("z=")) embedUrl += "&z=10"; // Varsayılan Zoom Ayarı (Buradan değiştirebilirsiniz)
                     }
                 }
 
                 // Zoom Slider Ayarı
                 if (zoomControls && zoomSlider) {
                     const zMatch = embedUrl.match(/z=(\d+)/); // URL'den z değerini bul
-                    const currentZoom = zMatch ? zMatch[1] : '18'; // Bulamazsan varsayılan 18
+                    const currentZoom = zMatch ? zMatch[1] : '10'; // Bulamazsan varsayılan 10
                     zoomSlider.value = currentZoom;
                     if(zoomValueDisplay) zoomValueDisplay.textContent = `${currentZoom}x`;
 
