@@ -28,8 +28,12 @@ function updateMapVisuals(gorev) {
 
     const mapImg = document.getElementById('active-map');
     const mapFrame = document.getElementById('active-frame');
+    const loader = document.getElementById('map-loader');
 
-    if (mapImg && mapFrame) {
+    if (mapImg && mapFrame && loader) {
+        // Yükleme başladığı için loader'ı göster
+        loader.style.display = 'flex';
+        
         if (gorev <= 9) { 
             // CMS'den gelen veriyi al
             let cmsContent = globalMissionData[gorev]?.image;
@@ -57,11 +61,15 @@ function updateMapVisuals(gorev) {
                     }
                 }
 
+                // Iframe yüklendiğinde loader'ı gizle
+                mapFrame.onload = () => { loader.style.display = 'none'; };
                 mapFrame.src = embedUrl;
                 mapFrame.style.display = "block";
                 mapImg.style.display = "none";
             } else {
                 // Normal resim
+                // Resim yüklendiğinde loader'ı gizle
+                mapImg.onload = () => { loader.style.display = 'none'; };
                 mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`; 
                 mapImg.style.display = "block";
                 mapFrame.style.display = "none";
@@ -70,6 +78,7 @@ function updateMapVisuals(gorev) {
         else { 
             mapImg.style.display = "none"; 
             mapFrame.style.display = "none";
+            loader.style.display = 'none'; // Görev 10+ için loader'ı kapat
         }
     }
 }
