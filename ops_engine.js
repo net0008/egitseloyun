@@ -58,7 +58,7 @@ function updateMapVisuals(gorev) {
             // --- LEAFLET MODU (Tam Çerçeve Oturtma) ---
             // Veritabanı formatı: "leaflet:lat1,lon1,lat2,lon2" (GüneyBatı, KuzeyDoğu)
             if (cmsContent && cmsContent.startsWith("leaflet:")) {
-                mapContentWrapper.style.display = 'block';
+                mapContentWrapper.style.display = 'none'; // Siyah perdeyi kaldır
                 mapFrame.style.display = 'none'; // Iframe gizle
                 mapImg.style.display = 'none';   // Resim gizle
                 loader.style.display = 'none';
