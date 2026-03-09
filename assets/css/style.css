@@ -174,7 +174,9 @@ main, .operation-layout, .dashboard-container {
 .map-viewport {
     width: 100%;
     height: 100%; /* map-frame'in yüksekliğini kullanır */
-    position: relative;
+    position: absolute; /* Flexbox içinde yükseklik kaybını önlemek için absolute yapıldı */
+    top: 0;
+    left: 0;
     overflow: hidden; /* Dışarı taşan menüleri gizler */
     border: 3px solid #000; /* Siyah çerçeve vurgusu */
     background: #000;
