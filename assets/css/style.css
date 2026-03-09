@@ -147,7 +147,7 @@ main, .operation-layout, .dashboard-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 400px;
+    min-height: 600px; /* Harita yüksekliği artırıldı */
 }
 
 .map-frame img {
