@@ -126,7 +126,7 @@ main, .operation-layout, .dashboard-container {
 /* --- 4. OPERASYON VE PANEL DÜZENLERİ --- */
 .operation-layout {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 500px; /* Sağ panel genişletildi, harita alanı daraldı */
     gap: 25px;
     padding: 25px;
 }
@@ -147,7 +147,7 @@ main, .operation-layout, .dashboard-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 600px; /* Harita yüksekliği artırıldı */
+    min-height: 800px; /* Harita yüksekliği artırıldı */
 }
 
 .map-frame img {
