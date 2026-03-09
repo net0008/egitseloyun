@@ -64,6 +64,7 @@ function updateMapVisuals(gorev) {
                     if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
                         if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
                         if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
+                        if (!embedUrl.includes("z=")) embedUrl += "&z=18"; // Varsayılan Zoom Ayarı (Buradan değiştirebilirsiniz)
                     }
                 }
 
