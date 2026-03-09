@@ -50,6 +50,9 @@ function updateMapVisuals(gorev) {
     const loader = document.getElementById('map-loader');
     if (loader) loader.style.display = 'flex';
 
+    const mapContentWrapper = document.getElementById('map-content-wrapper');
+    if (mapContentWrapper) mapContentWrapper.style.display = 'block';
+
     resetMapState(); // Önce tüm harita bileşenlerini temizle/gizle
         
     if (gorev > 9) {
@@ -58,7 +61,6 @@ function updateMapVisuals(gorev) {
     }
 
     const cmsContent = globalMissionData[gorev]?.image;
-    const mapContentWrapper = document.getElementById('map-content-wrapper');
 
     // --- RAW IFRAME MODU ---
     if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
@@ -97,10 +99,10 @@ function updateMapVisuals(gorev) {
 
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
-        mapFrame.src = embedUrl;
 
         const hideLoader = () => { if (loader) loader.style.display = 'none'; };
         mapFrame.onload = hideLoader;
+        mapFrame.src = embedUrl; // Önce listener, sonra kaynak (Race condition önlemi)
         setTimeout(hideLoader, 5000);
 
         if (embedUrl.includes("google.com/maps")) {
