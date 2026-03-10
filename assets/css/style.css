@@ -131,13 +131,6 @@ main, .operation-layout, .dashboard-container {
     padding: 25px;
 }
 
-/* MOBİL UYUMLULUK: 1024px altındaki ekranlarda tek sütuna geç */
-@media (max-width: 1024px) {
-    .operation-layout {
-        grid-template-columns: 1fr; /* Tek sütunlu yapı */
-    }
-}
-
 .visual-panel, .command-panel {
     border: 1px solid var(--neon-green);
     background: var(--panel-bg);
@@ -259,7 +252,7 @@ main, .operation-layout, .dashboard-container {
     height: 100%;
     z-index: 18; /* Haritanın üzerinde, scan-line'ın altında */
     pointer-events: none; /* Tıklamaları haritaya geçirir */
-    /* background: rgba(255,0,0,0.1); /* Hata ayıklama için */ */
+    /* background: rgba(255,0,0,0.1); /* Hata ayıklama için */
 }
 
 /* --- HARİTA YÜKLEME EKRANI (LOADER) --- */
@@ -504,4 +497,11 @@ th {
     0% { transform: scale(1); text-shadow: 0 0 0px var(--neon-green); }
     50% { transform: scale(1.2); text-shadow: 0 0 20px var(--neon-green), 0 0 40px #fff; }
     100% { transform: scale(1); text-shadow: 0 0 0px var(--neon-green); }
+}
+
+/* MOBİL UYUMLULUK: 1024px altındaki ekranlarda tek sütuna geç (DOĞRU YERE TAŞINDI) */
+@media (max-width: 1024px) {
+    .operation-layout {
+        grid-template-columns: 1fr; /* Tek sütunlu yapı */
+    }
 }
