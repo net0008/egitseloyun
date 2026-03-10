@@ -128,6 +128,13 @@ function updateMapVisuals(gorevNo) {
         return;
     }
 
+    // Görsel başlığını güncelle
+    const missionTitle = globalMissionData[gorevNo]?.title || `GÖREV ${gorevNo} GÖRSELİ`;
+    const titleBox = document.getElementById('visual-title');
+    if (titleBox) {
+        titleBox.textContent = missionTitle;
+    }
+
     const cmsContent = globalMissionData[gorevNo]?.image || '';
     const parsedVisual = parseMissionVisual(cmsContent);
 
@@ -135,6 +142,9 @@ function updateMapVisuals(gorevNo) {
         resetMapState(false);
         lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
+        if (titleBox) {
+            titleBox.textContent = 'GÖRSEL ANALİZİ BEKLENİYOR...';
+        }
         if (parsedVisual.type === 'invalid') {
             logBox('HATA: İframe kodu geçersiz. Lütfen src içeren doğru iframe kaydedin.', 'warning');
         }

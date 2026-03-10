@@ -163,6 +163,10 @@
                             <textarea id="h-${i}">${mission.hints || ''}</textarea>
                         </div>
                         <div class="form-group">
+                            <label for="title-${i}">Görsel Başlığı</label>
+                            <input type="text" id="title-${i}" value="${mission.title || ''}" placeholder="Harita veya resim için başlık girin...">
+                        </div>
+                        <div class="form-group">
                             <label for="img-${i}">Görev Görseli (Resim URL'i veya iframe kodu)</label>
                             <textarea id="img-${i}" oninput="updatePreview(${i})">${currentImg}</textarea>
                         </div>
@@ -226,6 +230,7 @@
                     const qEl = document.getElementById(`q-${i}`);
                     const aEl = document.getElementById(`a-${i}`);
                     const hEl = document.getElementById(`h-${i}`);
+                    const titleEl = document.getElementById(`title-${i}`);
                     const imgEl = document.getElementById(`img-${i}`);
                     const modeEl = document.getElementById(`mode-${i}`);
 
@@ -239,6 +244,7 @@
                         question: qEl.value.trim(),
                         answers: aEl.value.trim(),
                         hints: hEl.value.trim(),
+                        title: titleEl.value.trim(),
                         image: imgVal,
                         requireAll: modeEl.checked,
                     };
