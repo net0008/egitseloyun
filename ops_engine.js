@@ -95,28 +95,41 @@ function updateMapVisuals(gorev) {
         if (loader) loader.style.display = 'none';
     }
     // --- GOOGLE MAPS / UMAP MODU ---
-    else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
+    else if (cmsContent && ((cmsContent.includes("google.") && cmsContent.includes("/maps")) || cmsContent.includes("maps.google") || cmsContent.includes("umap.openstreetmap.fr"))) {
         let embedUrl = cmsContent.trim();
 
-        // CMS'deki dönüşüm mantığını buraya da ekliyoruz (Raw Link Desteği)
-        if (embedUrl.includes("google.com/maps")) {
-            // "My Maps" linkleri (/d/)
-            if (embedUrl.includes("/d/")) {
-                if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
-                if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
-            }
-            // Standart harita linkleri (henüz embed değilse)
-            else if (!embedUrl.includes("/embed") && (embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
-                if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
-                if (!embedUrl.includes("t=")) embedUrl += "&t=k"; 
-            }
-        }
-
+        // URL Normalizasyonu (CMS ile Eşitlendi)
         if (embedUrl.startsWith('//')) {
             embedUrl = 'https:' + embedUrl;
         }
+
+        if (embedUrl.includes("google.") || embedUrl.includes("maps.google")) {
+            // "My Maps" linkleri (/d/)
+            if (embedUrl.includes("/d/")) {
+                embedUrl = embedUrl.replace(/\/edit(\?|$)/, '/embed$1').replace(/\/viewer(\?|$)/, '/embed$1');
+            }
+            // Standart harita linkleri (henüz embed değilse)
+            else {
+                try {
+                    const urlObj = new URL(embedUrl);
+                    if (urlObj.searchParams.has('q') && !embedUrl.includes('/embed')) {
+                        if (!urlObj.searchParams.has('output')) urlObj.searchParams.set('output', 'embed');
+                        if (!urlObj.searchParams.has('t')) urlObj.searchParams.set('t', 'k');
+                        if (!urlObj.searchParams.has('z')) urlObj.searchParams.set('z', '11');
+                        embedUrl = urlObj.toString();
+                    }
+                } catch (e) {
+                    // URL API başarısız olursa manuel fallback
+                    if (!embedUrl.includes("/embed") && (embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
+                        if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
+                        if (!embedUrl.includes("t=")) embedUrl += "&t=k";
+                    }
+                }
+            }
+        }
+
         // HTTP linklerini HTTPS'e zorla (Mixed Content hatasını önlemek için)
-        else if (embedUrl.startsWith('http:')) {
+        if (embedUrl.startsWith('http:')) {
             embedUrl = embedUrl.replace('http:', 'https:');
         }
 
@@ -134,7 +147,7 @@ function updateMapVisuals(gorev) {
             if (loader) loader.style.display = 'none';
         }
 
-        if (embedUrl.includes("google.com/maps")) {
+        if (embedUrl.includes("google.") || embedUrl.includes("maps.google")) {
             document.querySelector('.scan-line')?.style.display = 'block';
             document.querySelector('.map-overlay-barrier')?.style.display = 'block';
             const zoomControls = document.querySelector('.zoom-controls');

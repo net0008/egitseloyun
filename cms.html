@@ -129,21 +129,31 @@
                 if (srcMatch && srcMatch[1]) url = srcMatch[1];
             }
             
-            if (url.includes("google.com/maps") || url.includes("umap.openstreetmap.fr")) {
+            // URL Normalizasyonu (Operasyon Ekranı ile Eşitlendi)
+            if (url.startsWith('//')) url = 'https:' + url;
+
+            const isGoogle = (url.includes("google.") && url.includes("/maps")) || url.includes("maps.google");
+            const isUmap = url.includes("umap.openstreetmap.fr");
+
+            if (isGoogle || isUmap) {
                 let embedUrl = url;
 
-                // "My Maps" linkleri (/d/)
-                if (embedUrl.includes("/d/")) {
-                    if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
-                    if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
-                }
-                // Standart harita linkleri (henüz embed değilse)
-                else if (!embedUrl.includes("/embed")) {
-                    // Eğer 'q' parametresi varsa, bu bir arama linkidir. 'output=embed' ekle.
-                    if ((embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
-                        if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
-                        if (!embedUrl.includes("t=")) embedUrl += "&t=k"; // Otomatik Uydu Modu
-                        if (!embedUrl.includes("z=")) embedUrl += "&z=11"; // Varsayılan Zoom Ayarı
+                if (isGoogle) {
+                    // "My Maps" linkleri (/d/)
+                    if (embedUrl.includes("/d/")) {
+                        embedUrl = embedUrl.replace(/\/edit(\?|$)/, '/embed$1').replace(/\/viewer(\?|$)/, '/embed$1');
+                    }
+                    // Standart harita linkleri (henüz embed değilse)
+                    else {
+                        try {
+                            const urlObj = new URL(embedUrl);
+                            if (urlObj.searchParams.has('q') && !embedUrl.includes('/embed')) {
+                                if (!urlObj.searchParams.has('output')) urlObj.searchParams.set('output', 'embed');
+                                if (!urlObj.searchParams.has('t')) urlObj.searchParams.set('t', 'k'); // Otomatik Uydu Modu
+                                if (!urlObj.searchParams.has('z')) urlObj.searchParams.set('z', '11'); // Varsayılan Zoom Ayarı
+                                embedUrl = urlObj.toString();
+                            }
+                        } catch (e) { console.warn("URL Parse Hatası", e); }
                     }
                 }
 
