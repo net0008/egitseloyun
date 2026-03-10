@@ -192,10 +192,14 @@ function updateMapVisuals(gorev) {
     }
     // --- GOOGLE MAPS / UMAP MODU ---
     else if (cmsContent && (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent))) {
-        const embedUrl = normalizeMapUrl(cmsContent);
+        let embedUrl = normalizeMapUrl(cmsContent);
+
+        // HTTPS Zorlaması (Mixed Content hatasını önlemek için)
+        if (embedUrl.startsWith("http:")) embedUrl = embedUrl.replace("http:", "https:");
 
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
+        mapFrame.style.zIndex = "15"; // Haritanın görünür olduğundan emin ol (Siyah ekranın üstüne çıkar)
 
         // URL değiştiyse yükle, aynıysa sadece loader'ı kapat (Sonsuz döngü önlemi)
         if (mapFrame.src !== embedUrl) {

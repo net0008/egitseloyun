@@ -222,7 +222,7 @@
 
                 // Eğer kullanıcı tam bir <iframe> kodu yapıştırdıysa, içinden sadece src linkini al.
                 if (imgVal.startsWith("<iframe")) {
-                    const srcMatch = imgVal.match(/src="([^"]+)"/);
+                    const srcMatch = imgVal.match(/src=["']([^"']+)["']/);
                     if (srcMatch && srcMatch[1]) imgVal = srcMatch[1];
                 }
 
