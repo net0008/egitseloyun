@@ -97,6 +97,21 @@ function updateMapVisuals(gorev) {
     // --- GOOGLE MAPS / UMAP MODU ---
     else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
         let embedUrl = cmsContent;
+
+        // CMS'deki dönüşüm mantığını buraya da ekliyoruz (Raw Link Desteği)
+        if (embedUrl.includes("google.com/maps")) {
+            // "My Maps" linkleri (/d/)
+            if (embedUrl.includes("/d/")) {
+                if (embedUrl.includes("/edit")) embedUrl = embedUrl.replace("/edit", "/embed");
+                if (embedUrl.includes("/viewer")) embedUrl = embedUrl.replace("/viewer", "/embed");
+            }
+            // Standart harita linkleri (henüz embed değilse)
+            else if (!embedUrl.includes("/embed") && (embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
+                if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
+                if (!embedUrl.includes("t=")) embedUrl += "&t=k"; 
+            }
+        }
+
         if (embedUrl.startsWith('//')) {
             embedUrl = 'https:' + embedUrl;
         }
