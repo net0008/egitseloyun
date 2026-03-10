@@ -63,14 +63,14 @@
         });
 
         function renderForms(data) {
-            missionContainer.innerHTML = "";
+            let allMissionsHTML = "";
             for (let i = 1; i <= 10; i++) {
                 const mission = data[i] || {};
                 // Varsayılan resim yolu
                 const defaultImg = `assets/img/soru${i}.jpg`;
                 const currentImg = mission.image || defaultImg;
 
-                const html = `
+                allMissionsHTML += `
                     <div class="mission-card">
                         <div class="card-header">
                             <h3>GÖREV ${i}</h3>
@@ -113,7 +113,14 @@
                         </div>
                     </div>
                 `;
-                missionContainer.innerHTML += html;
+            }
+            missionContainer.innerHTML = allMissionsHTML;
+
+            // Formlar DOM'a eklendikten sonra, iframe'leri doğru göstermek için
+            // her birinin önizlemesini tetikle.
+            for (let i = 1; i <= 10; i++) {
+                // Gecikme, tarayıcının DOM'u işlemesine zaman tanır.
+                setTimeout(() => updatePreview(i), 0);
             }
             // Yükleme tamamlandığında kaydet butonunu aktif et.
             // Bu, form elemanları oluşturulmadan kaydetmeye çalışmayı engeller.
@@ -170,34 +177,60 @@
          *    Bu, `ops_engine` tarafındaki "RAW IFRAME MODU"nun doğru çalışmasını sağlar.
          */
         window.saveAllMissions = function() {
-            const missions = {};
-            for (let i = 1; i <= 10; i++) {
-                missions[i] = {
-                    question: document.getElementById(`q-${i}`).value.trim(),
-                    answers: document.getElementById(`a-${i}`).value.trim(),
-                    hints: document.getElementById(`h-${i}`).value.trim(),
-                    image: document.getElementById(`img-${i}`).value.trim(), // Ham veriyi kaydet
-                    requireAll: document.getElementById(`mode-${i}`).checked,
-                };
-            }
-            
-            set(ref(db, 'gameContent/missions'), missions)
-                .then(() => {
-                    const btn = document.querySelector('.save-btn');
+            const btn = document.querySelector('.save-btn');
+            try {
+                const missions = {};
+                for (let i = 1; i <= 10; i++) {
+                    const qEl = document.getElementById(`q-${i}`);
+                    const aEl = document.getElementById(`a-${i}`);
+                    const hEl = document.getElementById(`h-${i}`);
+                    const imgEl = document.getElementById(`img-${i}`);
+                    const modeEl = document.getElementById(`mode-${i}`);
+
+                    if (!qEl || !aEl || !hEl || !imgEl || !modeEl) {
+                        throw new Error(`DOM elemanı bulunamadı: Görev ${i} içindeki bir alan eksik. Sayfa yapısı bozulmuş olabilir.`);
+                    }
+
+                    missions[i] = {
+                        question: qEl.value.trim(),
+                        answers: aEl.value.trim(),
+                        hints: hEl.value.trim(),
+                        image: imgEl.value.trim(),
+                        requireAll: modeEl.checked,
+                    };
+                }
+                
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerText = "KAYDEDİLİYOR...";
+                }
+
+                set(ref(db, 'gameContent/missions'), missions)
+                    .then(() => {
+                        if (!btn) return;
+                        const oldText = '💾 DEĞİŞİKLİKLERİ KAYDET VE YAYINLA';
+                        btn.innerText = "✅ BAŞARIYLA KAYDEDİLDİ!";
+                        btn.style.background = "#fff";
+                        btn.style.color = "#000";
+                        setTimeout(() => {
+                            btn.innerText = oldText;
+                            btn.style.background = ""; // Stili sıfırla, CSS sınıfı uygulasın
+                            btn.style.color = "";
+                            btn.disabled = false;
+                        }, 2500);
+                    })
+                    .catch(err => {
+                        throw err; // Genel hata yakalayıcıya gönder
+                    });
+            } catch (err) {
+                console.error("Kaydetme sırasında kritik hata:", err);
+                alert("HATA: Veriler kaydedilemedi. Lütfen geliştirici konsolunu kontrol edin.\n\n" + err.message);
+                if (btn) {
                     if (!btn) return;
-                    const oldText = btn.innerText;
-                    btn.innerText = "✅ BAŞARIYLA KAYDEDİLDİ!";
-                    btn.style.background = "#fff";
-                    btn.style.color = "#000";
-                    setTimeout(() => {
-                        btn.innerText = oldText;
-                        btn.style.background = "#39FF14";
-                    }, 2000);
-                })
-                .catch(err => {
-                    console.error("Firebase Kaydetme Hatası:", err);
-                    alert("HATA: Veriler sunucuya kaydedilemedi. İnternet bağlantınızı ve konsolu kontrol edin.\n\n" + err.message);
-                });
+                    btn.disabled = false;
+                    btn.innerText = '💾 KAYDETME BAŞARISIZ';
+                }
+            }
         };
     </script>
 </body>
