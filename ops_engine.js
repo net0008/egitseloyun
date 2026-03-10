@@ -13,15 +13,36 @@ import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 // URL üzerinden gelen takım ismini yakalayarak veri tünelini aktif eder.
 const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
+
+// Hata 4: Takım adı yoksa işlemi durdur ve kullanıcıyı bilgilendir.
+if (!teamName) {
+    document.body.innerHTML = '<div style="color:red; text-align:center; padding: 50px; font-size: 1.2rem;">HATA: Takım adı belirtilmemiş. Lütfen giriş ekranından bir takım seçin.</div>';
+    throw new Error("Takım adı URL'de eksik.");
+}
+
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const terminal = document.getElementById('terminal-output');
 let leafletMap = null; // Leaflet harita örneği için global değişken
+// Hata 7: Harita yükleme zaman aşımı için referans.
+let mapLoadTimeout = null;
 
 // --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
 // Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
 let globalMissionData = null; // Veri yüklenene kadar null
 let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
 let lastGorevNo = 0; // Brifing takibi için (Hoisting hatasını önlemek için yukarı taşındı)
+
+// Hata 8: CMS verisi (görevler) çekilirken varlık kontrolü ekle.
+onValue(ref(db, 'gameContent/missions'), (snapshot) => {
+    if (snapshot.exists()) {
+        globalMissionData = snapshot.val();
+        // Veri yüklendikten sonra mevcut görev için görselleri tetikle
+        updateMapVisuals(currentGorevNo);
+    } else {
+        console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
+        logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
+    }
+});
 
 // Harita durumunu sıfırlayan yardımcı fonksiyon
 function resetMapState() {
@@ -42,13 +63,16 @@ function resetMapState() {
         if (el) {
             el.style.display = 'none';
             // Iframe src'sini temizle ki yeni yüklemede onload kesin çalışsın
-            // if (el.tagName === 'IFRAME') el.src = 'about:blank'; // Kaldırıldı: Gereksiz yükleme ve döngü sorunu
+    // if (el.tagName === 'IFRAME') el.src = 'about:blank'; // Kaldırıldı: Gereksiz yükleme ve döngü sorunu
         }
     });
 }
 
 // Görsel Güncelleme Motoru (CMS verisi gelince veya görev değişince çalışır)
 function updateMapVisuals(gorev) {
+    // Hata 7: Fonksiyon her çalıştığında önceki zaman aşımını temizle.
+    if (mapLoadTimeout) clearTimeout(mapLoadTimeout);
+
     // CMS verisi henüz gelmediyse işlem yapma (HTML'de gizli bekler)
     if (globalMissionData === null) return;
     
@@ -66,58 +90,78 @@ function updateMapVisuals(gorev) {
     }
 
     const cmsContent = globalMissionData[gorev]?.image;
-const normalizeMapUrl = (rawUrl) => {
+
+    const normalizeMapUrl = (rawUrl) => {
         if (!rawUrl) return rawUrl;
+
         let url = rawUrl.trim();
+
+        // Kullanıcı iframe kodu yapıştırmışsa src değerini çek.
+        if (url.startsWith('<iframe')) {
+            const srcMatch = url.match(/src=["']([^"']+)["']/i);
+            if (srcMatch && srcMatch[1]) url = srcMatch[1];
+        }
 
         if (url.startsWith('//')) url = `https:${url}`;
 
-        const isGoogleMapUrl = /(^|\.)google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(url);
-        const isUmapUrl = /umap\.openstreetmap\.fr/i.test(url);
-
-        if (!isGoogleMapUrl && !isUmapUrl) return url;
-
-        // My Maps linklerini embed formatına çevir
-        if (url.includes('/d/')) {
-            if (url.includes('/edit')) url = url.replace('/edit', '/embed');
-            if (url.includes('/viewer')) url = url.replace('/viewer', '/embed');
+        let parsed;
+        try {
+            parsed = new URL(url);
+        } catch (_err) {
+            return url;
         }
 
-        if (isGoogleMapUrl) {
-            try {
-                const parsed = new URL(url);
-                const host = parsed.hostname.toLowerCase();
-                const isShortMapHost = host.includes('maps.app.goo.gl') || (host === 'goo.gl' && parsed.pathname.startsWith('/maps'));
+        const host = parsed.hostname.toLowerCase();
+        const path = parsed.pathname;
+        const isUmapUrl = host.includes('umap.openstreetmap.fr');
+        const isGoogleMapUrl =
+            /(^|\.)google\.[^/]+$/i.test(host) ||
+            host.startsWith('maps.google.') ||
+            host === 'maps.app.goo.gl' ||
+            (host === 'goo.gl' && path.startsWith('/maps'));
 
-                if (isShortMapHost) {
-                    const fallback = new URL('https://www.google.com/maps');
-                    fallback.searchParams.set('q', url);
-                    fallback.searchParams.set('output', 'embed');
-                    fallback.searchParams.set('t', 'k');
-                    fallback.searchParams.set('z', '11');
-                    return fallback.toString();
-                }
+        if (isUmapUrl) return parsed.toString();
+        if (!isGoogleMapUrl) return url;
 
-                const isAlreadyEmbed = parsed.pathname.includes('/embed');
-                if (!isAlreadyEmbed) {
-                    if (!parsed.searchParams.has('q') && parsed.pathname.includes('/place/')) {
-                        const placeSegment = decodeURIComponent(parsed.pathname.split('/place/')[1] || '').split('/')[0].replace(/\+/g, ' ').trim();
-                        if (placeSegment) parsed.searchParams.set('q', placeSegment);
-                    }
+        // My Maps linkleri (/maps/d/...)
+        if (path.includes('/maps/d/')) {
+            const myMaps = new URL(parsed.toString());
+            myMaps.pathname = myMaps.pathname.replace('/edit', '/embed').replace('/viewer', '/embed').replace('/view', '/embed');
+            return myMaps.toString();
+        }
 
-                    parsed.searchParams.set('output', 'embed');
-                    if (!parsed.searchParams.has('t')) parsed.searchParams.set('t', 'k');
-                    if (!parsed.searchParams.has('z')) parsed.searchParams.set('z', '11');
-                }
+        // Zaten embed ise olduğu gibi kullan.
+        if (path.includes('/maps/embed')) {
+            return parsed.toString();
+        }
 
-                url = parsed.toString();
-            } catch (_err) {
-                // URL parse edilemiyorsa ham değeri kullan.
+        // Güvenli ve her yerde çalışacak tek format: /maps?output=embed&q=...
+        let q = parsed.searchParams.get('q') || '';
+
+        if (!q) {
+            const placeMatch = path.match(/\/place\/([^/]+)/i);
+            if (placeMatch && placeMatch[1]) {
+                q = decodeURIComponent(placeMatch[1]).replace(/\+/g, ' ').trim();
             }
         }
 
-        return url;
+        if (!q) {
+            const atMatch = parsed.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+            if (atMatch) q = `${atMatch[1]},${atMatch[2]}`;
+        }
+
+        if (!q) {
+            q = parsed.searchParams.get('ll') || parsed.searchParams.get('query') || parsed.searchParams.get('destination') || url;
+        }
+
+        const embed = new URL('https://www.google.com/maps');
+        embed.searchParams.set('output', 'embed');
+        embed.searchParams.set('q', q);
+        if (!embed.searchParams.has('t')) embed.searchParams.set('t', 'k');
+        if (!embed.searchParams.has('z')) embed.searchParams.set('z', '11');
+        return embed.toString();
     };
+
     // --- RAW IFRAME MODU ---
     if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
         const rawDiv = document.createElement('div');
@@ -147,419 +191,34 @@ const normalizeMapUrl = (rawUrl) => {
         if (loader) loader.style.display = 'none';
     }
     // --- GOOGLE MAPS / UMAP MODU ---
-    else if (cmsContent && (/google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(cmsContent) || cmsContent.includes("umap.openstreetmap.fr"))) {
-        let embedUrl = normalizeMapUrl(cmsContent); // Hata 3 Düzeltildi: const -> let
-
-        // HTTP linklerini HTTPS'e zorla (Mixed Content hatasını önlemek için)
-        if (embedUrl.startsWith('http:')) {
-            embedUrl = embedUrl.replace('http:', 'https:');
-        }
+    else if (cmsContent && (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent))) {
+        const embedUrl = normalizeMapUrl(cmsContent);
 
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
-        mapFrame.style.zIndex = "15"; // Haritanın görünür olduğundan emin ol
 
         // URL değiştiyse yükle, aynıysa sadece loader'ı kapat (Sonsuz döngü önlemi)
         if (mapFrame.src !== embedUrl) {
             const hideLoader = () => { if (loader) loader.style.display = 'none'; };
             mapFrame.onload = hideLoader;
             mapFrame.src = embedUrl; 
-            setTimeout(hideLoader, 5000);
+            mapLoadTimeout = setTimeout(hideLoader, 5000); // Hata 7: Zaman aşımı referansını sakla.
         } else {
             if (loader) loader.style.display = 'none';
         }
 
-        // Hata 1 & 2 Düzeltildi: Kod bloğu else-if içine alındı ve parantezler düzeltildi
-        if (embedUrl.includes("google.") || embedUrl.includes("maps.google")) {
+        if (embedUrl.includes("google.com/maps")) {
             document.querySelector('.scan-line')?.style.display = 'block';
             document.querySelector('.map-overlay-barrier')?.style.display = 'block';
             const zoomControls = document.querySelector('.zoom-controls');
             if (zoomControls) {
                 zoomControls.style.display = 'flex';
                 const zMatch = embedUrl.match(/z=(\d+)/);
-                const currentZoom = zMatch ? zMatch[1] : '16';
+                const currentZoom = zMatch ? zMatch[1] : '11';
                 updateZoomLevel(currentZoom, false); // Sadece arayüzü güncelle, haritayı yeniden yükleme
             }
         }
-    }
-    // --- NORMAL RESİM MODU ---
-    else {
-        const mapImg = document.getElementById('active-map');
-        mapImg.style.display = "block";
-        mapImg.src = cmsContent || `assets/img/soru${gorev}.jpg`;
-
-        const hideLoader = () => { if (loader) loader.style.display = 'none'; };
-        mapImg.onload = hideLoader;
-        setTimeout(hideLoader, 5000);
-    }
-}
-
-// --- LEAFLET HARİTA BAŞLATICI ---
-function initLeafletMap(coords) {
-    // Harita konteynerini bul veya oluştur
-    let container = document.getElementById('leaflet-map-container');
-    if (!container) {
-        const frame = document.querySelector('.map-frame');
-        container = document.createElement('div');
-        container.id = 'leaflet-map-container';
-        frame.appendChild(container);
-    }
-    container.style.display = 'block';
-
-    // Harita zaten varsa temizle (tekrar render sorunu olmaması için)
-    if (leafletMap) leafletMap.remove();
-
-    // Haritayı başlat
-    leafletMap = L.map('leaflet-map-container', {
-        zoomControl: false, // Özel zoom butonları kullanıyoruz
-        attributionControl: false
-    });
-
-    // OpenStreetMap Katmanı (Veya Google Hibrit eklenebilir)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
-    }).addTo(leafletMap);
-
-    // --- FIT BOUNDS: Haritayı verilen koordinatlara tam oturt ---
-    // coords: [lat1, lon1, lat2, lon2] -> [[lat1, lon1], [lat2, lon2]]
-    const southWest = L.latLng(parseFloat(coords[0]), parseFloat(coords[1]));
-    const northEast = L.latLng(parseFloat(coords[2]), parseFloat(coords[3]));
-    const bounds = L.latLngBounds(southWest, northEast);
-
-    leafletMap.fitBounds(bounds);
-
-    // --- ADMIN ARAÇLARI: Çizim Yaparak Koordinat Alma ---
-    // Sadece konsolda görünür, oyuncuyu etkilemez.
-    if (typeof L.Control.Draw !== 'undefined') {
-        const drawControl = new L.Control.Draw({
-            draw: {
-                polygon: false, marker: false, circle: false, circlemarker: false, polyline: false,
-                rectangle: { shapeOptions: { color: '#39FF14' } } // Neon Yeşil Çerçeve
-            },
-            edit: false
-        });
-        leafletMap.addControl(drawControl);
-
-        leafletMap.on('draw:created', function (e) {
-            const layer = e.layer;
-            const b = layer.getBounds();
-            // Veritabanı formatını konsola yaz
-            console.log(`%c[VERİTABANI KODU]: leaflet:${b.getSouthWest().lat},${b.getSouthWest().lng},${b.getNorthEast().lat},${b.getNorthEast().lng}`, "color: #39FF14; font-size: 16px; background: #000; padding: 10px;");
-            leafletMap.addLayer(layer);
-        });
-    }
-}
-
-// --- ZOOM KONTROL MEKANİZMASI ---
-const zoomSliderElement = document.getElementById('zoom-slider');
-const mouseSliderElement = document.getElementById('mouse-zoom-slider');
-const zoomValueDisplayElement = document.getElementById('zoom-value');
-const mouseZoomValueDisplayElement = document.getElementById('mouse-zoom-value');
-const mapFrameElement = document.querySelector('.map-frame');
-
-let zoomDebounceTimer = null; // Gecikme zamanlayıcısı
-
-// Ortak Zoom Güncelleme Fonksiyonu
-function updateZoomLevel(newVal, triggerReload = true) {
-    // Değer sınırlarını kontrol et (8-20 arası)
-    let val = parseInt(newVal);
-    if (val < 8) val = 8;
-    if (val > 20) val = 20;
-
-    // Arayüzü güncelle (Hemen tepki ver)
-    // Bu elemanlar opsiyonel olabilir, varlıklarını kontrol et
-    if (zoomSliderElement) zoomSliderElement.value = val;
-    if (mouseSliderElement) mouseSliderElement.value = val;
-    if (zoomValueDisplayElement) zoomValueDisplayElement.textContent = `${val}x`;
-    if (mouseZoomValueDisplayElement) mouseZoomValueDisplayElement.textContent = `${val}x`;
-
-    // Iframe'i güncelle (Gecikmeli - Debounce)
-    // Eğer kullanıcı hala zoom yapıyorsa önceki işlemi iptal et
-    if (!triggerReload) return;
-
-    if (zoomDebounceTimer) clearTimeout(zoomDebounceTimer);
-    
-    // Kullanıcı durduktan 300ms sonra haritayı yenile
-    zoomDebounceTimer = setTimeout(() => {
-        const iframe = document.getElementById('active-frame');
-        if (iframe && iframe.src && iframe.style.display !== 'none') {
-            let url = iframe.src;
-            if (url.includes('z=')) {
-                url = url.replace(/z=\d+/, `z=${val}`);
-            } else {
-                url += `&z=${val}`;
-            }
-            // Sadece URL değiştiyse güncelle (Gereksiz reload önleme)
-            if (iframe.src !== url) iframe.src = url;
-        }
-    }, 300);
-}
-
-if (zoomSliderElement && zoomValueDisplayElement) {
-    // 'input' olayı, fareyi kaydırırken anlık güncelleme yapar
-    zoomSliderElement.addEventListener('input', (e) => {
-        updateZoomLevel(e.target.value);
-    });
-}
-
-// Mouse Wheel (Tekerlek) Dinleyicisi
-if (mapFrameElement) {
-    mapFrameElement.addEventListener('wheel', (e) => {
-        // Sadece harita aktifse çalış
-        const iframe = document.getElementById('active-frame');
-        if (!iframe || iframe.style.display === 'none') return;
-
-        e.preventDefault(); // Sayfa kaydırmayı engelle
-
-        // Mevcut zoom değerini al
-        let currentZoom = parseInt(zoomSliderElement ? zoomSliderElement.value : 11);
-        
-        // Yönü belirle (Aşağı yuvarlama: Uzaklaş, Yukarı yuvarlama: Yakınlaş)
-        if (e.deltaY > 0) {
-            updateZoomLevel(currentZoom - 1);
-        } else {
-            updateZoomLevel(currentZoom + 1);
-        }
-    }, { passive: false });
-}
-
-onValue(ref(db, 'gameContent/missions'), (snapshot) => {
-    const isInitialLoad = globalMissionData === null;
-    globalMissionData = snapshot.val() || {};
-    console.log("[CMS]: Oyun içeriği güncellendi.");
-    // Veri geldiği anda görseli yenile (Gecikme sorununu çözer)
-    updateMapVisuals(currentGorevNo);
-
-    // Eğer bu, sayfa yüklendikten sonra verinin ilk gelişi ise,
-    // brifing muhtemelen geçici bir metinle ("...indiriliyor") gösterilmiştir.
-    // Şimdi gerçek verilerle brifingi yeniden tetikleyerek doğru metnin gösterilmesini sağlıyoruz.
-    if (isInitialLoad && currentGorevNo > 0) {
-        lastGorevNo = 0; // Brifingin yeniden çalışmasını sağlamak için sıfırla
-        triggerBriefing(currentGorevNo);
-    }
-});
-
-// --- 2. TERMİNAL VE HAFIZA YÖNETİMİ ---
-function saveTerminal() { 
-    if (teamName && terminal) sessionStorage.setItem(`log_${teamName}`, terminal.innerHTML); 
-}
-
-function loadTerminal() { 
-    const saved = sessionStorage.getItem(`log_${teamName}`);
-    if (saved && terminal) {
-        terminal.innerHTML = saved;
-        terminal.scrollTop = terminal.scrollHeight;
-    }
-}
-
-function logBox(message, type = "") {
-    if (!terminal) return;
-    const div = document.createElement('div');
-    div.className = `terminal-msg ${type}`;
-    div.innerHTML = `> ${message}`;
-    terminal.appendChild(div);
-    terminal.scrollTop = terminal.scrollHeight;
-    saveTerminal();
-}
-
-// --- 3. ÖZEL GÖREV FONKSİYONLARI (GÖREV 10 & AI MOTORU) ---
-window.executeAIAnaliz = async function() {
-    const aiInput = document.getElementById('ai-coord-input');
-    const coordData = aiInput ? aiInput.value.trim() : "";
-    const snap = await get(scoreRef);
-    const data = snap.val();
-
-    // Referans Koordinatlar: Bergama-Dikili Hattı
-    const refLat = 39.121138;
-    const refLon = 27.179661;
-    const detectedCoords = coordData.match(/\d+(\.\d+)?/g);
-
-    if (detectedCoords && detectedCoords.length >= 2) {
-        const uLat = parseFloat(detectedCoords[0]);
-        const uLon = parseFloat(detectedCoords[1]);
-
-        if (Math.abs(uLat - refLat) < 0.005 && Math.abs(uLon - refLon) < 0.005) {
-            logBox("AI ANALİZİ: Başarılı. Koordinat uyumu mühürlendi.", "success");
-            logBox("Görev başarı ile tamamlanması için aşağıdaki düğmeye (Rapor yaz düğmesi) basarak raporunuzu yazınız", "warning");
-            
-            // Raporlama Paneli Aktivasyonu
-            const visualPanel = document.querySelector('.map-frame');
-            if (visualPanel) {
-                visualPanel.innerHTML = `
-                    <div id="rapor-ekrani" style="padding:25px; background:rgba(0,30,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
-                        <h2 style="margin-bottom:20px; font-size:1.5rem;">📁 OPERASYON RAPORU BEKLENİYOR</h2>
-                        <p style="margin-bottom:30px;">Analiz doğrulandı. Nihai raporu göndermek için butona basınız.</p>
-                        <button onclick="window.finishMission()" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:20px 40px; border:none; font-size:1.2rem; box-shadow: 0 0 15px #00ff41;">RAPOR YAZ</button>
-                    </div>
-                `;
-            }
-        } else {
-            logBox("AI ANALİZİ: Hatalı koordinat! Sapma payı kabul edilemez.", "warning");
-            const hCount = (data.hataSayisi || 0) + 1;
-            update(scoreRef, { hataSayisi: hCount, durum: "Hatalı Koordinat Girişi" });
-        }
-    } else {
-        logBox("HATA: Geçerli koordinat verisi bulunamadı!", "warning");
-    }
-};
-
-window.finishMission = async function() {
-    window.open('https://forms.gle/oZxe7BeasdeMUekB6', '_blank');
-    logBox("OPERASYON RAPORU GÖNDERİLDİ.", "success");
-    logBox("Görev başarı ile tamamlandı.", "success");
-    
-    await update(scoreRef, { 
-        gorevNo: 11, 
-        bolge: "TAMAMLANDI", 
-        durum: "OPERASYON TAMAM", 
-        ipucuSayisi: 0 
-    });
-};
-
-// --- 4. DİNAMİK BRİFİNG VE GÖREV ARAYÜZ YÖNETİMİ ---
-function triggerBriefing(gorevNo) {
-    if (lastGorevNo !== gorevNo) {
-        terminal.innerHTML = "";
-        logBox("[SİSTEM]: Yeni veri paketi tanımlandı.", "success");
-        
-        // Görev 10'da terminal giriş kutusunu gizleme protokolü
-        const inputGroup = document.querySelector('.input-group');
-        if (inputGroup) inputGroup.style.display = (gorevNo >= 10) ? "none" : "flex";
-
-        if (gorevNo <= 9) {
-            // CMS'den gelen soruyu yazdır, yoksa varsayılan bir mesaj göster.
-            const missionText = globalMissionData[gorevNo]?.question || "[MERKEZ]: Veri paketi indiriliyor... Lütfen bekleyin.";
-            logBox(`[MERKEZ]: ${missionText}`, "warning");
-        } else if (gorevNo === 10) {
-            logBox("[MERKEZ]: Bergama-Dikili hattı profil operasyonu aktif.", "warning");
-            const mapFrame = document.querySelector('.map-frame');
-            if (mapFrame) {
-                mapFrame.innerHTML = `
-                    <div id="task10-panel" style="padding:20px; background:rgba(0,25,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; gap:12px;">
-                        <h2 style="font-size:1.2rem; border-bottom:1px solid #00ff41; padding-bottom:8px; margin:0;">📊 PROFİL LABORATUVARI</h2>
-                        <button onclick="window.open('https://www.heywhatsthat.com/profiler.html', '_blank')" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:10px; border:none;">PROFİL OLUŞTURMA GÖREVİNİ YAP</button>
-                        <button onclick="window.open('assets/video/10_gorev.mp4', '_blank')" style="background:rgba(0,40,0,0.8); color:#00ff41; border:1px solid #00ff41; font-weight:bold; cursor:pointer; padding:10px;">🎥 EĞİTİM VİDEOSUNU İZLE</button>
-                        <div style="flex-grow:1; display:flex; flex-direction:column;">
-                            <label style="display:block; margin-bottom:5px; font-size:11px;">🤖 YAPAY ZEKA ANALİZ ALANI:</label>
-                            <textarea id="ai-coord-input" placeholder="Koordinatları buraya yapıştırın..." style="flex-grow:1; background:#000; color:#00ff41; border:1px solid #00ff41; padding:10px; font-family:monospace; resize:none; font-size:13px;"></textarea>
-                            <button onclick="window.executeAIAnaliz()" style="margin-top:10px; padding:15px; background:#00ff41; color:#000; font-weight:bold; cursor:pointer; border:none; width:100%;">ANALİZ ET VE GÖNDER</button>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-        lastGorevNo = gorevNo;
-        saveTerminal();
-    }
-}
-
-// --- 5. BAĞLANTI VE CANLI SENKRONİZASYON ---
-function initOperation() {
-    if (!teamName) return;
-    loadTerminal(); 
-    update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
-
-    onValue(scoreRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        const gorev = data.gorevNo || 1;
-        currentGorevNo = gorev; // Global değişkeni güncelle
-        const bolge = data.bolge || "2A";
-        
-        if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
-        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev'} ${bolge}`;
-        
-        // Görseli güncelle (Merkezi fonksiyon kullanımı)
-        updateMapVisuals(gorev);
-        
-        triggerBriefing(gorev);
-        
-        // Yıldız Hesaplama ve Bildirim Mantığı
-        const stars = document.querySelectorAll('.star');
-        let currentStarCount = 0;
-
-        stars.forEach((star, i) => {
-            star.classList.remove('filled');
-            if (gorev >= 3 && i === 0) star.classList.add('filled');
-            if (gorev >= 6 && i <= 1) star.classList.add('filled');
-            if (gorev >= 9 && i <= 2) star.classList.add('filled');
-            if (gorev >= 11 && i <= 3) star.classList.add('filled');
-            
-            if (star.classList.contains('filled')) currentStarCount++;
-        });
-
-        // Eğer önceki durum hafızada varsa (-1 değilse) ve yeni yıldız sayısı arttıysa:
-        if (window.lastStarCount !== undefined && window.lastStarCount !== -1 && currentStarCount > window.lastStarCount) {
-            if (currentStarCount === 4) {
-                logBox(`🎖️ TEBRİKLER! RÜTBE ATLADINIZ: 4 YILDIZ. 5. YILDIZI RAPORUNUZ İNCELENDİKTEN SONRA KAZANACAKSINIZ`, "success");
-            } else {
-                logBox(`🎖️ TEBRİKLER! RÜTBE KAZANDINIZ: ${currentStarCount} YILDIZ`, "success");
-            }
-            const starContainer = document.getElementById('star-container');
-            if(starContainer) { starContainer.classList.add('star-pulse'); setTimeout(() => starContainer.classList.remove('star-pulse'), 3000); }
-        }
-        window.lastStarCount = currentStarCount; // Mevcut durumu kaydet
-    });
-}
-initOperation();
-
-// --- 6. İPUCU TALEBİ PANELİ ---
-document.getElementById('btn-hint').addEventListener('click', async () => {
-    const snap = await get(scoreRef);
-    const data = snap.val();
-    const count = data.ipucuSayisi || 0, currentGorev = data.gorevNo || 1;
-    
-    // CMS'den gelen ipuçlarını al (Newline ile ayrılmış string olabilir, array'e çevir)
-    const rawHints = globalMissionData[currentGorev]?.hints || "";
-    const activeHints = rawHints.split('\n').filter(h => h.trim() !== "");
-
-    if (count < activeHints.length) {
-        const newScore = Math.max(0, (data.puan || 1000) - 50);
-        update(scoreRef, { puan: newScore, ipucuSayisi: count + 1, durum: `İpucu Kullanıldı` });
-        logBox(`[VERİ]: ${activeHints[count]}`, "hint");
-    } else {
-        logBox("Tüm ipucu haklarını kullandınız.", "warning");
-    }
-});
-
-// --- 7. ONAYLA (DOĞRULAMA MOTORU) ---
-document.getElementById('btn-verify').addEventListener('click', async () => {
-    const snap = await get(scoreRef);
-    const data = snap.val();
-    const cur = data.gorevNo || 1;
-
-    // Veri güvenliği: CMS verisi henüz yüklenmediyse işlem yapma
-    if (!globalMissionData) {
-        return logBox("SİSTEM: Oyun verileri yükleniyor, lütfen bekleyin...", "warning");
-    }
-
-    if (cur >= 10) return logBox("Lütfen analizi görsel paneldeki butonlar ile tamamlayın.", "warning");
-
-    const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
-    
-    // CMS'den gelen doğru cevapları al
-    const correctAnswersRaw = globalMissionData[cur]?.answers || "";
-    const requireAll = globalMissionData[cur]?.requireAll || false; // Kombinasyon modu açık mı?
-
-    // Virgülle ayrılmış cevapları diziye çevir ve temizle
-    const correctAnswers = correctAnswersRaw.split(',')
-        .map(a => a.trim().toLocaleLowerCase('tr').replace(/\s/g, ""))
-        .filter(a => a.length > 0); // Boş cevapları ("") temizle
-
-    // Eğer CMS'de hiç cevap tanımlanmamışsa, boş girişi doğru kabul etme.
-    if (correctAnswers.length === 0) return logBox("HATA: Bu görev için cevap anahtarı bulunamadı.", "warning");
-
-    let isCorrect = false;
-    
-    if (requireAll) {
-        // SIRALI KOMBİNASYON MODU: Kelimeler hem var olmalı hem de sırayla gelmeli.
-        let lastIndex = -1;
-        let sequenceMatch = true;
-
-        for (const ans of correctAnswers) {
-            // Bir önceki kelimenin bittiği yerden sonrasını ara
-            const idx = rawInput.indexOf(ans, lastIndex + 1);
-            if (idx === -1) {
+@@ -523,26 +576,26 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
                 sequenceMatch = false;
                 break;
             }
@@ -577,13 +236,64 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
     }
 
     if (isCorrect) {
-        update(scoreRef, { gorevNo: cur + 1, bolge: cur + 1 > 10 ? "TAMAMLANDI" : "2J", puan: (data.puan || 1000) + 200, durum: "Başarılı Analiz", ipucuSayisi: 0, hataSayisi: (data.hataSayisi || 0) });
+        const nextGorevNo = cur + 1;
+        const nextPuan = (data.puan || 1000) + 200;
+        // Hata 9: Hatalı bölge ("2J") ataması düzeltildi. Bölge dinamik olarak hesaplanıyor (2A, 2B, 2C...).
+        // A=65. Görev 2 için -> 65 + 2 - 1 = 66 -> 'B'.
+        const nextBolge = nextGorevNo > 10 ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
+
+        update(scoreRef, { gorevNo: nextGorevNo, bolge: nextBolge, puan: nextPuan, durum: "Başarılı Analiz", ipucuSayisi: 0 });
         logBox("VERİ DOĞRULANDI!", "success");
     } else {
         const hCount = (data.hataSayisi || 0) + 1;
-        update(scoreRef, { durum: "Hatalı Analiz Girişi", hataSayisi: hCount });
-        logBox("HATA: Analiz verisi geçersiz.", "warning");
+        const newPuan = (data.puan || 1000) - 50; // Hatalı cevapta puan düşür.
+        update(scoreRef, { durum: "Hatalı Analiz Girişi", hataSayisi: hCount, puan: newPuan });
+        logBox("HATA: Analiz verisi geçersiz. (-50 Puan)", "warning");
     }
     document.getElementById('kripto-val').value = "";
-
 });
+
+// Hata 1: Eksik `updateZoomLevel` fonksiyonu tanımlandı.
+/**
+ * Harita zoom seviyesini ve ilgili UI bileşenlerini günceller.
+ * @param {string|number} level - Yeni zoom seviyesi.
+ * @param {boolean} reloadMap - Haritanın yeni zoom seviyesiyle yeniden yüklenip yüklenmeyeceği.
+ */
+function updateZoomLevel(level, reloadMap = false) {
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomValueDisplay = document.getElementById('zoom-value');
+    if (zoomSlider && zoomValueDisplay) {
+        zoomSlider.value = level;
+        zoomValueDisplay.textContent = `${level}x`;
+    }
+
+    if (reloadMap) {
+        const mapFrame = document.getElementById('active-frame');
+        if (mapFrame && mapFrame.src && mapFrame.src.includes('google.com')) {
+            try {
+                const url = new URL(mapFrame.src);
+                url.searchParams.set('z', level);
+                if (mapFrame.src !== url.toString()) {
+                    const loader = document.getElementById('map-loader');
+                    if (loader) loader.style.display = 'flex';
+                    mapFrame.src = url.toString();
+                }
+            } catch (e) {
+                console.error("Zoom URL güncelleme hatası:", e);
+            }
+        }
+    }
+}
+
+// Hata 2: Zoom slider'ı için eksik olay dinleyicileri eklendi.
+const zoomSlider = document.getElementById('zoom-slider');
+if (zoomSlider) {
+    // Kaydırma sırasında sadece değeri anlık güncelle
+    zoomSlider.addEventListener('input', (e) => {
+        updateZoomLevel(e.target.value, false);
+    });
+    // Kullanıcı kaydırmayı bitirdiğinde haritayı yeni zoom ile yeniden yükle
+    zoomSlider.addEventListener('change', (e) => {
+        updateZoomLevel(e.target.value, true);
+    });
+}
