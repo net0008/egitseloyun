@@ -30,6 +30,7 @@ let teamScoreData = null;
 let currentGorevNo = 1;
 let lastGorevNo = 0;
 let mapLoadTimeout = null;
+let lastVisualSignature = '';
 
 // --- 1. GÖRSELLEŞTİRME VE ARAYÜZ YÖNETİMİ ---
 
@@ -61,6 +62,36 @@ function updateScoreDisplay(data) {
     }
 }
 
+function normalizeVisualUrl(url = '') {
+    const trimmed = String(url || '').trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('//')) return `https:${trimmed}`;
+    return trimmed;
+}
+
+function parseMissionVisual(cmsContent = '') {
+    const cleanContent = String(cmsContent || '').trim();
+    if (!cleanContent) return { type: 'none', url: '', signature: 'none' };
+
+    const iframeMatch = cleanContent.match(/<iframe[\s\S]*?<\/iframe>/i);
+    if (iframeMatch) {
+        const srcMatch = iframeMatch[0].match(/src=["']([^"']+)["']/i);
+        const normalizedSrc = normalizeVisualUrl(srcMatch?.[1] || '');
+        return {
+            type: normalizedSrc ? 'iframe' : 'invalid',
+            url: normalizedSrc,
+            signature: `iframe:${normalizedSrc || iframeMatch[0]}`
+        };
+    }
+
+    const normalizedUrl = normalizeVisualUrl(cleanContent);
+    if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(normalizedUrl)) {
+        return { type: 'iframe', url: normalizedUrl, signature: `iframe:${normalizedUrl}` };
+    }
+
+    return { type: 'image', url: normalizedUrl, signature: `image:${normalizedUrl}` };
+}
+
 function resetMapState() {
     const elements = {
         mapImg: document.getElementById('active-map'),
@@ -69,13 +100,9 @@ function resetMapState() {
         mapOverlayBarrier: document.querySelector('.map-overlay-barrier'),
         zoomControls: document.querySelector('.zoom-controls'),
     };
-    const rawIframeWrapper = document.getElementById('raw-iframe-temp');
-    if (rawIframeWrapper) rawIframeWrapper.remove();
 
-    // Hide all elements and clear their sources to prevent flickering
     if (elements.mapImg) {
         elements.mapImg.style.display = 'none';
-        elements.mapImg.src = '';
     }
     if (elements.mapFrame) {
         elements.mapFrame.style.display = 'none';
@@ -93,64 +120,60 @@ function updateMapVisuals(gorevNo) {
     const loader = document.getElementById('map-loader');
     if (loader) loader.style.display = 'flex';
 
-    resetMapState();
-
     if (gorevNo > 10) {
         if (loader) loader.style.display = 'none';
         return;
     }
 
-    let cmsContent = globalMissionData[gorevNo]?.image?.trim();
+    const cmsContent = globalMissionData[gorevNo]?.image || '';
+    const parsedVisual = parseMissionVisual(cmsContent);
 
-    if (!cmsContent) {
+    if (parsedVisual.type === 'none' || parsedVisual.type === 'invalid') {
+        lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
+        if (parsedVisual.type === 'invalid') {
+            logBox('HATA: İframe kodu geçersiz. Lütfen src içeren doğru iframe kaydedin.', 'warning');
+        }
         return;
     }
 
-    let isIframe = false;
-    let visualUrl = cmsContent;
-
-    // Gelen içeriğin bir iframe kodu mu, harita URL'i mi yoksa resim mi olduğunu anla.
-    if (cmsContent.startsWith("<iframe")) {
-        const srcMatch = cmsContent.match(/src=["']([^"']+)["']/i);
-        if (srcMatch && srcMatch[1]) {
-            visualUrl = srcMatch[1];
-            isIframe = true;
+    if (lastVisualSignature === parsedVisual.signature) {
+        if (loader) loader.style.display = 'none';
+        if (parsedVisual.type === 'iframe') {
+            const mapFrame = document.getElementById('active-frame');
+            if (mapFrame) mapFrame.style.display = 'block';
         } else {
-            visualUrl = ''; // Hatalı iframe kodu
+            const mapImg = document.getElementById('active-map');
+            if (mapImg) mapImg.style.display = 'block';
         }
-    } else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent)) {
-        isIframe = true;
-    }
-
-    if (!visualUrl) {
-        if (loader) loader.style.display = 'none';
         return;
     }
 
-    // Protokolsüz URL'leri HTTPS yap.
-    if (visualUrl.startsWith('//')) {
-        visualUrl = 'https:' + visualUrl;
-    }
+    resetMapState();
 
-    if (isIframe) {
+    if (parsedVisual.type === 'iframe') {
         const mapFrame = document.getElementById('active-frame');
-        mapFrame.style.display = "block";
-        if (mapFrame.src !== visualUrl) {
-            mapFrame.src = visualUrl;
+        if (mapFrame) {
+            mapFrame.style.display = 'block';
+            if (mapFrame.src !== parsedVisual.url) {
+                mapFrame.src = parsedVisual.url;
+            }
         }
-    } else { // It's an image
+    } else {
         const mapImg = document.getElementById('active-map');
-        mapImg.style.display = 'block';
-        if (mapImg.src !== visualUrl) {
-            mapImg.src = visualUrl;
+        if (mapImg) {
+            mapImg.style.display = 'block';
+            if (mapImg.src !== parsedVisual.url) {
+                mapImg.src = parsedVisual.url;
+            }
         }
     }
 
-    // Yükleyiciyi gizle (iframe'in yüklenmesini beklemek için bir timeout eklenebilir)
+    lastVisualSignature = parsedVisual.signature;
+
     mapLoadTimeout = setTimeout(() => {
         if (loader) loader.style.display = 'none';
-    }, 1500); // Haritanın yüklenmesi için biraz zaman tanı
+    }, 1200);
 }
 
 function triggerBriefing(gorevNo, force = false) {

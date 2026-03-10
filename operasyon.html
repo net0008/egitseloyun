@@ -12,6 +12,23 @@
         .modal-content { background: #111; margin: 5% auto; padding: 20px; border: 1px solid #39FF14; width: 80%; height: 80%; position: relative; }
         .close-btn { position: absolute; right: 20px; top: 10px; color: #ff3e3e; font-size: 1.5rem; cursor: pointer; border: 1px solid #ff3e3e; padding: 5px 10px; }
         .warning-text { color: #ff3e3e; font-weight: bold; }
+        #map-loader {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            color: #39FF14;
+            z-index: 5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #active-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
     </style>
 </head>
 <body class="op-screen">
@@ -32,6 +49,16 @@
 
             <div class="map-frame">
                 <img id="active-map" src="assets/img/soru1.jpg" alt="Analiz Bekleniyor...">
+                <iframe
+                    id="active-frame"
+                    title="Görev Haritası"
+                    style="display:none;"
+                    allowfullscreen
+                    allow="geolocation"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+                <div id="map-loader">Harita yükleniyor...</div>
                 <div class="scan-line"></div>
             </div>
             

@@ -105,6 +105,35 @@
             onlyOnce: true // Sayfa ilk açıldığında veriyi bir kez çek
         });
 
+
+        function normalizeVisualUrl(url = '') {
+            const trimmed = String(url || '').trim();
+            if (!trimmed) return '';
+            if (trimmed.startsWith('//')) return `https:${trimmed}`;
+            return trimmed;
+        }
+
+        function parseMissionVisual(content = '') {
+            const clean = String(content || '').trim();
+            if (!clean) return { type: 'none', url: '' };
+
+            const iframeMatch = clean.match(/<iframe[\s\S]*?<\/iframe>/i);
+            if (iframeMatch) {
+                const srcMatch = iframeMatch[0].match(/src=["']([^"']+)["']/i);
+                return {
+                    type: srcMatch?.[1] ? 'iframe' : 'invalid',
+                    url: normalizeVisualUrl(srcMatch?.[1] || ''),
+                };
+            }
+
+            const normalizedUrl = normalizeVisualUrl(clean);
+            if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(normalizedUrl)) {
+                return { type: 'iframe', url: normalizedUrl };
+            }
+
+            return { type: 'image', url: normalizedUrl };
+        }
+
         function renderForms(data) {
             let allMissionsHTML = "";
             for (let i = 1; i <= 10; i++) {
@@ -160,42 +189,32 @@
         }
 
         window.updatePreview = function(id) {
-            let url = document.getElementById(`img-${id}`).value.trim();
+            const content = document.getElementById(`img-${id}`).value;
             const img = document.getElementById(`prev-img-${id}`);
             const iframe = document.getElementById(`prev-iframe-${id}`);
             const txt = document.getElementById(`prev-txt-${id}`);
+            const parsed = parseMissionVisual(content);
 
-            let previewUrl = url;
-            let isIframe = false;
-
-            if (url.startsWith("<iframe")) {
-                const srcMatch = url.match(/src=["']([^"']+)["']/i);
-                if (srcMatch && srcMatch[1]) {
-                    previewUrl = srcMatch[1];
-                    isIframe = true;
-                }
-            } else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(url)) {
-                isIframe = true;
-            }
-
-            if (previewUrl.startsWith('//')) {
-                previewUrl = 'https:' + previewUrl;
-            }
-
-            if (isIframe) {
-                iframe.src = previewUrl;
+            if (parsed.type === 'iframe') {
+                iframe.src = parsed.url;
                 iframe.style.display = "block";
                 img.style.display = "none";
                 txt.style.display = "none";
-            } else if (url) {
-                img.src = previewUrl;
+            } else if (parsed.type === 'image') {
+                img.src = parsed.url;
                 img.style.display = "block";
                 iframe.style.display = "none";
                 txt.style.display = "none";
+            } else if (parsed.type === 'invalid') {
+                img.style.display = "none";
+                iframe.style.display = "none";
+                txt.style.display = "block";
+                txt.innerText = 'Geçersiz iframe kodu (src bulunamadı).';
             } else {
                 img.style.display = "none";
                 iframe.style.display = "none";
                 txt.style.display = "block";
+                txt.innerText = 'Önizleme Alanı';
             }
         };
 
@@ -214,12 +233,7 @@
                         throw new Error(`DOM elemanı bulunamadı: Görev ${i} içindeki bir alan eksik.`);
                     }
 
-                    let imgVal = imgEl.value.trim();
-                    // Kullanıcı iframe kodu ve fazlasını yapıştırdıysa, sadece iframe kısmını al.
-                    if (imgVal.startsWith("<iframe")) {
-                        const iframeMatch = imgVal.match(/<iframe[\s\S]*?<\/iframe>/i);
-                        if (iframeMatch) imgVal = iframeMatch[0];
-                    }
+                    const imgVal = imgEl.value.trim();
 
                     missions[i] = {
                         question: qEl.value.trim(),
