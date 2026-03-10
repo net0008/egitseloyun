@@ -144,10 +144,12 @@ function updateMapVisuals(gorevNo) {
     }
 }
 
-function triggerBriefing(gorevNo) {
-    if (lastGorevNo === gorevNo || !globalMissionData) return;
+function triggerBriefing(gorevNo, force = false) {
+    // Eğer zorunlu değilse ve görev numarası aynıysa VEYA görev verisi henüz yüklenmediyse çık.
+    if ((!force && lastGorevNo === gorevNo) || !globalMissionData) return;
 
-    if (lastGorevNo !== gorevNo) {
+    // Eğer yeni bir göreve geçildiyse veya CMS'den zorunlu bir yenileme geldiyse terminali temizle.
+    if (lastGorevNo !== gorevNo || force) {
         if(terminal) terminal.innerHTML = "";
         logBox("Yeni görev verisi alınıyor...", "system");
     }
@@ -270,10 +272,20 @@ function initOperation() {
 
     // 2. CMS'den görev içeriklerini dinle.
     onValue(missionsRef, (snapshot) => {
+        const isUpdate = !!globalMissionData; // Bu ilk yükleme mi yoksa bir güncelleme mi?
         if (snapshot.exists()) {
             globalMissionData = snapshot.val();
             console.log("Görev içerikleri (missions) yüklendi/güncellendi.");
-            renderUI(); // Skor verisi zaten gelmiş olabilir, arayüzü çizmeyi dene.
+
+            // Eğer bu bir güncelleme ise (ilk yükleme değil) ve oyun zaten başladıysa,
+            // arayüzü yeni gelen CMS verisiyle yenilemeye zorla.
+            if (isUpdate && teamScoreData) {
+                console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
+                updateMapVisuals(currentGorevNo);
+                triggerBriefing(currentGorevNo, true); // force=true
+            } else {
+                renderUI(); // İlk yükleme ise, normal render akışını tetikle.
+            }
         } else {
             logBox("KRİTİK HATA: Görev içerikleri veritabanında bulunamadı!", "warning");
         }
@@ -283,6 +295,7 @@ function initOperation() {
     onValue(scoreRef, (snapshot) => {
         if (snapshot.exists()) {
             teamScoreData = snapshot.val();
+            currentGorevNo = teamScoreData.gorevNo || 1;
             console.log("Takım skor/durum verisi yüklendi/güncellendi.");
             renderUI(); // Görev verisi zaten gelmiş olabilir, arayüzü çizmeyi dene.
         } else {
