@@ -71,9 +71,19 @@ function resetMapState() {
     };
     const rawIframeWrapper = document.getElementById('raw-iframe-temp');
     if (rawIframeWrapper) rawIframeWrapper.remove();
-    Object.values(elements).forEach(el => {
-        if (el) el.style.display = 'none';
-    });
+
+    // Hide all elements and clear their sources to prevent flickering
+    if (elements.mapImg) {
+        elements.mapImg.style.display = 'none';
+        elements.mapImg.src = '';
+    }
+    if (elements.mapFrame) {
+        elements.mapFrame.style.display = 'none';
+        elements.mapFrame.src = 'about:blank';
+    }
+    if (elements.scanLine) elements.scanLine.style.display = 'none';
+    if (elements.mapOverlayBarrier) elements.mapOverlayBarrier.style.display = 'none';
+    if (elements.zoomControls) elements.zoomControls.style.display = 'none';
 }
 
 function updateMapVisuals(gorevNo) {
@@ -97,52 +107,50 @@ function updateMapVisuals(gorevNo) {
         return;
     }
 
-    // RAW IFRAME MODU
+    let isIframe = false;
+    let visualUrl = cmsContent;
+
+    // Gelen içeriğin bir iframe kodu mu, harita URL'i mi yoksa resim mi olduğunu anla.
     if (cmsContent.startsWith("<iframe")) {
-        const mapContentWrapper = document.getElementById('map-content-wrapper');
-        const rawDiv = document.createElement('div');
-        rawDiv.id = 'raw-iframe-temp';
-        rawDiv.style.cssText = 'width: 100%; height: 100%; position: relative; z-index: 15;';
-        const fixedContent = cmsContent.replace(/src=(["'])\/\//g, 'src=$1https://');
-        rawDiv.innerHTML = fixedContent;
-        mapContentWrapper.appendChild(rawDiv);
-        const injectedIframe = rawDiv.querySelector('iframe');
-        if (injectedIframe) {
-            injectedIframe.style.width = '100%';
-            injectedIframe.style.height = '100%';
-            injectedIframe.style.border = 'none';
+        const srcMatch = cmsContent.match(/src=["']([^"']+)["']/i);
+        if (srcMatch && srcMatch[1]) {
+            visualUrl = srcMatch[1];
+            isIframe = true;
+        } else {
+            visualUrl = ''; // Hatalı iframe kodu
         }
-        if (loader) loader.style.display = 'none';
+    } else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent)) {
+        isIframe = true;
     }
-    // URL MODU (UMAP / Google Maps)
-    else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent)) {
-        let embedUrl = cmsContent;
-        if (embedUrl.startsWith('//')) embedUrl = 'https:' + embedUrl;
-        
+
+    if (!visualUrl) {
+        if (loader) loader.style.display = 'none';
+        return;
+    }
+
+    // Protokolsüz URL'leri HTTPS yap.
+    if (visualUrl.startsWith('//')) {
+        visualUrl = 'https:' + visualUrl;
+    }
+
+    if (isIframe) {
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
-        mapFrame.style.zIndex = "15";
-
-        if (mapFrame.src !== embedUrl) {
-            const hideLoader = () => { if (loader) loader.style.display = 'none'; };
-            mapFrame.onload = hideLoader;
-            mapFrame.src = embedUrl;
-            mapLoadTimeout = setTimeout(hideLoader, 5000);
-        } else {
-            if (loader) loader.style.display = 'none';
+        if (mapFrame.src !== visualUrl) {
+            mapFrame.src = visualUrl;
         }
-    }
-    // NORMAL RESİM MODU
-    else {
+    } else { // It's an image
         const mapImg = document.getElementById('active-map');
-        if (mapImg) {
-            mapImg.style.display = 'block';
-            if (mapImg.src !== cmsContent) {
-                mapImg.src = cmsContent;
-            }
+        mapImg.style.display = 'block';
+        if (mapImg.src !== visualUrl) {
+            mapImg.src = visualUrl;
         }
-        if (loader) loader.style.display = 'none';
     }
+
+    // Yükleyiciyi gizle (iframe'in yüklenmesini beklemek için bir timeout eklenebilir)
+    mapLoadTimeout = setTimeout(() => {
+        if (loader) loader.style.display = 'none';
+    }, 1500); // Haritanın yüklenmesi için biraz zaman tanı
 }
 
 function triggerBriefing(gorevNo, force = false) {
