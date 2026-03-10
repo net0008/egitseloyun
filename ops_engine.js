@@ -31,8 +31,11 @@ let lastGorevNo = 0;
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
     if (snapshot.exists()) {
         globalMissionData = snapshot.val();
-        // Sadece bir kez skor verisini çekerek ilk durumu ayarla
-        onValue(scoreRef, handleScoreUpdate, { onlyOnce: true });
+        // CMS'den gelen canlı veri değişikliğini operasyon ekranına yansıt.
+        // Bu, oyun devam ederken bir görev içeriği güncellendiğinde haritanın/görselin anında değişmesini sağlar.
+        console.log("Görev verisi Firebase'den güncellendi. Mevcut görev için görseller yenileniyor.");
+        updateMapVisuals(currentGorevNo);
+        triggerBriefing(currentGorevNo, true); // 'true' parametresi, aynı görev olsa bile brifingi yeniden yazdırmaya zorlar.
     } else {
         console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
         logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
@@ -244,9 +247,10 @@ function updateScoreDisplay(data) {
 /**
  * Görev brifingini terminale yazar.
  * @param {number} gorevNo - Aktif görev numarası.
+ * @param {boolean} [force=false] - Aynı görev olsa bile yeniden yazdırmaya zorlar.
  */
-function triggerBriefing(gorevNo) {
-    if (lastGorevNo === gorevNo || !globalMissionData) return;
+function triggerBriefing(gorevNo, force = false) {
+    if ((!force && lastGorevNo === gorevNo) || !globalMissionData) return;
     lastGorevNo = gorevNo;
     
     const mission = globalMissionData[gorevNo];
