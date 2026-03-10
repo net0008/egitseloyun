@@ -5,14 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Operasyon Terminali | Saha Analizi v3.3</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    
-    <!-- Leaflet Harita Motoru (Ana Kütüphane) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Leaflet Draw (Çizim ve Çerçeve Belirleme Eklentisi) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
         .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
         .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
@@ -39,28 +31,8 @@
             </p>
 
             <div class="map-frame">
-                <div id="map-loader" class="map-loader">
-                    <div class="loader-spinner"></div>
-                    <div class="loader-text">UYDU BAĞLANTISI KURULUYOR...</div>
-                </div>
-                <div id="map-content-wrapper" class="map-viewport">
-                    <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
-                    <iframe id="active-frame" allowfullscreen></iframe>
-                    <div class="scan-line"></div>
-                    <div class="map-overlay-barrier"></div>
-                </div>
-                <div class="zoom-controls" style="display:none;">
-                    <div class="zoom-row">
-                        <label for="zoom-slider">MANUEL</label>
-                        <input type="range" id="zoom-slider" min="8" max="20" value="11" step="1">
-                        <span id="zoom-value" class="zoom-value-display">11x</span>
-                    </div>
-                    <div class="zoom-row">
-                        <label for="mouse-zoom-slider">MOUSE</label>
-                        <input type="range" id="mouse-zoom-slider" min="8" max="20" value="11" step="1" disabled>
-                        <span id="mouse-zoom-value" class="zoom-value-display">11x</span>
-                    </div>
-                </div>
+                <img id="active-map" src="assets/img/soru1.jpg" alt="Analiz Bekleniyor...">
+                <div class="scan-line"></div>
             </div>
             
             <ul id="team-members-list" class="team-roster"></ul>
@@ -70,7 +42,7 @@
     <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
     <div class="terminal-log" id="terminal-output"></div>
     
-   <div class="input-group">
+   <div class="mission-input">
     <label>$ ANALİST_GİRİŞİ: </label>
     <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off">
     <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>

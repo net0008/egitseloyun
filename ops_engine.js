@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * ops_engine.js - Sürüm: v3.7.0 (Kararlı Sürüm)                               *
+ * ops_engine.js - Sürüm: v3.5.24                                              *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * CMS ve Karargah Senkronizasyon Protokolü Onarıldı.                         *
+ * Görev 1-10 Tam Entegrasyon | Bergama-Dikili Final Raporu & AI Motoru       *
  * *************************************************************************** *
  * Bu modül, Firebase Realtime Database üzerinden saha ve karargah arasındaki *
  * senkronizasyonu yönetir. Hata ve İpucu sayıları anlık olarak mühürlenir.   *
@@ -10,466 +10,296 @@
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
 
 // --- 0. BAĞLANTI PARAMETRELERİ VE SABİTLER ---
+// URL üzerinden gelen takım ismini yakalayarak veri tünelini aktif eder.
 const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
-
-if (!teamName) {
-    document.body.innerHTML = '<div style="color:red; text-align:center; padding: 50px; font-size: 1.2rem;">HATA: Takım adı belirtilmemiş. Lütfen giriş ekranından bir takım seçin.</div>';
-    throw new Error("Takım adı URL'de eksik.");
-}
-
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
-const missionsRef = ref(db, 'gameContent/missions');
 const terminal = document.getElementById('terminal-output');
-let leafletMap = null;
-let mapLoadTimeout = null;
 
-// --- 1. VERİ ÖNBELLEĞİ VE DURUM YÖNETİMİ ---
-let globalMissionData = null; // CMS'den gelen görev içerikleri
-let teamScoreData = null;     // Takımın anlık skor/durum verisi
-let currentGorevNo = 1;
-let lastGorevNo = 0;
-
-// --- 2. GÖRSELLEŞTİRME MOTORU ---
-
-/**
- * CMS'den gelen URL'yi standart bir embed formatına dönüştürür.
- * @param {string} rawUrl - Ham URL
- * @returns {string} - Gömülebilir URL
- */
-const normalizeMapUrl = (rawUrl) => {
-    if (!rawUrl) return rawUrl;
-    let url = rawUrl.trim();
-    if (url.startsWith('<iframe')) {
-        const srcMatch = url.match(/src=["']([^"']+)["']/i);
-        if (srcMatch && srcMatch[1]) url = srcMatch[1];
-    }
-    if (url.startsWith('//')) url = `https:${url}`;
-    let parsed;
-    try {
-        parsed = new URL(url);
-    } catch (_err) {
-        return url;
-    }
-    const host = parsed.hostname.toLowerCase();
-    const path = parsed.pathname;
-    const isUmapUrl = host.includes('umap.openstreetmap.fr');
-    if (isUmapUrl) return parsed.toString();
-    
-    const isGoogleMapUrl = /(^|\.)google\.[^/]+$/i.test(host) || host.startsWith('maps.google.') || host === 'maps.app.goo.gl' || (host === 'goo.gl' && path.startsWith('/maps'));
-    if (!isGoogleMapUrl) return url;
-
-    if (path.includes('/maps/d/')) {
-        const myMaps = new URL(parsed.toString());
-        myMaps.pathname = myMaps.pathname.replace('/edit', '/embed').replace('/viewer', '/embed').replace('/view', '/embed');
-        return myMaps.toString();
-    }
-    if (path.includes('/maps/embed')) {
-        return parsed.toString();
-    }
-    let q = parsed.searchParams.get('q') || '';
-    if (!q) {
-        const placeMatch = path.match(/\/place\/([^/]+)/i);
-        if (placeMatch && placeMatch[1]) q = decodeURIComponent(placeMatch[1]).replace(/\+/g, ' ').trim();
-    }
-    if (!q) {
-        const atMatch = parsed.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-        if (atMatch) q = `${atMatch[1]},${atMatch[2]}`;
-    }
-    if (!q) {
-        q = parsed.searchParams.get('ll') || parsed.searchParams.get('query') || parsed.searchParams.get('destination') || url;
-    }
-    const embed = new URL('https://www.google.com/maps');
-    embed.searchParams.set('output', 'embed');
-    embed.searchParams.set('q', q);
-    if (!embed.searchParams.has('t')) embed.searchParams.set('t', 'k');
-    if (!embed.searchParams.has('z')) embed.searchParams.set('z', '11');
-    return embed.toString();
+// --- 1. İPUCU KÜTÜPHANESİ (HİNT REPOSITORY) ---
+// Her görev aşaması için stratejik ipuçlarını ve teknik yönlendirmeleri içerir.
+const hint_library = {
+    1: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Deniz seviyesi (kıyı çizgisi) her yerde 0 metredir.",
+        "Deniz kıyı çizgisi ile ilk izohips arasındaki fark eküidistans değeridir.",
+        "Yükselti farkı 200m. Hesaplama: (İzohips Sayısı x 200)"
+    ],
+    2: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "İzohipslerin yükseltinin arttığı yöne büklüm yapması vadileri gösterir.",
+        "Ucu yüksek tarafa bakan 'V' şekillerine odaklanın.",
+        "Akarsuyun yatağını oluşturan bu yer şeklinin adı nedir?"
+    ],
+    3: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "İzohips eğrilerinin birbirine çok yaklaştığı bölgeleri inceleyin.",
+        "Bu bölgede akarsu olsaydı akış hızı ve aşındırma gücü yüksek olurdu.",
+        "Eğrilerin sıklaşması yükseltinin kısa mesafede değiştiği anlamına gelir."
+    ],
+    4: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Akarsuyun her iki yanındaki ilk izohipslerin yükseltisi ortaktır.",
+        "Birbirini çevrelemeyen komşu izohipslerin yükseltileri eşittir.",
+        "Kıyıdan (0m) itibaren basamakları tek tek sayarak ilerle."
+    ],
+    5: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "İzohipslerin oluşturduğu en içteki kapalı halkalara odaklanın.",
+        "Çevresine göre daha yüksekte kalan zirve noktalarını temsil ederler.",
+        "Nokta veya üçgen ile gösterilen bu doruk noktasına ne denir?"
+    ],
+    6: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "İzohipslerin birbirine değecek kadar yaklaştığı yerleri bulun.",
+        "Çizgilerin sık olması o bölgenin eğim durumu hakkında ne söyler?",
+        "Dik bir yamaç veya yokuş yapısını temsil eden kavram nedir?"
+    ],
+    7: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Akarsularla derince yarılmış yüksek düzlüklere plato denir.",
+        "Çevresine göre alçakta kalan geniş düzlük alanlara ova denir.",
+        "Z (Yüksek) ve Y (Alçak) düzlük kavramlarını birleştirin."
+    ],
+    8: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Akarsu alüvyonlarının denize döküldüğü yerde birikmesiyle oluşur.",
+        "Deniz kıyısındaki çizgilerin sıklaşması uçurumları (falez) gösterir.",
+        "Delta ve Falez kavramlarını uygun noktalarla eşleştirin."
+    ],
+    9: [
+        "Saha kılavuzunu dikkatlice oku.",
+        "Çizgilerin en sık olduğu doğrultuda eğim en yüksek seviyededir.",
+        "Çizgilerin seyrek olduğu doğrultu eğimin en az olduğu yerdir.",
+        "V, Y ve Z oklarını bu matematiksel kurala göre sıralayın."
+    ],
+    10: [
+        "Hata yaparsanız sayfayı yenileyin. (F5 Protokolü)",
+        "Profiler ekranında imleci tam 'Dikili' yazısının üzerine getirin.",
+        "Hattı tamamlamak için tam 'Bergama' yazısının üzerine tıklayın.",
+        "Koordinatları kopyalayıp Yapay Zeka Analiz alanına mühürleyin."
+    ]
 };
 
-function resetMapState() {
-    const elements = {
-        mapImg: document.getElementById('active-map'),
-        mapFrame: document.getElementById('active-frame'),
-        scanLine: document.querySelector('.scan-line'),
-        mapOverlayBarrier: document.querySelector('.map-overlay-barrier'),
-        zoomControls: document.querySelector('.zoom-controls'),
-        leafletContainer: document.getElementById('leaflet-map-container'),
-    };
-    const rawIframeWrapper = document.getElementById('raw-iframe-temp');
-    if (rawIframeWrapper) rawIframeWrapper.remove();
-    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
-    Object.values(elements).forEach(el => {
-        if (el) el.style.display = 'none';
+// --- 2. TERMİNAL VE HAFIZA YÖNETİMİ ---
+function saveTerminal() { 
+    if (teamName && terminal) sessionStorage.setItem(`log_${teamName}`, terminal.innerHTML); 
+}
+
+function loadTerminal() { 
+    const saved = sessionStorage.getItem(`log_${teamName}`);
+    if (saved && terminal) {
+        terminal.innerHTML = saved;
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+}
+
+function logBox(message, type = "") {
+    if (!terminal) return;
+    const div = document.createElement('div');
+    div.className = `terminal-msg ${type}`;
+    div.innerHTML = `> ${message}`;
+    terminal.appendChild(div);
+    terminal.scrollTop = terminal.scrollHeight;
+    saveTerminal();
+}
+
+// --- 3. ÖZEL GÖREV FONKSİYONLARI (GÖREV 10 & AI MOTORU) ---
+window.executeAIAnaliz = async function() {
+    const aiInput = document.getElementById('ai-coord-input');
+    const coordData = aiInput ? aiInput.value.trim() : "";
+    const snap = await get(scoreRef);
+    const data = snap.val();
+
+    // Referans Koordinatlar: Bergama-Dikili Hattı
+    const refLat = 39.121138;
+    const refLon = 27.179661;
+    const detectedCoords = coordData.match(/\d+(\.\d+)?/g);
+
+    if (detectedCoords && detectedCoords.length >= 2) {
+        const uLat = parseFloat(detectedCoords[0]);
+        const uLon = parseFloat(detectedCoords[1]);
+
+        if (Math.abs(uLat - refLat) < 0.005 && Math.abs(uLon - refLon) < 0.005) {
+            logBox("AI ANALİZİ: Başarılı. Koordinat uyumu mühürlendi.", "success");
+            logBox("Görev başarı ile tamamlanması için aşağıdaki düğmeye (Rapor yaz düğmesi) basarak raporunuzu yazınız", "warning");
+            
+            // Raporlama Paneli Aktivasyonu
+            const visualPanel = document.querySelector('.map-frame');
+            if (visualPanel) {
+                visualPanel.innerHTML = `
+                    <div id="rapor-ekrani" style="padding:25px; background:rgba(0,30,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                        <h2 style="margin-bottom:20px; font-size:1.5rem;">📁 OPERASYON RAPORU BEKLENİYOR</h2>
+                        <p style="margin-bottom:30px;">Analiz doğrulandı. Nihai raporu göndermek için butona basınız.</p>
+                        <button onclick="window.finishMission()" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:20px 40px; border:none; font-size:1.2rem; box-shadow: 0 0 15px #00ff41;">RAPOR YAZ</button>
+                    </div>
+                `;
+            }
+        } else {
+            logBox("AI ANALİZİ: Hatalı koordinat! Sapma payı kabul edilemez.", "warning");
+            const hCount = (data.hataSayisi || 0) + 1;
+            update(scoreRef, { hataSayisi: hCount, durum: "Hatalı Koordinat Girişi" });
+        }
+    } else {
+        logBox("HATA: Geçerli koordinat verisi bulunamadı!", "warning");
+    }
+};
+
+window.finishMission = async function() {
+    window.open('https://forms.gle/oZxe7BeasdeMUekB6', '_blank');
+    logBox("OPERASYON RAPORU GÖNDERİLDİ.", "success");
+    logBox("Görev başarı ile tamamlandı.", "success");
+    
+    await update(scoreRef, { 
+        gorevNo: 11, 
+        bolge: "TAMAMLANDI", 
+        durum: "OPERASYON TAMAM", 
+        ipucuSayisi: 0 
+    });
+};
+
+// --- 4. DİNAMİK BRİFİNG VE GÖREV ARAYÜZ YÖNETİMİ ---
+let lastGorevNo = 0;
+function triggerBriefing(gorevNo) {
+    if (lastGorevNo !== gorevNo) {
+        terminal.innerHTML = "";
+        logBox("[SİSTEM]: Yeni veri paketi tanımlandı.", "success");
+        
+        // Görev 10'da terminal giriş kutusunu gizleme protokolü
+        const inputGroup = document.querySelector('.input-group');
+        if (inputGroup) inputGroup.style.display = (gorevNo >= 10) ? "none" : "flex";
+
+        if (gorevNo <= 9) {
+            const brifingler = [
+                "", "[MERKEZ]: Konum ikonu ile gösterilen yerin yükseltisini bul. Karşıt unsurların eline geçmemesi için (h²) gerekli matematiksel işlemde bulduğun değeri gir.",
+                "[MERKEZ]: Kalın çizgili bölgedeki yer şeklini adı nedir?.",
+                "[MERKEZ]: İzohipslerin sıklaştığı yerin ortak özelliğini nedir?.",
+                "[MERKEZ]: X ve Y noktalarının gerçek yükseltisini hesapla.",
+                "[MERKEZ]: Sarı daireli yerlerin ortak özelliği belirlenmeli.",
+                "[MERKEZ]: Sarı çizgili sahalardaki ortak özellik nedir?",
+                "[MERKEZ]: Z ve Y alanlarının morfolojik adlarını yaz. Örnek: dağ, obruk.",
+                "[MERKEZ]: A ve B kıyı yer şeklinin adı nedir? Örnek: lagün, kıyı oku.",
+                "[MERKEZ]: V, Y ve Z oklarını eğim miktarına göre matematiksel kurala göre sıralayın. Örnek: A > B > C gibi."
+            ];
+            logBox(brifingler[gorevNo], "warning");
+        } else if (gorevNo === 10) {
+            logBox("[MERKEZ]: Bergama-Dikili hattı profil operasyonu aktif.", "warning");
+            const mapFrame = document.querySelector('.map-frame');
+            if (mapFrame) {
+                mapFrame.innerHTML = `
+                    <div id="task10-panel" style="padding:20px; background:rgba(0,25,0,0.95); height:100%; color:#00ff41; border:2px solid #00ff41; display:flex; flex-direction:column; gap:12px;">
+                        <h2 style="font-size:1.2rem; border-bottom:1px solid #00ff41; padding-bottom:8px;">📊 PROFİL LABORATUVARI</h2>
+                        <button onclick="window.open('https://www.heywhatsthat.com/profiler.html', '_blank')" style="background:#00ff41; color:#000; font-weight:bold; cursor:pointer; padding:10px; border:none;">PROFİL OLUŞTURMA GÖREVİNİ YAP</button>
+                        <button onclick="window.open('assets/video/10_gorev.mp4', '_blank')" style="background:rgba(0,40,0,0.8); color:#00ff41; border:1px solid #00ff41; font-weight:bold; cursor:pointer; padding:10px;">🎥 EĞİTİM VİDEOSUNU İZLE</button>
+                        <div style="border:1px dashed #00ff41; padding:10px; background:rgba(0,0,0,0.5);"><label style="display:block; margin-bottom:5px; font-size:11px;">📤 PROFİL DOSYASI YÜKLE:</label><input type="file" style="color:#fff; font-size:10px; width:100%;"></div>
+                        <div style="flex-grow:1; display:flex; flex-direction:column;">
+                            <label style="display:block; margin-bottom:5px; font-size:11px;">🤖 YAPAY ZEKA ANALİZ ALANI:</label>
+                            <textarea id="ai-coord-input" placeholder="Koordinatları buraya yapıştırın..." style="flex-grow:1; background:#000; color:#00ff41; border:1px solid #00ff41; padding:10px; font-family:monospace; resize:none; font-size:13px;"></textarea>
+                            <button onclick="window.executeAIAnaliz()" style="margin-top:10px; padding:15px; background:#00ff41; color:#000; font-weight:bold; cursor:pointer; border:none; width:100%;">ANALİZ ET VE GÖNDER</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        lastGorevNo = gorevNo;
+        saveTerminal();
+    }
+}
+
+// --- 5. BAĞLANTI VE CANLI SENKRONİZASYON ---
+function initOperation() {
+    if (!teamName) return;
+    loadTerminal(); 
+    update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
+
+    onValue(scoreRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        const gorev = data.gorevNo || 1;
+        const bolge = data.bolge || "2A";
+        
+        if(document.getElementById('current-score')) document.getElementById('current-score').innerText = data.puan || 1000;
+        if(document.getElementById('current-sector')) document.getElementById('current-sector').innerText = `${gorev > 10 ? 'BİTTİ' : gorev + '. Görev'} ${bolge}`;
+        
+        const mapImg = document.getElementById('active-map');
+        if (mapImg) {
+            if (gorev <= 9) { mapImg.src = `assets/img/soru${gorev}.jpg`; mapImg.style.display = "block"; }
+            else { mapImg.style.display = "none"; }
+        }
+        triggerBriefing(gorev);
+        
+        // Yıldız Hesaplama ve Bildirim Mantığı
+        const stars = document.querySelectorAll('.star');
+        let currentStarCount = 0;
+
+        stars.forEach((star, i) => {
+            star.classList.remove('filled');
+            if (gorev >= 3 && i === 0) star.classList.add('filled');
+            if (gorev >= 6 && i <= 1) star.classList.add('filled');
+            if (gorev >= 9 && i <= 2) star.classList.add('filled');
+            if (gorev >= 11 && i <= 3) star.classList.add('filled');
+            
+            if (star.classList.contains('filled')) currentStarCount++;
+        });
+
+        // Eğer önceki durum hafızada varsa (-1 değilse) ve yeni yıldız sayısı arttıysa:
+        if (window.lastStarCount !== undefined && window.lastStarCount !== -1 && currentStarCount > window.lastStarCount) {
+            if (currentStarCount === 4) {
+                logBox(`🎖️ TEBRİKLER! RÜTBE ATLADINIZ: 4 YILDIZ. 5. YILDIZI RAPORUNUZ İNCELENDİKTEN SONRA KAZANACAKSINIZ`, "success");
+            } else {
+                logBox(`🎖️ TEBRİKLER! RÜTBE KAZANDINIZ: ${currentStarCount} YILDIZ`, "success");
+            }
+            const starContainer = document.getElementById('star-container');
+            if(starContainer) { starContainer.classList.add('star-pulse'); setTimeout(() => starContainer.classList.remove('star-pulse'), 3000); }
+        }
+        window.lastStarCount = currentStarCount; // Mevcut durumu kaydet
     });
 }
+initOperation();
 
-function updateMapVisuals(gorev) {
-    if (mapLoadTimeout) clearTimeout(mapLoadTimeout);
-    if (globalMissionData === null) return;
-    
-    const loader = document.getElementById('map-loader');
-    if (loader) loader.style.display = 'flex';
+// --- 6. İPUCU TALEBİ PANELİ ---
+document.getElementById('btn-hint').addEventListener('click', async () => {
+    const snap = await get(scoreRef);
+    const data = snap.val();
+    const count = data.ipucuSayisi || 0, currentGorev = data.gorevNo || 1;
+    const activeHints = hint_library[currentGorev] || [];
 
-    resetMapState();
-        
-    if (gorev > 10) { // Görev 10'dan sonra harita alanı boş kalır.
-        if (loader) loader.style.display = 'none';
-        logBox("TÜM GÖREVLER TAMAMLANDI. KARARGAHA RAPOR VERİN.", "success");
-        return;
-    }
-
-    const cmsContent = globalMissionData[gorev]?.image?.trim();
-    if (!cmsContent) {
-        if (loader) loader.style.display = 'none';
-        return; // İçerik yoksa hiçbir şey gösterme
-    }
-
-    // --- RAW IFRAME MODU ---
-    if (cmsContent.startsWith("<iframe")) {
-        const mapContentWrapper = document.getElementById('map-content-wrapper');
-        const rawDiv = document.createElement('div');
-        rawDiv.id = 'raw-iframe-temp';
-        rawDiv.style.cssText = 'width: 100%; height: 100%; position: relative; z-index: 15;';
-        const fixedContent = cmsContent.replace(/src=(["'])\/\//g, 'src=$1https://');
-        rawDiv.innerHTML = fixedContent;
-        mapContentWrapper.appendChild(rawDiv);
-        const injectedIframe = rawDiv.querySelector('iframe');
-        if (injectedIframe) {
-            injectedIframe.style.width = '100%';
-            injectedIframe.style.height = '100%';
-            injectedIframe.style.border = 'none';
-        }
-        if (loader) loader.style.display = 'none';
-    }
-    // --- LEAFLET MODU ---
-    else if (cmsContent.startsWith("leaflet:")) {
-        const coords = cmsContent.replace("leaflet:", "").split(",");
-        if (coords.length >= 2) { // En az lat, lng olmalı
-            initLeafletMap(coords);
-        }
-        if (loader) loader.style.display = 'none';
-    }
-    // --- URL MODU (UMAP / Google Maps) ---
-    else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(cmsContent)) {
-        let embedUrl = normalizeMapUrl(cmsContent);
-        if (embedUrl.startsWith("http:")) embedUrl = embedUrl.replace("http:", "https:");
-
-        const mapFrame = document.getElementById('active-frame');
-        mapFrame.style.display = "block";
-        mapFrame.style.zIndex = "15";
-
-        if (mapFrame.src !== embedUrl) {
-            const hideLoader = () => { if (loader) loader.style.display = 'none'; };
-            mapFrame.onload = hideLoader;
-            mapFrame.src = embedUrl; 
-            mapLoadTimeout = setTimeout(hideLoader, 5000);
-        } else {
-            if (loader) loader.style.display = 'none';
-        }
-
-        if (embedUrl.includes("google.com/maps")) {
-            document.querySelector('.scan-line')?.style.display = 'block';
-            document.querySelector('.map-overlay-barrier')?.style.display = 'block';
-            const zoomControls = document.querySelector('.zoom-controls');
-            if (zoomControls) {
-                zoomControls.style.display = 'flex';
-                const zMatch = embedUrl.match(/z=(\d+)/);
-                const currentZoom = zMatch ? zMatch[1] : '11';
-                updateZoomLevel(currentZoom, false);
-            }
-        }
-    }
-    // --- NORMAL RESİM MODU ---
-    else {
-        const mapImg = document.getElementById('active-map');
-        mapImg.style.display = 'block';
-        if (mapImg.src !== cmsContent) {
-            mapImg.src = cmsContent;
-        }
-        if (loader) loader.style.display = 'none';
-    }
-}
-
-// --- 3. UI GÜNCELLEME VE YARDIMCI FONKSİYONLAR ---
-
-/**
- * Terminale formatlı mesaj yazar.
- * @param {string} message - Yazılacak mesaj.
- * @param {string} type - Mesaj tipi (system, briefing, success, warning, hint).
- */
-function logBox(message, type = 'system') {
-    if (!terminal) return;
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `terminal-msg ${type}`;
-    
-    const timestamp = new Date().toLocaleTimeString('tr-TR');
-    const span = document.createElement('span');
-    span.textContent = `[${timestamp}] `;
-    msgDiv.appendChild(span);
-    msgDiv.appendChild(document.createTextNode(message));
-
-    terminal.appendChild(msgDiv);
-    terminal.scrollTop = terminal.scrollHeight;
-}
-
-/**
- * Skor, sektör ve yıldızları günceller.
- * @param {object} data - Firebase'den gelen skor verisi.
- */
-function updateScoreDisplay(data) {
-    document.getElementById('current-score').innerText = data.puan || 1000;
-    document.getElementById('current-sector').innerText = `${data.gorevNo || 1}. Görev ${data.bolge || '2A'} Bölgesi`;
-    
-    const starContainer = document.getElementById('star-container');
-    if (starContainer) {
-        const stars = Math.min(5, Math.ceil((data.gorevNo || 1) / 2));
-        let starHTML = '';
-        for(let i=0; i<5; i++) {
-            starHTML += `<span class="star ${i < stars ? 'filled' : ''}">★</span>`;
-        }
-        starContainer.innerHTML = starHTML;
-    }
-}
-
-/**
- * Görev brifingini terminale yazar.
- * @param {number} gorevNo - Aktif görev numarası.
- * @param {boolean} [force=false] - Aynı görev olsa bile yeniden yazdırmaya zorlar.
- */
-function triggerBriefing(gorevNo, force = false) {
-    // Eğer zorunlu değilse ve görev numarası aynıysa VEYA görev verisi henüz yüklenmediyse çık.
-    if ((!force && lastGorevNo === gorevNo) || !globalMissionData) return;
-
-    // Eğer görev numarası değiştiyse veya CMS'den zorunlu bir yenileme geldiyse terminali temizle.
-    if (lastGorevNo !== gorevNo || force) {
-        if(terminal) terminal.innerHTML = "";
-        logBox("Yeni görev verisi alınıyor...", "system");
-    }
-
-    lastGorevNo = gorevNo;
-    
-    const mission = globalMissionData[gorevNo];
-    if (gorevNo > 10) {
-        logBox("TÜM GÖREVLER TAMAMLANDI. KARARGAHA RAPOR VERİN.", "success");
-        return;
-    }
-    const text = mission ? mission.question : "Görev verisi bekleniyor...";
-    logBox(`GÖREV ${gorevNo} BRİFİNGİ: ${text}`, "briefing");
-}
-
-/**
- * Leaflet haritasını başlatır.
- * @param {string[]} coords - [lat, lng, zoom, markerLat, markerLng]
- */
-function initLeafletMap(coords) {
-    const mapContainer = document.getElementById('leaflet-map-container');
-    if (!mapContainer || !window.L) return;
-    
-    mapContainer.style.display = 'block';
-    if (leafletMap) leafletMap.remove();
-    
-    const lat = parseFloat(coords[0]);
-    const lng = parseFloat(coords[1]);
-    const zoom = parseInt(coords[2]) || 13;
-    
-    leafletMap = L.map(mapContainer).setView([lat, lng], zoom);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(leafletMap);
-
-    if (coords.length >= 4) {
-        const markerLat = parseFloat(coords[3]);
-        const markerLng = parseFloat(coords[4] || coords[1]); // 5. parametre yoksa 2.yi kullan
-        L.marker([markerLat, markerLng]).addTo(leafletMap);
-    }
-}
-
-/**
- * Harita zoom seviyesini ve UI'ı günceller.
- * @param {string|number} level - Yeni zoom seviyesi.
- * @param {boolean} reloadMap - Haritayı yeniden yükle.
- */
-function updateZoomLevel(level, reloadMap = false) {
-    const zoomSlider = document.getElementById('zoom-slider');
-    const zoomValueDisplay = document.getElementById('zoom-value');
-    if (zoomSlider && zoomValueDisplay) {
-        zoomSlider.value = level;
-        zoomValueDisplay.textContent = `${level}x`;
-    }
-
-    if (reloadMap) {
-        const mapFrame = document.getElementById('active-frame');
-        if (mapFrame && mapFrame.src && mapFrame.src.includes('google.com')) {
-            try {
-                const url = new URL(mapFrame.src);
-                url.searchParams.set('z', level);
-                if (mapFrame.src !== url.toString()) {
-                    const loader = document.getElementById('map-loader');
-                    if (loader) loader.style.display = 'flex';
-                    mapFrame.src = url.toString();
-                }
-            } catch (e) {
-                console.error("Zoom URL güncelleme hatası:", e);
-            }
-        }
-    }
-}
-
-// --- 4. ETKİLEŞİM VE OYUN MANTIĞI ---
-
-// Buton: İpucu
-document.getElementById('btn-hint')?.addEventListener('click', async () => {
-    const snapshot = await get(scoreRef);
-    const data = snapshot.val() || {};
-    const mission = globalMissionData ? globalMissionData[currentGorevNo] : null;
-    
-    if (!mission || !mission.hints) {
-        logBox("Bu görev için ipucu bulunmuyor.", "warning");
-        return;
-    }
-    
-    const hints = mission.hints.split('\n').filter(h => h.trim() !== '');
-    const usedHints = data.ipucuSayisi || 0;
-    
-    if (usedHints < hints.length) {
-        const hintText = hints[usedHints];
-        logBox(`İPUCU: ${hintText}`, "hint");
-        update(scoreRef, { 
-            ipucuSayisi: usedHints + 1,
-            puan: (data.puan || 1000) - 50,
-            durum: `İpucu Alındı (${usedHints + 1})`
-        });
+    if (count < activeHints.length) {
+        const newScore = Math.max(0, (data.puan || 1000) - 50);
+        update(scoreRef, { puan: newScore, ipucuSayisi: count + 1, durum: `İpucu Kullanıldı` });
+        logBox(`[VERİ]: ${activeHints[count]}`, "hint");
     } else {
-        logBox("Tüm ipuçları zaten alındı.", "warning");
+        logBox("Tüm ipucu haklarını kullandınız.", "warning");
     }
 });
 
-// Buton: Onayla (Cevap Kontrol)
-document.getElementById('btn-verify')?.addEventListener('click', async () => {
-    const inputEl = document.getElementById('kripto-val');
-    const rawInput = inputEl.value.trim();
-    if (!rawInput) return;
-
-    const snapshot = await get(scoreRef);
-    const data = snapshot.val() || {};
+// --- 7. ONAYLA (DOĞRULAMA MOTORU) ---
+document.getElementById('btn-verify').addEventListener('click', async () => {
+    const snap = await get(scoreRef);
+    const data = snap.val();
     const cur = data.gorevNo || 1;
-    const mission = globalMissionData ? globalMissionData[cur] : null;
+    if (cur >= 10) return logBox("Lütfen analizi görsel paneldeki butonlar ile tamamlayın.", "warning");
 
-    if (!mission) {
-        logBox("Görev verisi yüklenemedi, cevap kontrol edilemiyor.", "warning");
-        return;
-    }
-
-    const correctAnswers = (mission.answers || "").split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
-    const userInput = rawInput.toLowerCase();
+    const rawInput = document.getElementById('kripto-val').value.trim().toLocaleLowerCase('tr').replace(/\s/g, "");
     let isCorrect = false;
 
-    if (mission.requireAll) {
-        // SIRALI KOMBİNASYON MODU: Tüm cevaplar doğru sırada geçmeli.
-        let lastIndex = -1;
-        let sequenceMatch = true;
-        for (const answer of correctAnswers) {
-            const idx = userInput.indexOf(answer, lastIndex + 1);
-            if (idx === -1) {
-                sequenceMatch = false;
-                break;
-            }
-            lastIndex = idx;
-        }
-        if (sequenceMatch && correctAnswers.length > 0) {
-            isCorrect = true;
-        }
-    } else {
-        // STANDART MOD: Cevaplardan herhangi biri tam eşleşirse doğru.
-        if (correctAnswers.includes(userInput)) {
-            isCorrect = true;
-        }
-    }
+    if (cur === 1 && Number(rawInput) === 360000) isCorrect = true;
+    else if (cur === 2 && rawInput === "vadi") isCorrect = true;
+    else if (cur === 3 && rawInput.includes("eğim")) isCorrect = true;
+    else if (cur === 4 && rawInput.includes("200")) isCorrect = true;
+    else if (cur === 5 && rawInput.includes("tepe")) isCorrect = true;
+    else if (cur === 6 && rawInput.includes("eğim")) isCorrect = true;
+    else if (cur === 7 && rawInput.includes("plato") && rawInput.includes("ova")) isCorrect = true;
+    else if (cur === 8 && rawInput.includes("delta") && rawInput.includes("falez")) isCorrect = true;
+    else if (cur === 9 && rawInput === "y>z>v") isCorrect = true;
 
     if (isCorrect) {
-        const nextGorevNo = cur + 1;
-        const nextPuan = (data.puan || 1000) + 200;
-        const nextBolge = nextGorevNo > 10 ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
-
-        update(scoreRef, { 
-            gorevNo: nextGorevNo, 
-            bolge: nextBolge, 
-            puan: nextPuan, 
-            durum: "Başarılı Analiz", 
-            ipucuSayisi: 0,
-            hataSayisi: 0
-        });
-        logBox("VERİ DOĞRULANDI! Bir sonraki göreve geçiliyor...", "success");
+        update(scoreRef, { gorevNo: cur + 1, bolge: cur + 1 > 10 ? "TAMAMLANDI" : "2J", puan: (data.puan || 1000) + 200, durum: "Başarılı Analiz", ipucuSayisi: 0, hataSayisi: (data.hataSayisi || 0) });
+        logBox("VERİ DOĞRULANDI!", "success");
     } else {
         const hCount = (data.hataSayisi || 0) + 1;
-        const newPuan = (data.puan || 1000) - 50;
-        update(scoreRef, { durum: "Hatalı Analiz Girişi", hataSayisi: hCount, puan: newPuan });
-        logBox("HATA: Analiz verisi geçersiz. (-50 Puan)", "warning");
+        update(scoreRef, { durum: "Hatalı Analiz Girişi", hataSayisi: hCount });
+        logBox("HATA: Analiz verisi geçersiz.", "warning");
     }
-    inputEl.value = "";
+    document.getElementById('kripto-val').value = "";
 });
-
-// Zoom slider'ı için olay dinleyicileri
-const zoomSlider = document.getElementById('zoom-slider');
-if (zoomSlider) {
-    zoomSlider.addEventListener('input', (e) => updateZoomLevel(e.target.value, false));
-    zoomSlider.addEventListener('change', (e) => updateZoomLevel(e.target.value, true));
-}
-
-// Takım adını ekrana yazdır
-const teamNameDisplay = document.getElementById('team-name-display');
-if (teamNameDisplay) {
-    teamNameDisplay.textContent = `UYDU ANALİZİ: ${teamName}`;
-}
-
-// --- 5. ANA OPERASYON BAŞLATICISI ---
-function initOperation() {
-    // 1. Karargaha anında "Bağlantı Kuruldu" sinyali gönder.
-    update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
-    logBox("Karargah ile güvenli bağlantı kuruldu.", "success");
-
-    let isScoreListenerAttached = false;
-
-    // 2. Önce CMS'den görev içeriklerini dinle.
-    onValue(missionsRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
-            logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
-            return;
-        }
-        
-        globalMissionData = snapshot.val();
-        console.log("Görev verisi (missions) yüklendi/güncellendi.");
-
-        // Eğer skor dinleyicisi zaten çalışıyorsa (yani bu bir CMS güncellemesi ise),
-        // arayüzü yeni görev verisiyle yenile.
-        if (isScoreListenerAttached && teamScoreData) {
-            console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
-            updateMapVisuals(currentGorevNo);
-            triggerBriefing(currentGorevNo, true); // force=true
-        }
-
-        // 3. Skor dinleyicisini SADECE BİR KEZ, ilk görev verisi yüklendikten sonra başlat.
-        // Bu, yarış durumu (race condition) sorununu çözer.
-        if (!isScoreListenerAttached) {
-            isScoreListenerAttached = true;
-            
-            onValue(scoreRef, (scoreSnapshot) => {
-                const data = scoreSnapshot.val();
-                if (!data) return;
-
-                teamScoreData = data; // Veriyi önbelleğe al
-                currentGorevNo = data.gorevNo || 1;
-
-                // Arayüzü güncelle. Bu noktada globalMissionData'nın dolu olduğu garantidir.
-                updateScoreDisplay(data);
-                updateMapVisuals(currentGorevNo);
-                triggerBriefing(currentGorevNo);
-            });
-        }
-    });
-}
-
-// Operasyonu başlat!
-initOperation();
