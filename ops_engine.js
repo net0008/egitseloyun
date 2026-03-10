@@ -92,11 +92,6 @@ function updateMapVisuals(gorevNo) {
 
     let cmsContent = globalMissionData[gorevNo]?.image?.trim();
 
-    // İstek üzerine 1. görevdeki resim kaldırıldı.
-    if (gorevNo === 1) {
-        cmsContent = "";
-    }
-
     if (!cmsContent) {
         if (loader) loader.style.display = 'none';
         return;
