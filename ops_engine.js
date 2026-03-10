@@ -31,11 +31,15 @@ let lastGorevNo = 0;
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
     if (snapshot.exists()) {
         globalMissionData = snapshot.val();
-        // CMS'den gelen canlı veri değişikliğini operasyon ekranına yansıt.
-        // Bu, oyun devam ederken bir görev içeriği güncellendiğinde haritanın/görselin anında değişmesini sağlar.
-        console.log("Görev verisi Firebase'den güncellendi. Mevcut görev için görseller yenileniyor.");
-        updateMapVisuals(currentGorevNo);
-        triggerBriefing(currentGorevNo, true); // 'true' parametresi, aynı görev olsa bile brifingi yeniden yazdırmaya zorlar.
+        console.log("Görev verisi Firebase'den güncellendi.");
+        
+        // Eğer oyun zaten başlamışsa (lastGorevNo > 0), mevcut görevin
+        // görsellerini ve metnini yeni gelen veriyle yenile.
+        if (lastGorevNo > 0) {
+            console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
+            updateMapVisuals(currentGorevNo);
+            triggerBriefing(currentGorevNo, true);
+        }
     } else {
         console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
         logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
@@ -329,6 +333,11 @@ function updateZoomLevel(level, reloadMap = false) {
 function handleScoreUpdate(snapshot) {
     const data = snapshot.val();
     if (data) {
+        // Takım bağlandığında veya sinyal beklerken durumu "Bağlantı Kuruldu" olarak güncelle.
+        // Bu, karargah ekranına anlık bilgi verir.
+        if (data.durum === "Bağlantı Bekleniyor" || data.durum === "Sinyal Bekleniyor") {
+            update(scoreRef, { durum: "Bağlantı Kuruldu" });
+        }
         currentGorevNo = data.gorevNo || 1;
         updateScoreDisplay(data);
         updateMapVisuals(currentGorevNo);
