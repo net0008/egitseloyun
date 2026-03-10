@@ -238,7 +238,15 @@ function updateScoreDisplay(data) {
  * @param {boolean} [force=false] - Aynı görev olsa bile yeniden yazdırmaya zorlar.
  */
 function triggerBriefing(gorevNo, force = false) {
+    // Eğer zorunlu değilse ve görev numarası aynıysa VEYA görev verisi henüz yüklenmediyse çık.
     if ((!force && lastGorevNo === gorevNo) || !globalMissionData) return;
+
+    // Eğer görev numarası değiştiyse veya CMS'den zorunlu bir yenileme geldiyse terminali temizle.
+    if (lastGorevNo !== gorevNo || force) {
+        if(terminal) terminal.innerHTML = "";
+        logBox("Yeni görev verisi alınıyor...", "system");
+    }
+
     lastGorevNo = gorevNo;
     
     const mission = globalMissionData[gorevNo];
@@ -417,44 +425,48 @@ if (teamNameDisplay) {
 
 // --- 5. ANA OPERASYON BAŞLATICISI ---
 function initOperation() {
-    // 1. Karargaha anında "Bağlantı Kuruldu" sinyali gönder. Bu, "Sinyal Bekleniyor" sorununu çözer.
+    // 1. Karargaha anında "Bağlantı Kuruldu" sinyali gönder.
     update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
     logBox("Karargah ile güvenli bağlantı kuruldu.", "success");
 
-    // 2. Takımın skor/durum verisini dinle.
-    onValue(scoreRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
+    let isScoreListenerAttached = false;
 
-        teamScoreData = data; // Veriyi önbelleğe al
-        currentGorevNo = data.gorevNo || 1;
-        updateScoreDisplay(data);
-
-        // Eğer görev verisi (missions) daha önce yüklendiyse, arayüzü şimdi çiz.
-        if (globalMissionData) {
-            updateMapVisuals(currentGorevNo);
-            triggerBriefing(currentGorevNo);
-        } else {
-            console.log("Skor verisi geldi, ancak harita/brifing için görev verisinin yüklenmesi bekleniyor.");
-        }
-    });
-
-    // 3. CMS'den gelen görev içeriklerini dinle.
+    // 2. Önce CMS'den görev içeriklerini dinle.
     onValue(missionsRef, (snapshot) => {
-        if (snapshot.exists()) {
-            globalMissionData = snapshot.val();
-            console.log("Görev verisi (missions) yüklendi/güncellendi.");
-
-            // Eğer skor verisi daha önce geldiyse, arayüzü yeni görev verisiyle hemen güncelle.
-            // Bu, hem başlangıçtaki yarış durumunu (race condition) çözer hem de canlı CMS güncellemelerini sağlar.
-            if (teamScoreData) {
-                console.log("Mevcut skor verisi ile arayüz, yeni görev verisine göre yenileniyor.");
-                updateMapVisuals(teamScoreData.gorevNo || 1);
-                triggerBriefing(teamScoreData.gorevNo || 1, true);
-            }
-        } else {
+        if (!snapshot.exists()) {
             console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
             logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
+            return;
+        }
+        
+        globalMissionData = snapshot.val();
+        console.log("Görev verisi (missions) yüklendi/güncellendi.");
+
+        // Eğer skor dinleyicisi zaten çalışıyorsa (yani bu bir CMS güncellemesi ise),
+        // arayüzü yeni görev verisiyle yenile.
+        if (isScoreListenerAttached && teamScoreData) {
+            console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
+            updateMapVisuals(currentGorevNo);
+            triggerBriefing(currentGorevNo, true); // force=true
+        }
+
+        // 3. Skor dinleyicisini SADECE BİR KEZ, ilk görev verisi yüklendikten sonra başlat.
+        // Bu, yarış durumu (race condition) sorununu çözer.
+        if (!isScoreListenerAttached) {
+            isScoreListenerAttached = true;
+            
+            onValue(scoreRef, (scoreSnapshot) => {
+                const data = scoreSnapshot.val();
+                if (!data) return;
+
+                teamScoreData = data; // Veriyi önbelleğe al
+                currentGorevNo = data.gorevNo || 1;
+
+                // Arayüzü güncelle. Bu noktada globalMissionData'nın dolu olduğu garantidir.
+                updateScoreDisplay(data);
+                updateMapVisuals(currentGorevNo);
+                triggerBriefing(currentGorevNo);
+            });
         }
     });
 }
