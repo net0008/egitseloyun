@@ -14,6 +14,18 @@
             margin: 30px auto;
             padding: 0 20px;
         }
+        .cms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .cms-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
         .mission-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -81,6 +93,11 @@
     <div id="header-placeholder"></div>
 
     <div class="cms-container">
+        <div class="cms-header">
+            <h1>Görev Yönetim Paneli</h1>
+            <a href="karargah.html" class="cyber-btn" style="border-color: var(--info-blue); color: var(--info-blue);">« Karargâh Kontrol'e Dön</a>
+        </div>
+
         <div id="mission-grid" class="mission-grid">
             <!-- Görev kartları buraya dinamik olarak eklenecek -->
         </div>
