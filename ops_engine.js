@@ -234,7 +234,7 @@ function triggerBriefing(gorevNo, force = false) {
     }
     
     const text = mission.question || "Görev brifingi bekleniyor...";
-    logBox(`GÖREV ${gorevNo} BRİFİNGİ: ${text}`, "briefing");
+    logBox(`GÖREV ${gorevNo}: ${text}`, "briefing");
 }
 
 // --- 2. ETKİLEŞİM VE OYUN MANTIĞI ---
@@ -320,6 +320,17 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
     }
     inputEl.value = "";
 });
+
+// Enter tuşu ile onayla
+const kriptoInput = document.getElementById('kripto-val');
+if (kriptoInput) {
+    kriptoInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Formun gönderilmesini engelle
+            document.getElementById('btn-verify')?.click();
+        }
+    });
+}
 
 // --- 3. ANA OPERASYON BAŞLATICISI ---
 
