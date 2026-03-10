@@ -96,7 +96,7 @@ function updateMapVisuals(gorev) {
     }
     // --- GOOGLE MAPS / UMAP MODU ---
     else if (cmsContent && (cmsContent.includes("google.com/maps") || cmsContent.includes("umap.openstreetmap.fr"))) {
-        let embedUrl = cmsContent;
+        let embedUrl = cmsContent.trim();
 
         // CMS'deki dönüşüm mantığını buraya da ekliyoruz (Raw Link Desteği)
         if (embedUrl.includes("google.com/maps")) {
@@ -115,9 +115,14 @@ function updateMapVisuals(gorev) {
         if (embedUrl.startsWith('//')) {
             embedUrl = 'https:' + embedUrl;
         }
+        // HTTP linklerini HTTPS'e zorla (Mixed Content hatasını önlemek için)
+        else if (embedUrl.startsWith('http:')) {
+            embedUrl = embedUrl.replace('http:', 'https:');
+        }
 
         const mapFrame = document.getElementById('active-frame');
         mapFrame.style.display = "block";
+        mapFrame.style.zIndex = "15"; // Haritanın görünür olduğundan emin ol
 
         // URL değiştiyse yükle, aynıysa sadece loader'ı kapat (Sonsuz döngü önlemi)
         if (mapFrame.src !== embedUrl) {
