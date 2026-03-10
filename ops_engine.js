@@ -21,6 +21,7 @@ let leafletMap = null; // Leaflet harita örneği için global değişken
 // Sorular ve İpuçları artık Firebase 'gameContent/missions' düğümünden çekiliyor.
 let globalMissionData = null; // Veri yüklenene kadar null
 let currentGorevNo = 1; // Anlık görev numarasını takip etmek için
+let lastGorevNo = 0; // Brifing takibi için (Hoisting hatasını önlemek için yukarı taşındı)
 
 // Harita durumunu sıfırlayan yardımcı fonksiyon
 function resetMapState() {
@@ -65,7 +66,58 @@ function updateMapVisuals(gorev) {
     }
 
     const cmsContent = globalMissionData[gorev]?.image;
+const normalizeMapUrl = (rawUrl) => {
+        if (!rawUrl) return rawUrl;
+        let url = rawUrl.trim();
 
+        if (url.startsWith('//')) url = `https:${url}`;
+
+        const isGoogleMapUrl = /(^|\.)google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(url);
+        const isUmapUrl = /umap\.openstreetmap\.fr/i.test(url);
+
+        if (!isGoogleMapUrl && !isUmapUrl) return url;
+
+        // My Maps linklerini embed formatına çevir
+        if (url.includes('/d/')) {
+            if (url.includes('/edit')) url = url.replace('/edit', '/embed');
+            if (url.includes('/viewer')) url = url.replace('/viewer', '/embed');
+        }
+
+        if (isGoogleMapUrl) {
+            try {
+                const parsed = new URL(url);
+                const host = parsed.hostname.toLowerCase();
+                const isShortMapHost = host.includes('maps.app.goo.gl') || (host === 'goo.gl' && parsed.pathname.startsWith('/maps'));
+
+                if (isShortMapHost) {
+                    const fallback = new URL('https://www.google.com/maps');
+                    fallback.searchParams.set('q', url);
+                    fallback.searchParams.set('output', 'embed');
+                    fallback.searchParams.set('t', 'k');
+                    fallback.searchParams.set('z', '11');
+                    return fallback.toString();
+                }
+
+                const isAlreadyEmbed = parsed.pathname.includes('/embed');
+                if (!isAlreadyEmbed) {
+                    if (!parsed.searchParams.has('q') && parsed.pathname.includes('/place/')) {
+                        const placeSegment = decodeURIComponent(parsed.pathname.split('/place/')[1] || '').split('/')[0].replace(/\+/g, ' ').trim();
+                        if (placeSegment) parsed.searchParams.set('q', placeSegment);
+                    }
+
+                    parsed.searchParams.set('output', 'embed');
+                    if (!parsed.searchParams.has('t')) parsed.searchParams.set('t', 'k');
+                    if (!parsed.searchParams.has('z')) parsed.searchParams.set('z', '11');
+                }
+
+                url = parsed.toString();
+            } catch (_err) {
+                // URL parse edilemiyorsa ham değeri kullan.
+            }
+        }
+
+        return url;
+    };
     // --- RAW IFRAME MODU ---
     if (cmsContent && cmsContent.trim().startsWith("<iframe")) {
         const rawDiv = document.createElement('div');
@@ -95,38 +147,8 @@ function updateMapVisuals(gorev) {
         if (loader) loader.style.display = 'none';
     }
     // --- GOOGLE MAPS / UMAP MODU ---
-    else if (cmsContent && ((cmsContent.includes("google.") && cmsContent.includes("/maps")) || cmsContent.includes("maps.google") || cmsContent.includes("umap.openstreetmap.fr"))) {
-        let embedUrl = cmsContent.trim();
-
-        // URL Normalizasyonu (CMS ile Eşitlendi)
-        if (embedUrl.startsWith('//')) {
-            embedUrl = 'https:' + embedUrl;
-        }
-
-        if (embedUrl.includes("google.") || embedUrl.includes("maps.google")) {
-            // "My Maps" linkleri (/d/)
-            if (embedUrl.includes("/d/")) {
-                embedUrl = embedUrl.replace(/\/edit(\?|$)/, '/embed$1').replace(/\/viewer(\?|$)/, '/embed$1');
-            }
-            // Standart harita linkleri (henüz embed değilse)
-            else {
-                try {
-                    const urlObj = new URL(embedUrl);
-                    if (urlObj.searchParams.has('q') && !embedUrl.includes('/embed')) {
-                        if (!urlObj.searchParams.has('output')) urlObj.searchParams.set('output', 'embed');
-                        if (!urlObj.searchParams.has('t')) urlObj.searchParams.set('t', 'k');
-                        if (!urlObj.searchParams.has('z')) urlObj.searchParams.set('z', '11');
-                        embedUrl = urlObj.toString();
-                    }
-                } catch (e) {
-                    // URL API başarısız olursa manuel fallback
-                    if (!embedUrl.includes("/embed") && (embedUrl.includes("?q=") || embedUrl.includes("&q="))) {
-                        if (!embedUrl.includes("output=")) embedUrl += "&output=embed";
-                        if (!embedUrl.includes("t=")) embedUrl += "&t=k";
-                    }
-                }
-            }
-        }
+    else if (cmsContent && (/google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(cmsContent) || cmsContent.includes("umap.openstreetmap.fr"))) {
+        let embedUrl = normalizeMapUrl(cmsContent); // Hata 3 Düzeltildi: const -> let
 
         // HTTP linklerini HTTPS'e zorla (Mixed Content hatasını önlemek için)
         if (embedUrl.startsWith('http:')) {
@@ -147,6 +169,7 @@ function updateMapVisuals(gorev) {
             if (loader) loader.style.display = 'none';
         }
 
+        // Hata 1 & 2 Düzeltildi: Kod bloğu else-if içine alındı ve parantezler düzeltildi
         if (embedUrl.includes("google.") || embedUrl.includes("maps.google")) {
             document.querySelector('.scan-line')?.style.display = 'block';
             document.querySelector('.map-overlay-barrier')?.style.display = 'block';
@@ -394,7 +417,6 @@ window.finishMission = async function() {
 };
 
 // --- 4. DİNAMİK BRİFİNG VE GÖREV ARAYÜZ YÖNETİMİ ---
-let lastGorevNo = 0;
 function triggerBriefing(gorevNo) {
     if (lastGorevNo !== gorevNo) {
         terminal.innerHTML = "";
@@ -563,4 +585,5 @@ document.getElementById('btn-verify').addEventListener('click', async () => {
         logBox("HATA: Analiz verisi geçersiz.", "warning");
     }
     document.getElementById('kripto-val').value = "";
+
 });

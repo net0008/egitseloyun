@@ -122,7 +122,56 @@
             const img = document.getElementById(`prev-img-${id}`);
             const iframe = document.getElementById(`prev-iframe-${id}`);
             const txt = document.getElementById(`prev-txt-${id}`);
-            
+             const normalizeMapUrl = (rawUrl) => {
+                if (!rawUrl) return rawUrl;
+                let normalized = rawUrl.trim();
+
+                if (normalized.startsWith('//')) normalized = `https:${normalized}`;
+
+                const isGoogleMapUrl = /(^|\.)google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(normalized);
+                const isUmapUrl = /umap\.openstreetmap\.fr/i.test(normalized);
+                if (!isGoogleMapUrl && !isUmapUrl) return normalized;
+
+                if (normalized.includes('/d/')) {
+                    if (normalized.includes('/edit')) normalized = normalized.replace('/edit', '/embed');
+                    if (normalized.includes('/viewer')) normalized = normalized.replace('/viewer', '/embed');
+                }
+
+                if (isGoogleMapUrl) {
+                    try {
+                        const parsed = new URL(normalized);
+                        const host = parsed.hostname.toLowerCase();
+                        const isShortMapHost = host.includes('maps.app.goo.gl') || (host === 'goo.gl' && parsed.pathname.startsWith('/maps'));
+
+                        if (isShortMapHost) {
+                            const fallback = new URL('https://www.google.com/maps');
+                            fallback.searchParams.set('q', normalized);
+                            fallback.searchParams.set('output', 'embed');
+                            fallback.searchParams.set('t', 'k');
+                            fallback.searchParams.set('z', '11');
+                            return fallback.toString();
+                        }
+
+                        const isAlreadyEmbed = parsed.pathname.includes('/embed');
+                        if (!isAlreadyEmbed) {
+                            if (!parsed.searchParams.has('q') && parsed.pathname.includes('/place/')) {
+                                const placeSegment = decodeURIComponent(parsed.pathname.split('/place/')[1] || '').split('/')[0].replace(/\+/g, ' ').trim();
+                                if (placeSegment) parsed.searchParams.set('q', placeSegment);
+                            }
+
+                            parsed.searchParams.set('output', 'embed');
+                            if (!parsed.searchParams.has('t')) parsed.searchParams.set('t', 'k');
+                            if (!parsed.searchParams.has('z')) parsed.searchParams.set('z', '11');
+                        }
+
+                        normalized = parsed.toString();
+                    } catch (_err) {
+                        // Parse hatasında ham URL ile devam et.
+                    }
+                }
+
+                return normalized;
+            };
             // Eğer iframe kodu yapıştırıldıysa içinden src'yi al
             if (url.startsWith("<iframe")) {
                 const srcMatch = url.match(/src="([^"]+)"/);
