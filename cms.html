@@ -28,8 +28,9 @@
         .preview-text { font-size: 0.8rem; color: #666; }
 
         .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 15px; text-align: center; border-top: 2px solid var(--primary); box-shadow: 0 -5px 20px rgba(0,0,0,0.8); z-index: 100; }
-        .save-btn { background: var(--primary); color: #000; border: none; padding: 12px 40px; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 30px; transition: transform 0.2s; }
+        .save-btn { background: var(--primary); color: #000; border: none; padding: 12px 40px; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 30px; transition: all 0.2s; }
         .save-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--primary); }
+        .save-btn:disabled { background: #555; color: #999; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .helper-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
     </style>
@@ -47,7 +48,7 @@
     </div>
 
     <div class="sticky-footer">
-        <button class="save-btn" onclick="saveAllMissions()">💾 DEĞİŞİKLİKLERİ KAYDET VE YAYINLA</button>
+        <button class="save-btn" onclick="saveAllMissions()" disabled>Veriler Yükleniyor...</button>
     </div>
 
     <script type="module">
@@ -114,6 +115,13 @@
                 `;
                 missionContainer.innerHTML += html;
             }
+            // Yükleme tamamlandığında kaydet butonunu aktif et.
+            // Bu, form elemanları oluşturulmadan kaydetmeye çalışmayı engeller.
+            const saveBtn = document.querySelector('.save-btn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerText = '💾 DEĞİŞİKLİKLERİ KAYDET VE YAYINLA';
+            }
         }
 
         // Global fonksiyonlar (HTML içinden erişim için window'a atanır)
@@ -122,131 +130,74 @@
             const img = document.getElementById(`prev-img-${id}`);
             const iframe = document.getElementById(`prev-iframe-${id}`);
             const txt = document.getElementById(`prev-txt-${id}`);
-
-            const normalizeMapUrl = (rawUrl) => {
-                if (!rawUrl) return rawUrl;
-
-                let normalized = rawUrl.trim();
-
-                // Kullanıcı iframe kodu yapıştırmışsa src değerini çek.
-                if (normalized.startsWith('<iframe')) {
-                    const srcMatch = normalized.match(/src=["']([^"']+)["']/i);
-                    if (srcMatch && srcMatch[1]) normalized = srcMatch[1];
-                }
-
-                if (normalized.startsWith('//')) normalized = `https:${normalized}`;
-
-                let parsed;
-                try {
-                    parsed = new URL(normalized);
-                } catch (_err) {
-                    return normalized;
-                }
-
-                const host = parsed.hostname.toLowerCase();
-                const path = parsed.pathname;
-                const isUmapUrl = host.includes('umap.openstreetmap.fr');
-                const isGoogleMapUrl =
-                    /(^|\.)google\.[^/]+$/i.test(host) ||
-                    host.startsWith('maps.google.') ||
-                    host === 'maps.app.goo.gl' ||
-                    (host === 'goo.gl' && path.startsWith('/maps'));
-
-                if (isUmapUrl) return parsed.toString();
-                if (!isGoogleMapUrl) return normalized;
-
-                // My Maps linkleri (/maps/d/...)
-                if (path.includes('/maps/d/')) {
-                    const myMaps = new URL(parsed.toString());
-                    myMaps.pathname = myMaps.pathname.replace('/edit', '/embed').replace('/viewer', '/embed').replace('/view', '/embed');
-                    return myMaps.toString();
-                }
-
-                // Zaten embed ise olduğu gibi kullan.
-                if (path.includes('/maps/embed')) {
-                    return parsed.toString();
-                }
-
-                // Güvenli ve her yerde çalışacak tek format: /maps?output=embed&q=...
-                let q = parsed.searchParams.get('q') || '';
-
-                if (!q) {
-                    const placeMatch = path.match(/\/place\/([^/]+)/i);
-                    if (placeMatch && placeMatch[1]) {
-                        q = decodeURIComponent(placeMatch[1]).replace(/\+/g, ' ').trim();
-                    }
-                }
-
-                if (!q) {
-                    const atMatch = parsed.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-                    if (atMatch) q = `${atMatch[1]},${atMatch[2]}`;
-                }
-
-                if (!q) {
-                    q = parsed.searchParams.get('ll') || parsed.searchParams.get('query') || parsed.searchParams.get('destination') || normalized;
-                }
-
-                const embed = new URL('https://www.google.com/maps');
-                embed.searchParams.set('output', 'embed');
-                embed.searchParams.set('q', q);
-                if (!embed.searchParams.has('t')) embed.searchParams.set('t', 'k');
-                if (!embed.searchParams.has('z')) embed.searchParams.set('z', '11');
-                return embed.toString();
-            };
             
-            // Eğer iframe kodu yapıştırıldıysa içinden src'yi al
+            let previewUrl = url;
+            let isIframe = false;
+
             if (url.startsWith("<iframe")) {
-                const srcMatch = url.match(/src="([^"]+)"/);
-                if (srcMatch && srcMatch[1]) url = srcMatch[1];
+                const srcMatch = url.match(/src=["']([^"']+)["']/i);
+                if (srcMatch && srcMatch[1]) {
+                    previewUrl = srcMatch[1];
+                    isIframe = true;
+                }
+            } else if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(url)) {
+                isIframe = true;
             }
-            
-            if (/(google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|umap\.openstreetmap\.fr)/i.test(url)) {
-                const embedUrl = normalizeMapUrl(url);
 
-                iframe.src = embedUrl;
+            // Protokolü https yap
+            if (previewUrl.startsWith('//')) {
+                previewUrl = 'https:' + previewUrl;
+            }
+
+            if (isIframe) {
+                iframe.src = previewUrl;
                 iframe.style.display = "block";
                 img.style.display = "none";
                 txt.style.display = "none";
             } else {
-                img.src = url;
+                img.src = previewUrl;
                 img.style.display = "block";
                 iframe.style.display = "none";
                 txt.style.display = "none";
             }
         };
 
+        /**
+         * Tüm görevleri Firebase'e kaydeder.
+         * HATA DÜZELTMESİ:
+         * 1. `ops_engine.js` tam `<iframe>` kodunu işleyebildiği için,
+         *    burada `src` linkini ayıklamak yerine ham veriyi kaydediyoruz.
+         *    Bu, `ops_engine` tarafındaki "RAW IFRAME MODU"nun doğru çalışmasını sağlar.
+         */
         window.saveAllMissions = function() {
             const missions = {};
             for (let i = 1; i <= 10; i++) {
-                let imgVal = document.getElementById(`img-${i}`).value.trim();
-
-                // Eğer kullanıcı tam bir <iframe> kodu yapıştırdıysa, içinden sadece src linkini al.
-                if (imgVal.startsWith("<iframe")) {
-                    const srcMatch = imgVal.match(/src=["']([^"']+)["']/);
-                    if (srcMatch && srcMatch[1]) imgVal = srcMatch[1];
-                }
-
                 missions[i] = {
-                    question: document.getElementById(`q-${i}`).value,
-                    answers: document.getElementById(`a-${i}`).value,
-                    hints: document.getElementById(`h-${i}`).value,
-                    image: imgVal,
-                    requireAll: document.getElementById(`mode-${i}`).checked
+                    question: document.getElementById(`q-${i}`).value.trim(),
+                    answers: document.getElementById(`a-${i}`).value.trim(),
+                    hints: document.getElementById(`h-${i}`).value.trim(),
+                    image: document.getElementById(`img-${i}`).value.trim(), // Ham veriyi kaydet
+                    requireAll: document.getElementById(`mode-${i}`).checked,
                 };
             }
             
             set(ref(db, 'gameContent/missions'), missions)
                 .then(() => {
                     const btn = document.querySelector('.save-btn');
+                    if (!btn) return;
                     const oldText = btn.innerText;
                     btn.innerText = "✅ BAŞARIYLA KAYDEDİLDİ!";
                     btn.style.background = "#fff";
+                    btn.style.color = "#000";
                     setTimeout(() => {
                         btn.innerText = oldText;
                         btn.style.background = "#39FF14";
                     }, 2000);
                 })
-                .catch(err => alert("Hata oluştu: " + err));
+                .catch(err => {
+                    console.error("Firebase Kaydetme Hatası:", err);
+                    alert("HATA: Veriler sunucuya kaydedilemedi. İnternet bağlantınızı ve konsolu kontrol edin.\n\n" + err.message);
+                });
         };
     </script>
 </body>
