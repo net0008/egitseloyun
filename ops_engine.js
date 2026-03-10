@@ -31,6 +31,7 @@ let currentGorevNo = 1;
 let lastGorevNo = 0;
 let mapLoadTimeout = null;
 let lastVisualSignature = '';
+let mapRenderToken = 0;
 
 // --- 1. GÖRSELLEŞTİRME VE ARAYÜZ YÖNETİMİ ---
 
@@ -92,7 +93,7 @@ function parseMissionVisual(cmsContent = '') {
     return { type: 'image', url: normalizedUrl, signature: `image:${normalizedUrl}` };
 }
 
-function resetMapState() {
+function resetMapState(keepIframeSrc = true) {
     const elements = {
         mapImg: document.getElementById('active-map'),
         mapFrame: document.getElementById('active-frame'),
@@ -106,7 +107,7 @@ function resetMapState() {
     }
     if (elements.mapFrame) {
         elements.mapFrame.style.display = 'none';
-        elements.mapFrame.src = 'about:blank';
+        if (!keepIframeSrc) elements.mapFrame.src = 'about:blank';
     }
     if (elements.scanLine) elements.scanLine.style.display = 'none';
     if (elements.mapOverlayBarrier) elements.mapOverlayBarrier.style.display = 'none';
@@ -121,6 +122,8 @@ function updateMapVisuals(gorevNo) {
     if (loader) loader.style.display = 'flex';
 
     if (gorevNo > 10) {
+        resetMapState(false);
+        lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
         return;
     }
@@ -129,6 +132,7 @@ function updateMapVisuals(gorevNo) {
     const parsedVisual = parseMissionVisual(cmsContent);
 
     if (parsedVisual.type === 'none' || parsedVisual.type === 'invalid') {
+        resetMapState(false);
         lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
         if (parsedVisual.type === 'invalid') {
@@ -149,22 +153,47 @@ function updateMapVisuals(gorevNo) {
         return;
     }
 
-    resetMapState();
+    mapRenderToken += 1;
+    const token = mapRenderToken;
+
+    resetMapState(true);
 
     if (parsedVisual.type === 'iframe') {
         const mapFrame = document.getElementById('active-frame');
         if (mapFrame) {
             mapFrame.style.display = 'block';
+            mapFrame.onload = () => {
+                if (token !== mapRenderToken) return;
+                if (loader) loader.style.display = 'none';
+            };
+            mapFrame.onerror = () => {
+                if (token !== mapRenderToken) return;
+                if (loader) loader.style.display = 'none';
+                logBox('UYARI: Harita iframe yüklenemedi. Linki kontrol edin.', 'warning');
+            };
             if (mapFrame.src !== parsedVisual.url) {
                 mapFrame.src = parsedVisual.url;
+            } else if (loader) {
+                loader.style.display = 'none';
             }
         }
     } else {
         const mapImg = document.getElementById('active-map');
         if (mapImg) {
             mapImg.style.display = 'block';
+            mapImg.onload = () => {
+                if (token !== mapRenderToken) return;
+                if (loader) loader.style.display = 'none';
+            };
+            mapImg.onerror = () => {
+                if (token !== mapRenderToken) return;
+                if (loader) loader.style.display = 'none';
+                logBox('UYARI: Görsel yüklenemedi. URL veya erişim iznini kontrol edin.', 'warning');
+            };
             if (mapImg.src !== parsedVisual.url) {
                 mapImg.src = parsedVisual.url;
+            } else if (loader) {
+                loader.style.display = 'none';
             }
         }
     }
@@ -172,8 +201,9 @@ function updateMapVisuals(gorevNo) {
     lastVisualSignature = parsedVisual.signature;
 
     mapLoadTimeout = setTimeout(() => {
+        if (token !== mapRenderToken) return;
         if (loader) loader.style.display = 'none';
-    }, 1200);
+    }, 4000);
 }
 
 function triggerBriefing(gorevNo, force = false) {
