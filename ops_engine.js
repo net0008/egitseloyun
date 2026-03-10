@@ -27,18 +27,19 @@ let mapLoadTimeout = null;
 let globalMissionData = null;
 let currentGorevNo = 1;
 let lastGorevNo = 0;
+let scoreData = null; // Gelen skor verisini önbelleğe almak için
 
 onValue(ref(db, 'gameContent/missions'), (snapshot) => {
     if (snapshot.exists()) {
         globalMissionData = snapshot.val();
-        console.log("Görev verisi Firebase'den güncellendi.");
-        
-        // Eğer oyun zaten başlamışsa (lastGorevNo > 0), mevcut görevin
-        // görsellerini ve metnini yeni gelen veriyle yenile.
-        if (lastGorevNo > 0) {
-            console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
-            updateMapVisuals(currentGorevNo);
-            triggerBriefing(currentGorevNo, true);
+        console.log("Görev verisi (missions) yüklendi/güncellendi.");
+
+        // Eğer skor verisi daha önce geldiyse, arayüzü yeni görev verisiyle hemen güncelle.
+        // Bu, hem başlangıçtaki yarış durumunu (race condition) çözer hem de canlı CMS güncellemelerini sağlar.
+        if (scoreData) {
+            console.log("Mevcut skor verisi ile arayüz, yeni görev verisine göre yenileniyor.");
+            updateMapVisuals(scoreData.gorevNo || 1);
+            triggerBriefing(scoreData.gorevNo || 1, true);
         }
     } else {
         console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
@@ -332,16 +333,26 @@ function updateZoomLevel(level, reloadMap = false) {
  */
 function handleScoreUpdate(snapshot) {
     const data = snapshot.val();
-    if (data) {
-        // Takım bağlandığında veya sinyal beklerken durumu "Bağlantı Kuruldu" olarak güncelle.
-        // Bu, karargah ekranına anlık bilgi verir.
-        if (data.durum === "Bağlantı Bekleniyor" || data.durum === "Sinyal Bekleniyor") {
-            update(scoreRef, { durum: "Bağlantı Kuruldu" });
-        }
-        currentGorevNo = data.gorevNo || 1;
-        updateScoreDisplay(data);
+    if (!data) return;
+
+    const isFirstLoad = !scoreData;
+    scoreData = data; // Veriyi önbelleğe al
+
+    // Takım ilk kez bağlandığında veya sinyal beklenirken durumu "Bağlantı Kuruldu" olarak güncelle.
+    // Bu, karargah ekranına anlık bilgi verir ve sorunun ana kaynağını çözer.
+    if (isFirstLoad && (data.durum === "Bağlantı Bekleniyor" || data.durum === "Sinyal Bekleniyor")) {
+        update(scoreRef, { durum: "Bağlantı Kuruldu" });
+    }
+
+    currentGorevNo = data.gorevNo || 1;
+    updateScoreDisplay(data);
+
+    // Eğer görev verisi (missions) daha önce yüklendiyse, haritayı ve brifingi şimdi çiz.
+    if (globalMissionData) {
         updateMapVisuals(currentGorevNo);
         triggerBriefing(currentGorevNo);
+    } else {
+        console.log("Skor verisi geldi, ancak harita/brifing için görev verisinin yüklenmesi bekleniyor.");
     }
 }
 
