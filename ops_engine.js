@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * ops_engine.js - Sürüm: v3.6.0 (Tam Onarım)                                  *
+ * ops_engine.js - Sürüm: v3.7.0 (Kararlı Sürüm)                               *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Görev 1-10 Tam Entegrasyon | Bergama-Dikili Final Raporu & AI Motoru       *
+ * CMS ve Karargah Senkronizasyon Protokolü Onarıldı.                         *
  * *************************************************************************** *
  * Bu modül, Firebase Realtime Database üzerinden saha ve karargah arasındaki *
  * senkronizasyonu yönetir. Hata ve İpucu sayıları anlık olarak mühürlenir.   *
@@ -19,33 +19,16 @@ if (!teamName) {
 }
 
 const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
+const missionsRef = ref(db, 'gameContent/missions');
 const terminal = document.getElementById('terminal-output');
 let leafletMap = null;
 let mapLoadTimeout = null;
 
-// --- 1. İÇERİK YÖNETİMİ (CMS ENTEGRASYONU) ---
-let globalMissionData = null;
+// --- 1. VERİ ÖNBELLEĞİ VE DURUM YÖNETİMİ ---
+let globalMissionData = null; // CMS'den gelen görev içerikleri
+let teamScoreData = null;     // Takımın anlık skor/durum verisi
 let currentGorevNo = 1;
 let lastGorevNo = 0;
-let scoreData = null; // Gelen skor verisini önbelleğe almak için
-
-onValue(ref(db, 'gameContent/missions'), (snapshot) => {
-    if (snapshot.exists()) {
-        globalMissionData = snapshot.val();
-        console.log("Görev verisi (missions) yüklendi/güncellendi.");
-
-        // Eğer skor verisi daha önce geldiyse, arayüzü yeni görev verisiyle hemen güncelle.
-        // Bu, hem başlangıçtaki yarış durumunu (race condition) çözer hem de canlı CMS güncellemelerini sağlar.
-        if (scoreData) {
-            console.log("Mevcut skor verisi ile arayüz, yeni görev verisine göre yenileniyor.");
-            updateMapVisuals(scoreData.gorevNo || 1);
-            triggerBriefing(scoreData.gorevNo || 1, true);
-        }
-    } else {
-        console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
-        logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
-    }
-});
 
 // --- 2. GÖRSELLEŞTİRME MOTORU ---
 
@@ -327,38 +310,6 @@ function updateZoomLevel(level, reloadMap = false) {
 
 // --- 4. ETKİLEŞİM VE OYUN MANTIĞI ---
 
-/**
- * Skor verisi güncellendiğinde tetiklenir.
- * @param {object} snapshot - Firebase snapshot.
- */
-function handleScoreUpdate(snapshot) {
-    const data = snapshot.val();
-    if (!data) return;
-
-    const isFirstLoad = !scoreData;
-    scoreData = data; // Veriyi önbelleğe al
-
-    // Takım ilk kez bağlandığında veya sinyal beklenirken durumu "Bağlantı Kuruldu" olarak güncelle.
-    // Bu, karargah ekranına anlık bilgi verir ve sorunun ana kaynağını çözer.
-    if (isFirstLoad && (data.durum === "Bağlantı Bekleniyor" || data.durum === "Sinyal Bekleniyor")) {
-        update(scoreRef, { durum: "Bağlantı Kuruldu" });
-    }
-
-    currentGorevNo = data.gorevNo || 1;
-    updateScoreDisplay(data);
-
-    // Eğer görev verisi (missions) daha önce yüklendiyse, haritayı ve brifingi şimdi çiz.
-    if (globalMissionData) {
-        updateMapVisuals(currentGorevNo);
-        triggerBriefing(currentGorevNo);
-    } else {
-        console.log("Skor verisi geldi, ancak harita/brifing için görev verisinin yüklenmesi bekleniyor.");
-    }
-}
-
-// Skorları dinle ve UI güncelle
-onValue(scoreRef, handleScoreUpdate);
-
 // Buton: İpucu
 document.getElementById('btn-hint')?.addEventListener('click', async () => {
     const snapshot = await get(scoreRef);
@@ -463,3 +414,50 @@ const teamNameDisplay = document.getElementById('team-name-display');
 if (teamNameDisplay) {
     teamNameDisplay.textContent = `UYDU ANALİZİ: ${teamName}`;
 }
+
+// --- 5. ANA OPERASYON BAŞLATICISI ---
+function initOperation() {
+    // 1. Karargaha anında "Bağlantı Kuruldu" sinyali gönder. Bu, "Sinyal Bekleniyor" sorununu çözer.
+    update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
+    logBox("Karargah ile güvenli bağlantı kuruldu.", "success");
+
+    // 2. Takımın skor/durum verisini dinle.
+    onValue(scoreRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        teamScoreData = data; // Veriyi önbelleğe al
+        currentGorevNo = data.gorevNo || 1;
+        updateScoreDisplay(data);
+
+        // Eğer görev verisi (missions) daha önce yüklendiyse, arayüzü şimdi çiz.
+        if (globalMissionData) {
+            updateMapVisuals(currentGorevNo);
+            triggerBriefing(currentGorevNo);
+        } else {
+            console.log("Skor verisi geldi, ancak harita/brifing için görev verisinin yüklenmesi bekleniyor.");
+        }
+    });
+
+    // 3. CMS'den gelen görev içeriklerini dinle.
+    onValue(missionsRef, (snapshot) => {
+        if (snapshot.exists()) {
+            globalMissionData = snapshot.val();
+            console.log("Görev verisi (missions) yüklendi/güncellendi.");
+
+            // Eğer skor verisi daha önce geldiyse, arayüzü yeni görev verisiyle hemen güncelle.
+            // Bu, hem başlangıçtaki yarış durumunu (race condition) çözer hem de canlı CMS güncellemelerini sağlar.
+            if (teamScoreData) {
+                console.log("Mevcut skor verisi ile arayüz, yeni görev verisine göre yenileniyor.");
+                updateMapVisuals(teamScoreData.gorevNo || 1);
+                triggerBriefing(teamScoreData.gorevNo || 1, true);
+            }
+        } else {
+            console.error("Kritik Hata: Görev içerikleri (missions) veritabanında bulunamadı!");
+            logBox("SİSTEM HATASI: Görev verileri yüklenemedi. Lütfen karargah ile iletişime geçin.", "warning");
+        }
+    });
+}
+
+// Operasyonu başlat!
+initOperation();
