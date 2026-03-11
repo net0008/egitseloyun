@@ -184,14 +184,3 @@ document.getElementById("btn-reset-db")?.addEventListener("click", () => {
         });
     }
 });
-/* --- GÜVENLİK KİLİDİ: MÜLAKAT ESNASINDA YANLIŞLIKLA SAYFAYI KAPATMAYI ENGELLER --- */
-window.addEventListener('beforeunload', (event) => {
-    // Standart tarayıcı uyarısını tetikler
-    event.preventDefault();
-    
-    // Modern tarayıcılar için boş bir string döndürmek yeterlidir, 
-    // tarayıcı kendi standart "Ayrılmak istiyor musunuz?" kutusunu gösterir.
-    event.returnValue = ''; 
-});
-
-console.log("[SİSTEM]: Karargâh Güvenlik Kilidi Aktif. Yanlışlıkla kapanmalara karşı koruma sağlandı.");
