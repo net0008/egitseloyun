@@ -35,7 +35,7 @@ let mapRenderToken = 0;
 
 // --- 1. GÖRSELLEŞTİRME VE ARAYÜZ YÖNETİMİ ---
 
-function logBox(message, type = 'system') {
+function logBox(message, type = 'system', atTop = false) {
     if (!terminal) return;
     const div = document.createElement('div');
     div.className = `terminal-msg ${type}`;
@@ -44,8 +44,14 @@ function logBox(message, type = 'system') {
     span.textContent = `[${timestamp}] `;
     div.appendChild(span);
     div.appendChild(document.createTextNode(message));
-    terminal.appendChild(div);
-    terminal.scrollTop = terminal.scrollHeight;
+
+    if (atTop) {
+        terminal.insertBefore(div, terminal.firstChild);
+        terminal.scrollTop = 0;
+    } else {
+        terminal.appendChild(div);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
 }
 
 function updateScoreDisplay(data) {
@@ -644,12 +650,13 @@ function initOperation() {
                 const oldStars = Math.min(5, Math.ceil((previousData.gorevNo || 1) / 2));
                 const newStars = Math.min(5, Math.ceil((teamScoreData.gorevNo || 1) / 2));
 
-                if (newStars > oldStars) {
-                    logBox("Tebrikler rütbe kazandınız.", "success");
+                // Rütbe atlama anları: 3, 5, 7, 9. görevler ve final.
+                if (newStars > oldStars || ((teamScoreData.gorevNo || 1) > 10 && (previousData.gorevNo || 1) <= 10)) {
+                    logBox("Tebrikler rütbe kazandınız.", "success", true);
                     const starContainer = document.getElementById('star-container');
                     if (starContainer) {
                         starContainer.classList.add('star-pulse');
-                        // Animasyon 1 saniye sürer ve 3 kez tekrarlanır. 3 saniye sonra sınıfı kaldır.
+                        // Animasyon bittikten sonra sınıfı kaldır
                         setTimeout(() => starContainer.classList.remove('star-pulse'), 3000);
                     }
                 }
