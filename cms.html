@@ -89,13 +89,34 @@
         .helper-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
     </style>
 </head>
-<body>
+<body class="matrix-theme">
+    <aside class="side-comms-menu" id="side-comms-menu">
+        <div style="padding-top: 60px;">
+            <h3>İletişim Kanalları</h3>
+            <ul>
+                <li><a href="karargah.html">Karargâh</a></li>
+                <li><a href="operasyon.html">Operasyon Kontrol</a></li>
+                <li><a href="cms.html">CMS (Görev Yönetimi)</a></li>
+                <li><a href="#">Arşiv</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <div class="comms-toggle">
+        <button class="comms-toggle-btn" id="comms-toggle-btn" title="İletişim Menüsünü Aç/Kapat">
+            &#128224;
+        </button>
+        <div class="comms-status">
+            <span class="pulse-dot"></span>
+            COMMS ACTIVE
+        </div>
+    </div>
+
     <div id="header-placeholder"></div>
 
     <div class="cms-container">
         <div class="cms-header">
             <h1>Görev Yönetim Paneli</h1>
-            <a href="karargah.html" class="cyber-btn" style="border-color: var(--info-blue); color: var(--info-blue);">« Karargâh Kontrol'e Dön</a>
         </div>
 
         <div id="mission-grid" class="mission-grid">
@@ -341,5 +362,15 @@
 
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
+
+    <script>
+        const commsMenu = document.getElementById('side-comms-menu');
+        const commsToggleBtn = document.getElementById('comms-toggle-btn');
+        if (commsToggleBtn && commsMenu) {
+            commsToggleBtn.addEventListener('click', () => {
+                commsMenu.classList.toggle('active');
+            });
+        }
+    </script>
 </body>
 </html>
