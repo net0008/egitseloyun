@@ -70,12 +70,25 @@
         <section class="command-panel">
     <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
     <div class="terminal-log" id="terminal-output"></div>
-    
-   <div class="mission-input">
-    <label>$ ANALİST_GİRİŞİ: </label>
-    <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off">
-    <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
-</div>
+
+    <div id="standard-mission-input" class="mission-input">
+        <label>$ ANALİST_GİRİŞİ: </label>
+        <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off">
+        <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
+    </div>
+
+    <div id="mission-10-input" class="mission-input" style="display: none; flex-direction: column; gap: 15px; align-items: stretch;">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <a href="https://www.heywhatsthat.com/profiler.html" target="_blank" class="cyber-btn">Eğitim İzle</a>
+            <a href="assets/video/10_gorev.mp4" target="_blank" class="cyber-btn">Profil Çıkar</a>
+        </div>
+        <div style="border: 1px dashed var(--border-color); padding: 15px; text-align: center;">
+            <label for="fake-upload" class="cyber-btn secondary" style="width: 100%;">Profil Resmini Kaydet (Upload)</label>
+            <input type="file" id="fake-upload" hidden="">
+        </div>
+        <input type="text" id="coords-input" placeholder="Enlem boylam bilgisini yapıştır.">
+        <button class="cyber-btn primary" id="btn-ai-verify">Yapay Zeka</button>
+    </div>
 
     <div class="extra-tools">
         <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 PUAN)</button>

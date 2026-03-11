@@ -155,8 +155,25 @@
             let allMissionsHTML = "";
             for (let i = 1; i <= 10; i++) {
                 const mission = data[i] || {};
-                const defaultImg = ``; // Varsayılan resim yok
-                const currentImg = mission.image || defaultImg;
+                const currentImg = mission.image || ``;
+
+                // --- Special labels for Mission 10 ---
+                let questionLabel = "Soru";
+                let answerLabel = "Cevaplar (Virgülle ayırın)";
+                let answerPlaceholder = "";
+                let answerHelper = "";
+                let visualLabel = "Görev Görseli (Resim URL'i veya iframe kodu)";
+                let visualHelper = "";
+
+                if (i === 10) {
+                    questionLabel = "Görev 10 Açıklaması";
+                    answerLabel = "Doğru Koordinat (enlem,boylam)";
+                    answerPlaceholder = "Örn: 39.121138,27.179661";
+                    answerHelper = "Sadece tek bir 'enlem,boylam' çifti girin. Sistem küçük hata paylarını tolere edecektir.";
+                    visualLabel = "Görev Görseli (İsteğe Bağlı)";
+                    visualHelper = "Profil görevinde bu alan kullanılmaz, boş bırakılabilir.";
+                }
+                // --- End of special labels ---
 
                 allMissionsHTML += `
                     <div class="mission-card">
@@ -168,24 +185,26 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label for="q-${i}">Soru</label>
+                            <label for="q-${i}">${questionLabel}</label>
                             <textarea id="q-${i}">${mission.question || ''}</textarea>
                         </div>
                         <div class="form-group">
-                            <label for="a-${i}">Cevaplar (Virgülle ayırın)</label>
-                            <input type="text" id="a-${i}" value="${mission.answers || ''}">
+                            <label for="a-${i}">${answerLabel}</label>
+                            <input type="text" id="a-${i}" value="${mission.answers || ''}" placeholder="${answerPlaceholder}">
+                            ${answerHelper ? `<p class="helper-text">${answerHelper}</p>` : ''}
                         </div>
                         <div class="form-group">
                             <label for="h-${i}">İpuçları (Her satıra bir ipucu)</label>
                             <textarea id="h-${i}">${mission.hints || ''}</textarea>
                         </div>
                         <div class="form-group">
-                            <label for="title-${i}">Görsel Başlığı</label>
+                            <label for="title-${i}">Görsel Başlığı (İsteğe Bağlı)</label>
                             <input type="text" id="title-${i}" value="${mission.title || ''}" placeholder="Harita veya resim için başlık girin...">
                         </div>
                         <div class="form-group">
-                            <label for="img-${i}">Görev Görseli (Resim URL'i veya iframe kodu)</label>
+                            <label for="img-${i}">${visualLabel}</label>
                             <textarea id="img-${i}" oninput="updatePreview(${i})">${currentImg}</textarea>
+                            ${visualHelper ? `<p class="helper-text">${visualHelper}</p>` : ''}
                         </div>
                         <div class="preview-box">
                             <span id="prev-txt-${i}" class="preview-text">Önizleme Alanı</span>

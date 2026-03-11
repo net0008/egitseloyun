@@ -265,6 +265,83 @@ document.getElementById('btn-hint')?.addEventListener('click', async () => {
     }
 });
 
+document.getElementById('btn-ai-verify')?.addEventListener('click', async () => {
+    const inputEl = document.getElementById('coords-input');
+    const rawInput = inputEl.value.trim();
+    if (!rawInput) return;
+
+    if (!teamScoreData || !globalMissionData) {
+        logBox("Sistem verileri henüz hazır değil, lütfen bekleyin.", "warning");
+        return;
+    }
+
+    const cur = teamScoreData.gorevNo || 1;
+    if (cur !== 10) {
+        logBox("HATA: Profil çıkarma modülü sadece 10. görevde aktiftir.", "warning");
+        return;
+    }
+
+    const mission = globalMissionData[cur];
+    if (!mission) {
+        logBox("Görev verisi yüklenemedi, cevap kontrol edilemiyor.", "warning");
+        return;
+    }
+
+    // Parse user input: expecting "lat, lon"
+    const parts = rawInput.replace(',', ' ').split(/\s+/).filter(Boolean);
+    if (parts.length !== 2) {
+        logBox("HATA: Geçersiz format. Lütfen 'enlem, boylam' formatında veri girin.", "warning");
+        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: (teamScoreData.hataSayisi || 0) + 1, puan: (teamScoreData.puan || 1000) - 10 });
+        return;
+    }
+
+    const lat = parseFloat(parts[0]);
+    const lon = parseFloat(parts[1]);
+
+    if (isNaN(lat) || isNaN(lon)) {
+        logBox("HATA: Enlem ve boylam sayısal değerler olmalıdır.", "warning");
+        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: (teamScoreData.hataSayisi || 0) + 1, puan: (teamScoreData.puan || 1000) - 10 });
+        return;
+    }
+
+    // Get correct answer from CMS
+    const correctAnswers = (mission.answers || "").split(',').map(a => a.trim()).filter(Boolean);
+    if (correctAnswers.length !== 2) {
+        logBox("KRİTİK HATA: Görev 10 için cevaplar doğru formatta değil. CMS'i kontrol edin.", "warning");
+        return;
+    }
+
+    const correctLat = parseFloat(correctAnswers[0]);
+    const correctLon = parseFloat(correctAnswers[1]);
+
+    // Check with a margin of error
+    const latError = Math.abs(lat - correctLat);
+    const lonError = Math.abs(lon - correctLon);
+    const tolerance = 0.001; // ~111 meters margin of error
+
+    if (latError <= tolerance && lonError <= tolerance) {
+        // Correct
+        const nextGorevNo = cur + 1;
+        const nextPuan = (teamScoreData.puan || 1000) + 200;
+        const nextBolge = "TAMAMLANDI";
+        update(scoreRef, {
+            gorevNo: nextGorevNo,
+            bolge: nextBolge,
+            puan: nextPuan,
+            durum: "Profil Çıkarma Başarılı",
+            ipucuSayisi: 0
+        });
+        logBox("YAPAY ZEKA ANALİZİ BAŞARILI! Profil doğrulandı. Operasyon tamamlanıyor...", "success");
+    } else {
+        // Incorrect
+        const hCount = (teamScoreData.hataSayisi || 0) + 1;
+        const newPuan = (teamScoreData.puan || 1000) - 50;
+        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: hCount, puan: newPuan });
+        logBox("HATA: Yapay zeka analizi başarısız. Konum verisi eşleşmiyor. (-50 Puan)", "warning");
+    }
+    inputEl.value = "";
+});
+
 document.getElementById('btn-verify')?.addEventListener('click', async () => {
     const inputEl = document.getElementById('kripto-val');
     const rawInput = inputEl.value.trim();
@@ -343,9 +420,46 @@ function renderUI() {
     
     const gorevNo = teamScoreData.gorevNo || 1;
     
+    const standardInput = document.getElementById('standard-mission-input');
+    const mission10Input = document.getElementById('mission-10-input');
+    const visualPanel = document.querySelector('.visual-panel');
+    const terminalHeader = document.querySelector('.terminal-header');
+    const extraTools = document.querySelector('.extra-tools');
+
+    if (gorevNo > 10) {
+        // Game finished
+        if (visualPanel) visualPanel.style.display = 'block'; // Show it again for the final message
+        resetMapState(false);
+        if(terminal) terminal.innerHTML = "";
+        logBox("Tebrikler! Bergama 2050 operasyonunu başarıyla tamamladınız. Skorunuz karargaha iletildi.", "success");
+        const titleBox = document.getElementById('visual-title');
+        if(titleBox) titleBox.textContent = "OPERASYON BAŞARIYLA TAMAMLANDI";
+        if (standardInput) standardInput.style.display = 'none';
+        if (mission10Input) mission10Input.style.display = 'none';
+        if (extraTools) extraTools.style.display = 'none';
+        updateScoreDisplay(teamScoreData); // Update score one last time
+        return; // Stop further rendering
+    }
+
+    // Toggle mission inputs based on gorevNo
+    if (gorevNo === 10) {
+        if (standardInput) standardInput.style.display = 'none';
+        if (mission10Input) mission10Input.style.display = 'flex';
+        if (visualPanel) visualPanel.style.display = 'none'; // Hide the map/image panel for mission 10
+        if (terminalHeader) terminalHeader.style.marginTop = '0'; // Reset margin
+    } else {
+        if (standardInput) standardInput.style.display = 'flex';
+        if (mission10Input) mission10Input.style.display = 'none';
+        if (visualPanel) visualPanel.style.display = 'block'; // Show map/image panel for other missions
+        if (terminalHeader) terminalHeader.style.marginTop = ''; // Use default margin
+    }
+    
     updateScoreDisplay(teamScoreData);
-    updateMapVisuals(gorevNo);
-    triggerBriefing(gorevNo);
+    
+    if (gorevNo <= 10) {
+        updateMapVisuals(gorevNo);
+        triggerBriefing(gorevNo);
+    }
 }
 
 function initOperation() {
