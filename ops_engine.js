@@ -480,24 +480,31 @@ function renderUI() {
         const allScoresRef = ref(db, 'operasyon/skorlar');
         get(allScoresRef).then((snapshot) => {
             if (snapshot.exists()) {
-                const allScores = snapshot.val();
-                let championTeam = '';
-                let highScore = -Infinity;
-
-                for (const team in allScores) {
-                    if (allScores[team].puan > highScore) {
-                        highScore = allScores[team].puan;
-                        championTeam = team;
-                    }
+                const scoresObject = snapshot.val();
+                const teamsRanked = [];
+                for (const teamNameKey in scoresObject) {
+                    teamsRanked.push({
+                        name: teamNameKey,
+                        score: scoresObject[teamNameKey].puan || 0
+                    });
                 }
 
-                const championNameEl = document.getElementById('champion-name');
-                const championScoreEl = document.getElementById('champion-score');
+                // Takımları puana göre yüksekten alçağa sırala
+                teamsRanked.sort((a, b) => b.score - a.score);
+
+                const championListEl = document.getElementById('champion-list');
                 const championSection = document.getElementById('champion-section');
 
-                if (championNameEl && championScoreEl && championSection) {
-                    championNameEl.textContent = championTeam;
-                    championScoreEl.textContent = highScore;
+                if (championListEl && championSection) {
+                    championListEl.innerHTML = ''; // Önceki içeriği temizle
+                    teamsRanked.forEach((team, index) => {
+                        const p = document.createElement('p');
+                        p.style.marginBottom = '5px';
+                        // Birinciye taç simgesi ekle
+                        const rankDisplay = index === 0 ? '👑' : `${index + 1}.`;
+                        p.innerHTML = `<span style="color: #fff; width: 2.5em; display: inline-block;">${rankDisplay}</span> <span style="font-weight: bold; color: var(--neon-green);">${team.name}</span> - <span class="neon-text" style="color: var(--info-blue);">${team.score}</span> Puan`;
+                        championListEl.appendChild(p);
+                    });
                     championSection.style.display = 'block';
                 }
             }
