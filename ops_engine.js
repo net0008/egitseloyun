@@ -320,7 +320,9 @@ document.getElementById('btn-ai-verify')?.addEventListener('click', async () => 
     }
 
     // Parse user input: expecting "lat, lon"
-    const parts = rawInput.replace(',', ' ').split(/\s+/).filter(Boolean);
+    // Kullanıcıdan gelebilecek "39.121369° N 27.179983° E" gibi formatları işlemek için temizleme yapılır.
+    const cleanedInput = rawInput.replace(/[°NESW]/gi, ' ').replace(/,/g, ' ');
+    const parts = cleanedInput.split(/\s+/).filter(Boolean);
     if (parts.length !== 2) {
         logBox("HATA: Geçersiz format. Lütfen 'enlem, boylam' formatında veri girin.", "warning");
         update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: (teamScoreData.hataSayisi || 0) + 1, puan: (teamScoreData.puan || 1000) - 10 });
