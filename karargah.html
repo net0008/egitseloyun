@@ -26,7 +26,7 @@
         </div>
     </aside>
 
-    <div class="comms-toggle">
+    <div class="comms-toggle" style="display: none;">
         <button class="comms-toggle-btn" id="comms-toggle-btn" title="İletişim Menüsünü Aç/Kapat">
             &#128224;
         </button>
@@ -36,9 +36,22 @@
         </div>
     </div>
 
-    <div id="header-placeholder"></div>
+    <div id="header-placeholder" style="display: none;"></div>
 
-    <main class="dashboard-container">
+    <!-- Kripto Erişim Paneli -->
+    <div id="crypto-access-panel" class="crypto-overlay">
+        <div class="crypto-panel">
+            <h2>KRİPTO ERİŞİM GEREKLİ</h2>
+            <p>Karargâh sistemlerine erişim için kimlik doğrulaması yapın.</p>
+            <div class="crypto-input-group">
+                <input type="password" id="access-password" placeholder="Giriş Kodu...">
+                <button id="btn-access-verify" class="cyber-btn">GİRİŞ</button>
+            </div>
+            <p id="crypto-error-msg" class="crypto-error"></p>
+        </div>
+    </div>
+
+    <main class="dashboard-container" style="display: none;">
         
         <section class="ops-instructions">
             <div class="instruction-box">
@@ -99,6 +112,41 @@
     <script src="components/footer.js"></script>
 
     <script>
+        // --- Crypto Access Panel Logic ---
+        const correctPassword = '2061907';
+        const accessPanel = document.getElementById('crypto-access-panel');
+        const mainContent = document.querySelector('.dashboard-container');
+        const commsToggle = document.querySelector('.comms-toggle');
+        const headerPlaceholder = document.getElementById('header-placeholder');
+        const passwordInput = document.getElementById('access-password');
+        const verifyBtn = document.getElementById('btn-access-verify');
+        const errorMsg = document.getElementById('crypto-error-msg');
+
+        function attemptLogin() {
+            if (passwordInput.value === correctPassword) {
+                accessPanel.style.display = 'none';
+                mainContent.style.display = 'block';
+                commsToggle.style.display = 'flex';
+                headerPlaceholder.style.display = 'block';
+            } else {
+                errorMsg.textContent = 'Erişim Reddedildi - Yetkisiz Giriş Saptandı';
+                passwordInput.value = '';
+                const cryptoPanel = document.querySelector('.crypto-panel');
+                if (cryptoPanel) {
+                    cryptoPanel.classList.add('shake');
+                    setTimeout(() => cryptoPanel.classList.remove('shake'), 500);
+                }
+            }
+        }
+
+        verifyBtn.addEventListener('click', attemptLogin);
+        passwordInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                attemptLogin();
+            }
+        });
+
+        // --- Side Menu Logic ---
         const commsMenu = document.getElementById('side-comms-menu');
         const commsToggleBtn = document.getElementById('comms-toggle-btn');
         if (commsToggleBtn && commsMenu) {
