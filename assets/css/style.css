@@ -519,3 +519,121 @@ th {
         grid-template-columns: 1fr; /* Tek sütunlu yapı */
     }
 }
+
+/* --- 12. SABİT İLETİŞİM MENÜSÜ --- */
+.side-comms-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-right: 1px solid var(--neon-green);
+    box-shadow: 5px 0 25px -10px var(--neon-green);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease-in-out;
+    z-index: 1100; /* Header'ın üzerinde */
+    padding: 20px;
+}
+
+.side-comms-menu.active {
+    transform: translateX(0);
+}
+
+.side-comms-menu h3 {
+    color: var(--neon-green);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.side-comms-menu ul {
+    list-style: none;
+}
+
+.side-comms-menu ul li a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+    transition: background 0.2s;
+    font-size: 0.9rem;
+}
+
+.side-comms-menu ul li a:hover {
+    background: rgba(57, 255, 20, 0.15);
+    text-shadow: 0 0 5px #fff;
+}
+
+.comms-toggle {
+    position: fixed;
+    top: 25px;
+    left: 25px;
+    z-index: 1200; /* Menünün üzerinde */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.comms-toggle-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+.comms-toggle-btn:hover {
+    transform: scale(1.1);
+    background: var(--neon-green);
+    color: #000;
+}
+
+.comms-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.7);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    color: var(--warning-red);
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--warning-red);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--warning-red);
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 62, 62, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 62, 62, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 62, 62, 0);
+    }
+}
