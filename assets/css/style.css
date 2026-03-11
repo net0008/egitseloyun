@@ -570,7 +570,7 @@ th {
 
 .comms-toggle {
     position: fixed;
-    top: 25px;
+    bottom: 25px;
     left: 25px;
     z-index: 1200; /* Menünün üzerinde */
     display: flex;
