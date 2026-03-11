@@ -458,23 +458,27 @@ function renderUI() {
     const mission10Input = document.getElementById('mission-10-input');
     const standardVisual = document.getElementById('standard-visual-content');
     const mission10Visual = document.getElementById('mission-10-visual-content');
+    const gameOverContent = document.getElementById('game-over-content');
     const terminalHeader = document.querySelector('.terminal-header');
     const extraTools = document.querySelector('.extra-tools');
     const commandPanel = document.querySelector('.command-panel');
 
     if (gorevNo > 10) {
         // Game finished
-        if (standardVisual) standardVisual.style.display = 'block';
+        if (standardVisual) standardVisual.style.display = 'none';
         if (mission10Visual) mission10Visual.style.display = 'none';
+        if (gameOverContent) gameOverContent.style.display = 'flex';
+
         resetMapState(false);
         if(terminal) terminal.innerHTML = "";
         logBox("Tebrikler! Bergama 2050 operasyonunu başarıyla tamamladınız. Skorunuz karargaha iletildi.", "success");
-        const titleBox = document.getElementById('visual-title');
-        if(titleBox) titleBox.textContent = "OPERASYON BAŞARIYLA TAMAMLANDI";
+
+        const finalScoreEl = document.getElementById('final-score');
+        if (finalScoreEl) finalScoreEl.textContent = teamScoreData.puan || 1000;
+
         if (standardInput) standardInput.style.display = 'none';
         if (mission10Input) mission10Input.style.display = 'none';
         if (extraTools) extraTools.style.display = 'none';
-        updateScoreDisplay(teamScoreData); // Update score one last time
         return; // Stop further rendering
     }
 
