@@ -422,13 +422,16 @@ function renderUI() {
     
     const standardInput = document.getElementById('standard-mission-input');
     const mission10Input = document.getElementById('mission-10-input');
-    const visualPanel = document.querySelector('.visual-panel');
+    const standardVisual = document.getElementById('standard-visual-content');
+    const mission10Visual = document.getElementById('mission-10-visual-content');
     const terminalHeader = document.querySelector('.terminal-header');
     const extraTools = document.querySelector('.extra-tools');
+    const commandPanel = document.querySelector('.command-panel');
 
     if (gorevNo > 10) {
         // Game finished
-        if (visualPanel) visualPanel.style.display = 'block'; // Show it again for the final message
+        if (standardVisual) standardVisual.style.display = 'block';
+        if (mission10Visual) mission10Visual.style.display = 'none';
         resetMapState(false);
         if(terminal) terminal.innerHTML = "";
         logBox("Tebrikler! Bergama 2050 operasyonunu başarıyla tamamladınız. Skorunuz karargaha iletildi.", "success");
@@ -443,15 +446,33 @@ function renderUI() {
 
     // Toggle mission inputs based on gorevNo
     if (gorevNo === 10) {
+        // --- Mission 10 Layout ---
         if (standardInput) standardInput.style.display = 'none';
         if (mission10Input) mission10Input.style.display = 'flex';
-        if (visualPanel) visualPanel.style.display = 'none'; // Hide the map/image panel for mission 10
+        if (standardVisual) standardVisual.style.display = 'none';
+        if (mission10Visual) mission10Visual.style.display = 'block';
         if (terminalHeader) terminalHeader.style.marginTop = '0'; // Reset margin
+        if (extraTools && mission10Visual && !mission10Visual.contains(extraTools)) {
+             mission10Visual.appendChild(extraTools); // Move tools to the right panel
+        }
+
+        // Update Mission 10 button links from CMS
+        const missionData = globalMissionData[10];
+        const trainingBtn = document.getElementById('btn-training-video');
+        const profilerBtn = document.getElementById('btn-profiler-tool');
+        if (missionData && trainingBtn) trainingBtn.href = missionData.trainingVideoUrl || 'assets/video/10_gorev.mp4';
+        if (missionData && profilerBtn) profilerBtn.href = missionData.profilerToolUrl || 'https://www.heywhatsthat.com/profiler.html';
+
     } else {
+        // --- Standard Mission Layout (1-9) ---
         if (standardInput) standardInput.style.display = 'flex';
         if (mission10Input) mission10Input.style.display = 'none';
-        if (visualPanel) visualPanel.style.display = 'block'; // Show map/image panel for other missions
+        if (standardVisual) standardVisual.style.display = 'block';
+        if (mission10Visual) mission10Visual.style.display = 'none';
         if (terminalHeader) terminalHeader.style.marginTop = ''; // Use default margin
+        if (extraTools && commandPanel && !commandPanel.contains(extraTools)) {
+            commandPanel.appendChild(extraTools); // Move tools back to the left panel
+        }
     }
     
     updateScoreDisplay(teamScoreData);

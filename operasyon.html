@@ -36,35 +36,33 @@
 
     <main class="operation-layout">
         <section class="visual-panel">
-            <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
-            
-            <div class="star-rating" id="star-container">
-                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+            <div id="standard-visual-content">
+                <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
+                <div class="star-rating" id="star-container">
+                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                </div>
+                <p class="sys-msg">
+                    Puan: <span id="current-score" class="neon-text">1000</span> | 
+                    <span id="current-sector">1. Görev 2A Bölgesi</span>
+                </p>
+                <div class="visual-title-box" id="visual-title">Görsel Analizi Bekleniyor...</div>
+                <div class="map-frame">
+                    <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
+                    <iframe id="active-frame" title="Görev Haritası" style="display:none;" allowfullscreen allow="geolocation" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    <div id="map-loader">Harita yükleniyor...</div>
+                    <div class="scan-line"></div>
+                </div>
+                <ul id="team-members-list" class="team-roster"></ul>
             </div>
 
-            <p class="sys-msg">
-                Puan: <span id="current-score" class="neon-text">1000</span> | 
-                <span id="current-sector">1. Görev 2A Bölgesi</span>
-            </p>
-
-            <div class="visual-title-box" id="visual-title">Görsel Analizi Bekleniyor...</div>
-
-            <div class="map-frame">
-                <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
-                <iframe
-                    id="active-frame"
-                    title="Görev Haritası"
-                    style="display:none;"
-                    allowfullscreen
-                    allow="geolocation"
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade"
-                ></iframe>
-                <div id="map-loader">Harita yükleniyor...</div>
-                <div class="scan-line"></div>
+            <div id="mission-10-visual-content" style="display: none; flex-direction: column; height: 100%; padding: 10px;">
+                <h3 style="border-bottom: 1px solid var(--neon-green); padding-bottom: 10px; margin-bottom: 15px;">KRİTİK GÖREV: PROFİL ÇIKARMA</h3>
+                <p style="font-size: 0.9rem; line-height: 1.6; color: #ccc; flex-grow: 1;">
+                    Genç Ajanlar, operasyonun en kritik kısmına geldik! Haritaya yukarıdan bakmak (izohipsler) bize arazinin nerede olduğunu söyler ama profil çıkarmak o arazinin "karakterini" anlatır.<br><br>
+                    Bir hız trenine binmeden önce uzaktan baktığınızda gördüğünüz o heyecan verici iniş ve çıkışlar aslında o rayların profilidir. Mühendisler o rayları tasarlarken izohips haritasına bakıp, trenin en hızlı nerede ineceğini bu profilleri çıkararak hesaplarlar. Profil olmasaydı, trenin nerede hızlanıp nerede yavaşlayacağını asla bilemezdik!<br><br>
+                    <b>Özetle:</b> İzohips haritası bir yerin "planı", profil ise o yerin "hikayesidir." Plan nerede olduğumuzu, profil ise oraya gitmenin ne kadar zor olacağını söyler.
+                </p>
             </div>
-            
-            <ul id="team-members-list" class="team-roster"></ul>
         </section>
 
         <section class="command-panel">
@@ -79,8 +77,8 @@
 
     <div id="mission-10-input" class="mission-input" style="display: none; flex-direction: column; gap: 15px; align-items: stretch;">
         <div style="display: flex; gap: 10px; justify-content: center;">
-            <a href="https://www.heywhatsthat.com/profiler.html" target="_blank" class="cyber-btn">Eğitim İzle</a>
-            <a href="assets/video/10_gorev.mp4" target="_blank" class="cyber-btn">Profil Çıkar</a>
+            <a href="assets/video/10_gorev.mp4" id="btn-training-video" target="_blank" class="cyber-btn">Eğitim İzle</a>
+            <a href="https://www.heywhatsthat.com/profiler.html" id="btn-profiler-tool" target="_blank" class="cyber-btn">Profil Çıkar</a>
         </div>
         <div style="border: 1px dashed var(--border-color); padding: 15px; text-align: center;">
             <label for="fake-upload" class="cyber-btn secondary" style="width: 100%;">Profil Resmini Kaydet (Upload)</label>

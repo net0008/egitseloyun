@@ -172,6 +172,8 @@
                     answerHelper = "Sadece tek bir 'enlem,boylam' çifti girin. Sistem küçük hata paylarını tolere edecektir.";
                     visualLabel = "Görev Görseli (İsteğe Bağlı)";
                     visualHelper = "Profil görevinde bu alan kullanılmaz, boş bırakılabilir.";
+                    // Add extra fields for mission 10
+
                 }
                 // --- End of special labels ---
 
@@ -205,6 +207,18 @@
                             <label for="img-${i}">${visualLabel}</label>
                             <textarea id="img-${i}" oninput="updatePreview(${i})">${currentImg}</textarea>
                             ${visualHelper ? `<p class="helper-text">${visualHelper}</p>` : ''}
+                        </div>
+                        
+                        <div class="form-group" style="display:${i === 10 ? 'flex' : 'none'}">
+                            <label for="training-video-url-${i}">Görev 10: Eğitim Videosu Linki</label>
+                            <input type="text" id="training-video-url-${i}" value="${mission.trainingVideoUrl || 'assets/video/10_gorev.mp4'}" placeholder="Örn: assets/video/10_gorev.mp4">
+                            <p class="helper-text">"Eğitim İzle" düğmesinin açacağı video dosyası veya YouTube linki.</p>
+                        </div>
+
+                        <div class="form-group" style="display:${i === 10 ? 'flex' : 'none'}">
+                            <label for="profiler-tool-url-${i}">Görev 10: Profil Aracı Linki</label>
+                            <input type="text" id="profiler-tool-url-${i}" value="${mission.profilerToolUrl || 'https://www.heywhatsthat.com/profiler.html'}" placeholder="Örn: https://www.heywhatsthat.com/profiler.html">
+                            <p class="helper-text">"Profil Çıkar" düğmesinin açacağı web sitesi linki.</p>
                         </div>
                         <div class="preview-box">
                             <span id="prev-txt-${i}" class="preview-text">Önizleme Alanı</span>
@@ -284,6 +298,15 @@
                         image: imgVal,
                         requireAll: modeEl.checked,
                     };
+
+                    if (i === 10) {
+                        const trainingUrlEl = document.getElementById(`training-video-url-${i}`);
+                        const profilerUrlEl = document.getElementById(`profiler-tool-url-${i}`);
+                        if (trainingUrlEl && profilerUrlEl) {
+                            missions[i].trainingVideoUrl = trainingUrlEl.value.trim();
+                            missions[i].profilerToolUrl = profilerUrlEl.value.trim();
+                        }
+                    }
                 }
                 
                 if (btn) {
