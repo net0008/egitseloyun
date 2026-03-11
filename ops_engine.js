@@ -634,9 +634,27 @@ function initOperation() {
     // 3. Takımın skor/durum verisini dinle.
     onValue(scoreRef, (snapshot) => {
         if (snapshot.exists()) {
+            const previousData = teamScoreData; // Önceki durumu sakla
             teamScoreData = snapshot.val();
             currentGorevNo = teamScoreData.gorevNo || 1;
             console.log("Takım skor/durum verisi yüklendi/güncellendi.");
+
+            // Rütbe (yıldız) kazanma kontrolü ve bildirimi
+            if (previousData && (teamScoreData.gorevNo || 1) > (previousData.gorevNo || 1)) {
+                const oldStars = Math.min(5, Math.ceil((previousData.gorevNo || 1) / 2));
+                const newStars = Math.min(5, Math.ceil((teamScoreData.gorevNo || 1) / 2));
+
+                if (newStars > oldStars) {
+                    logBox("Tebrikler rütbe kazandınız.", "success");
+                    const starContainer = document.getElementById('star-container');
+                    if (starContainer) {
+                        starContainer.classList.add('star-pulse');
+                        // Animasyon 1 saniye sürer ve 3 kez tekrarlanır. 3 saniye sonra sınıfı kaldır.
+                        setTimeout(() => starContainer.classList.remove('star-pulse'), 3000);
+                    }
+                }
+            }
+
             renderUI(); // Görev verisi zaten gelmiş olabilir, arayüzü çizmeyi dene.
         } else {
             logBox(`HATA: ${teamName} için skor verisi bulunamadı!`, "warning");
