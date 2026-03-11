@@ -46,8 +46,15 @@ function logBox(message, type = 'system', atTop = false) {
     div.appendChild(document.createTextNode(message));
 
     if (atTop) {
-        terminal.insertBefore(div, terminal.firstChild);
-        terminal.scrollTop = 0;
+        const terminalHeader = document.querySelector('.terminal-header');
+        if (terminalHeader && terminalHeader.parentNode) {
+            // Bildirimi "GÖREV GÜNLÜĞÜ" başlığının üzerine ekle
+            terminalHeader.parentNode.insertBefore(div, terminalHeader);
+        } else {
+            // Başlık bulunamazsa eski davranışa geri dön
+            terminal.insertBefore(div, terminal.firstChild);
+            terminal.scrollTop = 0;
+        }
     } else {
         terminal.appendChild(div);
         terminal.scrollTop = terminal.scrollHeight;
