@@ -465,9 +465,9 @@ function renderUI() {
 
     if (gorevNo > 10) {
         // Game finished
-        if (standardVisual) standardVisual.style.display = 'none';
-        if (mission10Visual) mission10Visual.style.display = 'none';
-        if (gameOverContent) gameOverContent.style.display = 'flex';
+        if (standardVisual) standardVisual.style.display = "none";
+        if (mission10Visual) mission10Visual.style.display = "none";
+        if (gameOverContent) gameOverContent.style.display = "flex";
 
         resetMapState(false);
         if(terminal) terminal.innerHTML = "";
@@ -510,9 +510,9 @@ function renderUI() {
             }
         });
 
-        if (standardInput) standardInput.style.display = 'none';
-        if (mission10Input) mission10Input.style.display = 'none';
-        if (extraTools) extraTools.style.display = 'none';
+        if (standardInput) standardInput.style.display = "none";
+        if (mission10Input) mission10Input.style.display = "none";
+        if (extraTools) extraTools.style.display = "none";
         return; // Stop further rendering
     }
 
