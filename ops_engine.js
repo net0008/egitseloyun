@@ -255,27 +255,6 @@ document.getElementById('btn-hint')?.addEventListener('click', async () => {
     if (usedHints < hints.length) {
         const hintText = hints[usedHints];
         logBox(`İPUCU: ${hintText}`, "hint");
-
-        if (currentGorev === 10) {
-            const briefing = document.getElementById('mission-10-briefing');
-            const hintContainer = document.getElementById('mission-10-hint-container');
-            const hintDisplay = document.getElementById('mission-10-hint-display');
-
-            if (briefing) briefing.style.display = 'none';
-            if (hintContainer) hintContainer.style.display = 'block';
-            
-            if (hintDisplay) {
-                const p = document.createElement('p');
-                p.style.borderLeft = '3px solid var(--info-blue)';
-                p.style.paddingLeft = '10px';
-                p.style.marginBottom = '10px';
-                p.textContent = hintText;
-                hintDisplay.appendChild(p);
-            }
-        } else {
-            logBox(`İPUCU: ${hintText}`, "hint");
-        }
-
         update(scoreRef, {
             ipucuSayisi: usedHints + 1,
             puan: (teamScoreData.puan || 1000) - 50,
@@ -283,19 +262,6 @@ document.getElementById('btn-hint')?.addEventListener('click', async () => {
         });
     } else {
         logBox("Tüm ipuçları zaten alındı.", "warning");
-        if (currentGorev === 10) {
-            const hintDisplay = document.getElementById('mission-10-hint-display');
-            if (hintDisplay && !hintDisplay.querySelector('.no-more-hints')) {
-                const p = document.createElement('p');
-                p.className = 'no-more-hints';
-                p.style.color = 'var(--warning-red)';
-                p.style.marginTop = '15px';
-                p.textContent = '[SİSTEM]: Bu görev için başka ipucu kalmadı.';
-                hintDisplay.appendChild(p);
-            }
-        } else {
-            logBox("Tüm ipuçları zaten alındı.", "warning");
-        }
     }
 });
 
@@ -486,39 +452,8 @@ function renderUI() {
         if (standardVisual) standardVisual.style.display = 'none';
         if (mission10Visual) mission10Visual.style.display = 'block';
         if (terminalHeader) terminalHeader.style.marginTop = '0'; // Reset margin
-        
-        // Move and style the tools container
         if (extraTools && mission10Visual && !mission10Visual.contains(extraTools)) {
              mission10Visual.appendChild(extraTools); // Move tools to the right panel
-             extraTools.style.marginTop = 'auto';
-             extraTools.style.paddingTop = '15px';
-             extraTools.style.textAlign = 'center';
-        }
-
-        // Handle hint display vs briefing display
-        const briefing = document.getElementById('mission-10-briefing');
-        const hintContainer = document.getElementById('mission-10-hint-container');
-        const hintDisplay = document.getElementById('mission-10-hint-display');
-        const usedHints = teamScoreData.ipucuSayisi || 0;
-        const missionHints = globalMissionData[10]?.hints?.split('\n').filter(h => h.trim() !== '') || [];
-
-        if (usedHints > 0 && hintDisplay && missionHints.length > 0) {
-            if (briefing) briefing.style.display = 'none';
-            if (hintContainer) hintContainer.style.display = 'block';
-            
-            hintDisplay.innerHTML = ''; // Clear previous
-            for (let i = 0; i < Math.min(usedHints, missionHints.length); i++) {
-                const p = document.createElement('p');
-                p.style.borderLeft = '3px solid var(--info-blue)';
-                p.style.paddingLeft = '10px';
-                p.style.marginBottom = '10px';
-                p.textContent = missionHints[i];
-                hintDisplay.appendChild(p);
-            }
-        } else {
-            if (briefing) briefing.style.display = 'flex';
-            if (hintContainer) hintContainer.style.display = 'none';
-            if (hintDisplay) hintDisplay.innerHTML = '';
         }
 
         // Update Mission 10 button links from CMS
@@ -537,9 +472,6 @@ function renderUI() {
         if (terminalHeader) terminalHeader.style.marginTop = ''; // Use default margin
         if (extraTools && commandPanel && !commandPanel.contains(extraTools)) {
             commandPanel.appendChild(extraTools); // Move tools back to the left panel
-            extraTools.style.marginTop = '';
-            extraTools.style.paddingTop = '';
-            extraTools.style.textAlign = '';
         }
     }
     
