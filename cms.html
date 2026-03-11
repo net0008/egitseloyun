@@ -109,6 +109,7 @@
     </aside>
 
     <div class="comms-toggle">
+    <div class="comms-toggle" style="display: none;">
         <button class="comms-toggle-btn" id="comms-toggle-btn" title="İletişim Menüsünü Aç/Kapat">
             &#128224;
         </button>
@@ -119,8 +120,23 @@
     </div>
 
     <div id="header-placeholder"></div>
+    <div id="header-placeholder" style="display: none;"></div>
 
     <div class="cms-container">
+    <!-- Kripto Erişim Paneli -->
+    <div id="crypto-access-panel" class="crypto-overlay">
+        <div class="crypto-panel">
+            <h2>KRİPTO ERİŞİM GEREKLİ</h2>
+            <p>CMS sistemlerine erişim için kimlik doğrulaması yapın.</p>
+            <div class="crypto-input-group">
+                <input type="password" id="access-password" placeholder="Giriş Kodu...">
+                <button id="btn-access-verify" class="cyber-btn">GİRİŞ</button>
+            </div>
+            <p id="crypto-error-msg" class="crypto-error"></p>
+        </div>
+    </div>
+
+    <div class="cms-container" style="display: none;">
         <div class="cms-header">
             <h1>Görev Yönetim Paneli</h1>
         </div>
@@ -131,6 +147,7 @@
     </div>
 
     <div class="sticky-footer">
+    <div class="sticky-footer" style="display: none;">
         <button class="save-btn" onclick="saveAllMissions()" disabled>Veriler Yükleniyor...</button>
     </div>
 
@@ -370,6 +387,43 @@
     <script src="components/footer.js"></script>
 
     <script>
+        // --- Crypto Access Panel Logic ---
+        const correctPassword = '2061907';
+        const accessPanel = document.getElementById('crypto-access-panel');
+        const mainContent = document.querySelector('.cms-container');
+        const stickyFooter = document.querySelector('.sticky-footer');
+        const commsToggle = document.querySelector('.comms-toggle');
+        const headerPlaceholder = document.getElementById('header-placeholder');
+        const passwordInput = document.getElementById('access-password');
+        const verifyBtn = document.getElementById('btn-access-verify');
+        const errorMsg = document.getElementById('crypto-error-msg');
+
+        function attemptLogin() {
+            if (passwordInput.value === correctPassword) {
+                accessPanel.style.display = 'none';
+                mainContent.style.display = 'block';
+                stickyFooter.style.display = 'block';
+                commsToggle.style.display = 'flex';
+                headerPlaceholder.style.display = 'block';
+            } else {
+                errorMsg.textContent = 'Erişim Reddedildi - Yetkisiz Giriş Saptandı';
+                passwordInput.value = '';
+                const cryptoPanel = document.querySelector('.crypto-panel');
+                if (cryptoPanel) {
+                    cryptoPanel.classList.add('shake');
+                    setTimeout(() => cryptoPanel.classList.remove('shake'), 500);
+                }
+            }
+        }
+
+        verifyBtn.addEventListener('click', attemptLogin);
+        passwordInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                attemptLogin();
+            }
+        });
+
+        // --- Side Menu Logic ---
         const commsMenu = document.getElementById('side-comms-menu');
         const commsToggleBtn = document.getElementById('comms-toggle-btn');
         if (commsToggleBtn && commsMenu) {
