@@ -476,6 +476,33 @@ function renderUI() {
         const finalScoreEl = document.getElementById('final-score');
         if (finalScoreEl) finalScoreEl.textContent = teamScoreData.puan || 1000;
 
+        // Find and display the champion
+        const allScoresRef = ref(db, 'operasyon/skorlar');
+        get(allScoresRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const allScores = snapshot.val();
+                let championTeam = '';
+                let highScore = -Infinity;
+
+                for (const team in allScores) {
+                    if (allScores[team].puan > highScore) {
+                        highScore = allScores[team].puan;
+                        championTeam = team;
+                    }
+                }
+
+                const championNameEl = document.getElementById('champion-name');
+                const championScoreEl = document.getElementById('champion-score');
+                const championSection = document.getElementById('champion-section');
+
+                if (championNameEl && championScoreEl && championSection) {
+                    championNameEl.textContent = championTeam;
+                    championScoreEl.textContent = highScore;
+                    championSection.style.display = 'block';
+                }
+            }
+        });
+
         if (standardInput) standardInput.style.display = 'none';
         if (mission10Input) mission10Input.style.display = 'none';
         if (extraTools) extraTools.style.display = 'none';

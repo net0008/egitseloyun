@@ -1,0 +1,31 @@
+Okul No,Adı Soyadı,Takım Adı,Görev
+101,Ahmet Yılmaz,Grup Manas,Tim Kaptanı
+102,Ayşe Demir,Grup Manas,Kartograf (Harita)
+103,Mehmet Can,Grup Manas,Veri Analizcisi
+104,Fatma Kaya,Grup Manas,Matematikçi (Hesaplama)
+105,Ali Öztürk,Grup Manas,Lojistik (İpucu/Kılavuz)
+106,Zeynep Aydın,Dede Korkut,Tim Kaptanı
+107,Burak Şahin,Dede Korkut,Kartograf (Harita)
+108,Elif Yıldız,Dede Korkut,Veri Analizcisi
+109,Mert Çelik,Dede Korkut,Matematikçi (Hesaplama)
+110,Selin Arslan,Dede Korkut,Lojistik (İpucu/Kılavuz)
+121,Metin CAN,Türk Tim,Tim Kaptanı
+127,Ayşe CANDAN,Türk Tim,Kartograf (Harita)
+152,Faruk KARA,Türk Tim,Veri Analizcisi
+172,Güler ÜSTÜN,Türk Tim,Matematikçi (Hesaplama)
+177,Can KARAGÜLMEZ,Türk Tim,Lojistik (İpucu/Kılavuz)
+189,Suat SOYTAŞ,Serhadlar,Tim Kaptanı
+196,Ebru KALEM,Serhadlar,Kartograf (Harita)
+199,Fatih YİĞİT,Serhadlar,Veri Analizcisi
+203,İbrahim ERDİNÇ,Serhadlar,Matematikçi (Hesaplama)
+207,Bilal MUTLU,Serhadlar,Lojistik (İpucu/Kılavuz)
+209,Hülya AK,Mete Han,Tim Kaptanı
+221,Mert ÇELİK,Mete Han,Kartograf (Harita)
+231,Oğuzhan DEMİR,Mete Han,Veri Analizcisi
+254,Sezen YORULMAZ,Mete Han,Matematikçi (Hesaplama)
+266,Ahmet YAZICI,Mete Han,Lojistik (İpucu/Kılavuz)
+289,Çetin TOPÇU,Kurtalan Ekspres,Tim Kaptanı
+306,Gülfem DENİZ,Kurtalan Ekspres,Kartograf (Harita)
+310,Ulaş KAYA,Kurtalan Ekspres,Veri Analizcisi
+325,Hüseyin DOĞRU,Kurtalan Ekspres,Matematikçi (Hesaplama)
+341,Nazlı KILIÇ,Kurtalan Ekspres,Lojistik (İpucu/Kılavuz)
