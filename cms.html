@@ -104,6 +104,7 @@
             <ul>
                 <li><a href="karargah.html">🔑 Karargâh</a></li>
                 <li><a href="cms.html">🔑 CMS (Görev Yönetimi)</a></li>
+                <li><a href="#" id="secure-logout" style="color: var(--warning-red);">🔒 Güvenli Çıkış</a></li>
             </ul>
         </div>
     </aside>
@@ -394,13 +395,18 @@
         const verifyBtn = document.getElementById('btn-access-verify');
         const errorMsg = document.getElementById('crypto-error-msg');
 
+        function grantAccess() {
+            accessPanel.style.display = 'none';
+            mainContent.style.display = 'block';
+            stickyFooter.style.display = 'block';
+            commsToggle.style.display = 'flex';
+            headerPlaceholder.style.display = 'block';
+        }
+
         function attemptLogin() {
             if (passwordInput.value === correctPassword) {
-                accessPanel.style.display = 'none';
-                mainContent.style.display = 'block';
-                stickyFooter.style.display = 'block';
-                commsToggle.style.display = 'flex';
-                headerPlaceholder.style.display = 'block';
+                localStorage.setItem('bergama2050_access_token', 'granted');
+                grantAccess();
             } else {
                 errorMsg.textContent = 'Erişim Reddedildi - Yetkisiz Giriş Saptandı';
                 passwordInput.value = '';
@@ -412,12 +418,27 @@
             }
         }
 
+        // Sayfa yüklendiğinde tarayıcı hafızasını kontrol et
+        if (localStorage.getItem('bergama2050_access_token') === 'granted') {
+            grantAccess();
+        }
+
         verifyBtn.addEventListener('click', attemptLogin);
         passwordInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 attemptLogin();
             }
         });
+
+        // Güvenli Çıkış Mantığı
+        const logoutBtn = document.getElementById('secure-logout');
+        if(logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('bergama2050_access_token');
+                window.location.reload();
+            });
+        }
 
         // --- Side Menu Logic ---
         const commsMenu = document.getElementById('side-comms-menu');
