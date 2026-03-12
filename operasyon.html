@@ -10,6 +10,8 @@
     <style>
         /* --- TİPOGRAFİ VE OKUNABİLİRLİK İYİLEŞTİRMELERİ --- */
         body.op-screen {
+            height: 100vh; /* Sayfayı ekran boyuna sabitle */
+            overflow: hidden; /* Scroll bar'ı gizle */
             font-family: 'Roboto', sans-serif; /* Genel okuma fontu */
         }
         h1, h2, h3, .panel-tag, .terminal-header, .cyber-btn {
@@ -23,8 +25,11 @@
             backdrop-filter: blur(10px); /* Arka planı bulanıklaştırır (Glassmorphism) */
             border: 1px solid rgba(57, 255, 20, 0.3);
             border-radius: 8px; /* Keskin köşeleri yumuşat */
-            padding: 25px;
+            padding: 15px; /* Panellerin iç boşluğunu azalttık */
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* Panellerin tam boy kaplamasını sağla */
         }
 
         /* Uzun metinlerin rengini beyaz yaparak göz yorgunluğunu azalt */
@@ -54,7 +59,10 @@
             background: rgba(0, 30, 0, 0.8);
         }
 
-        .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
+        /* Yıldızları sağ tarafa taşıdığımız için boyutunu biraz optimize ettik */
+        .star-rating { 
+            font-size: 1.2rem; color: #444; margin: 0; letter-spacing: 2px; 
+        }
         .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); }
         .modal-content { background: #111; margin: 5% auto; padding: 20px; border: 1px solid #39FF14; width: 80%; height: 80%; position: relative; }
@@ -77,6 +85,23 @@
             height: 100%;
             border: 0;
         }
+        /* --- LAYOUT OPTİMİZASYONU (SCROLL ENGELLEME) --- */
+        .operation-layout {
+            height: 100%; 
+            overflow: hidden;
+            padding-bottom: 5px; /* Alt boşluğu azalt */
+        }
+        #standard-visual-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        /* Harita çerçevesini esnek yap, kalan boşluğu doldursun */
+        .map-frame {
+            height: auto !important; /* Style.css'deki sabit yüksekliği ez */
+            flex-grow: 1; 
+            min-height: 0; /* İçerik taşmasını engelle */
+        }
     </style>
 </head>
 <body class="op-screen">
@@ -85,15 +110,16 @@
     <main class="operation-layout">
         <section class="visual-panel">
             <div id="standard-visual-content">
-                <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
-                <div class="star-rating" id="star-container">
-                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                <!-- Üst bilgi kısmını sıkıştırdık: Takım adı ve Puan yan yana -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <div class="panel-tag" id="team-name-display" style="font-size: 1rem; margin:0;">UYDU ANALİZİ: AKTİF</div>
+                    <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 0.9rem; margin: 0;">
+                        <span id="current-score" class="neon-text">1000</span> Puan | 
+                        <span id="current-sector">1. Görev</span>
+                    </p>
                 </div>
-                <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem;">
-                    Puan: <span id="current-score" class="neon-text">1000</span> | 
-                    <span id="current-sector">1. Görev 2A Bölgesi</span>
-                </p>
-                <div class="visual-title-box" id="visual-title">Görsel Analizi Bekleniyor...</div>
+                
+                <div class="visual-title-box" id="visual-title" style="margin-top: 5px; padding: 8px; font-size: 0.95rem;">Görsel Analizi Bekleniyor...</div>
                 <div class="map-frame">
                     <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
                     <iframe id="active-frame" title="Görev Haritası" style="display:none;" allowfullscreen allow="geolocation" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -140,7 +166,14 @@
         </section>
 
         <section class="command-panel">
-    <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
+    <!-- Yıldızları buraya taşıdık ve başlık ile aynı satıra hizaladık -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--neon-green); padding-bottom: 10px; margin-bottom: 10px;">
+        <div class="star-rating" id="star-container">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+        </div>
+        <div class="terminal-header" style="border: none; padding: 0; margin: 0; font-size: 1.1rem;">GÖREV GÜNLÜĞÜ</div>
+    </div>
+
     <div class="terminal-log" id="terminal-output"></div>
 
     <div id="standard-mission-input" class="mission-input" style="display: flex; gap: 10px; margin-top: 15px;">
