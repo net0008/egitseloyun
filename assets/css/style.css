@@ -464,6 +464,11 @@ th {
 .terminal-msg.warning { border-color: var(--warning-red); border-left-color: var(--warning-red); }
 .terminal-msg.hint { border-color: var(--info-blue); border-left-color: var(--info-blue); }
 .terminal-msg.success { border-color: var(--neon-green); }
+.terminal-msg.briefing {
+    border-left-color: var(--info-blue);
+    color: var(--info-blue);
+    font-weight: bold; /* Metni daha okunaklı yapmak için kalınlaştır */
+}
 
 /* --- 9. ANİMASYONLAR VE EFEKTLER --- */
 .scan-line {
