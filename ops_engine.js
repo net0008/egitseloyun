@@ -33,6 +33,11 @@ let mapLoadTimeout = null;
 let lastVisualSignature = '';
 let mapRenderToken = 0;
 
+// --- 1.A YARDIMCI FONKSİYONLAR ---
+function getTotalMissions() {
+    return globalMissionData ? Object.keys(globalMissionData).length : 10;
+}
+
 // --- 1. GÖRSELLEŞTİRME VE ARAYÜZ YÖNETİMİ ---
 
 function logBox(message, type = 'system', atTop = false) {
@@ -100,10 +105,12 @@ function logBox(message, type = 'system', atTop = false) {
 function updateScoreDisplay(data) {
     if (!data) return;
     document.getElementById('current-score').innerText = data.puan || 1000;
-    document.getElementById('current-sector').innerText = `${data.gorevNo || 1}. Görev ${data.bolge || '2A'} Bölgesi`;
+    const totalMissions = getTotalMissions();
+    const sectorText = (data.gorevNo || 1) > totalMissions ? 'OPERASYON TAMAMLANDI' : `${data.gorevNo || 1}. Görev ${data.bolge || '2A'} Bölgesi`;
+    document.getElementById('current-sector').innerText = sectorText;
     const starContainer = document.getElementById('star-container');
     if (starContainer) {
-        const stars = Math.min(5, Math.ceil((data.gorevNo || 1) / 2));
+        const stars = Math.min(5, Math.ceil(5 * (data.gorevNo || 1) / totalMissions));
         let starHTML = '';
         for (let i = 0; i < 5; i++) {
             starHTML += `<span class="star ${i < stars ? 'filled' : ''}">★</span>`;
@@ -170,7 +177,8 @@ function updateMapVisuals(gorevNo) {
     const loader = document.getElementById('map-loader');
     if (loader) loader.style.display = 'flex';
 
-    if (gorevNo > 10) {
+    const totalMissions = getTotalMissions();
+    if (gorevNo > totalMissions) {
         resetMapState(false);
         lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
@@ -357,8 +365,9 @@ document.getElementById('btn-ai-verify')?.addEventListener('click', async () => 
     }
 
     const cur = teamScoreData.gorevNo || 1;
-    if (cur !== 10) {
-        logBox("HATA: Profil çıkarma modülü sadece 10. görevde aktiftir.", "warning");
+    const totalMissions = getTotalMissions();
+    if (cur !== totalMissions) {
+        logBox(`HATA: Profil çıkarma modülü sadece ${totalMissions}. görevde aktiftir.`, "warning");
         return;
     }
 
@@ -462,8 +471,9 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
 
     if (isCorrect) {
         const nextGorevNo = cur + 1;
+        const totalMissions = getTotalMissions();
         const nextPuan = (teamScoreData.puan || 1000) + 200;
-        const nextBolge = nextGorevNo > 10 ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
+        const nextBolge = nextGorevNo > totalMissions ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
         update(scoreRef, {
             gorevNo: nextGorevNo,
             bolge: nextBolge,
@@ -502,6 +512,7 @@ function renderUI() {
     console.log("Tüm veriler hazır. Arayüz çiziliyor.");
     
     const gorevNo = teamScoreData.gorevNo || 1;
+    const totalMissions = getTotalMissions();
     
     const standardInput = document.getElementById('standard-mission-input');
     const mission10Input = document.getElementById('mission-10-input');
@@ -512,7 +523,7 @@ function renderUI() {
     const extraTools = document.querySelector('.extra-tools');
     const commandPanel = document.querySelector('.command-panel');
 
-    if (gorevNo > 10) {
+    if (gorevNo > totalMissions) {
         // Game finished
         if (standardVisual) standardVisual.style.display = "none";
         if (mission10Visual) mission10Visual.style.display = "none";
@@ -566,7 +577,7 @@ function renderUI() {
     }
 
     // Toggle mission inputs based on gorevNo
-    if (gorevNo === 10) {
+    if (gorevNo === totalMissions) {
         // --- Mission 10 Layout ---
         if (standardInput) standardInput.style.display = 'none';
         if (mission10Input) mission10Input.style.display = 'flex';
@@ -594,7 +605,7 @@ function renderUI() {
         const hintContainer = document.getElementById('mission-10-hint-container');
         const hintDisplay = document.getElementById('mission-10-hint-display');
         const usedHints = teamScoreData.ipucuSayisi || 0;
-        const missionHints = globalMissionData[10]?.hints?.split('\n').filter(h => h.trim() !== '') || [];
+        const missionHints = globalMissionData[totalMissions]?.hints?.split('\n').filter(h => h.trim() !== '') || [];
 
         if (usedHints > 0 && hintDisplay && missionHints.length > 0) {
             if (briefing) briefing.style.display = 'none';
@@ -616,7 +627,7 @@ function renderUI() {
         }
 
         // Update Mission 10 button links from CMS
-        const missionData = globalMissionData[10];
+        const missionData = globalMissionData[totalMissions];
         const trainingBtn = document.getElementById('btn-training-video');
         const profilerBtn = document.getElementById('btn-profiler-tool');
         if (missionData && trainingBtn) trainingBtn.href = missionData.trainingVideoUrl || 'assets/video/10_gorev.mp4';
@@ -648,7 +659,7 @@ function renderUI() {
     
     updateScoreDisplay(teamScoreData);
     
-    if (gorevNo <= 10) {
+    if (gorevNo <= totalMissions) {
         updateMapVisuals(gorevNo);
         triggerBriefing(gorevNo);
     }
@@ -690,11 +701,12 @@ function initOperation() {
 
             // Rütbe (yıldız) kazanma kontrolü ve bildirimi
             if (previousData && (teamScoreData.gorevNo || 1) > (previousData.gorevNo || 1)) {
-                const oldStars = Math.min(5, Math.ceil((previousData.gorevNo || 1) / 2));
-                const newStars = Math.min(5, Math.ceil((teamScoreData.gorevNo || 1) / 2));
+                const totalMissions = getTotalMissions();
+                const oldStars = Math.min(5, Math.ceil(5 * (previousData.gorevNo || 1) / totalMissions));
+                const newStars = Math.min(5, Math.ceil(5 * (teamScoreData.gorevNo || 1) / totalMissions));
 
                 // Rütbe atlama anları: 3, 5, 7, 9. görevler ve final.
-                if (newStars > oldStars || ((teamScoreData.gorevNo || 1) > 10 && (previousData.gorevNo || 1) <= 10)) {
+                if (newStars > oldStars || ((teamScoreData.gorevNo || 1) > totalMissions && (previousData.gorevNo || 1) <= totalMissions)) {
                     logBox("Tebrikler rütbe kazandınız.", "success", true);
                     const starContainer = document.getElementById('star-container');
                     if (starContainer) {

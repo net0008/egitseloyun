@@ -239,6 +239,9 @@
     <script type="module">
         import { db, ref, set, onValue } from './assets/js/firebase-config.js';
 
+        // --- GÖREV SAYISI AYARI ---
+        const TOTAL_MISSIONS = 10; // Toplam görev sayısını buradan değiştirebilirsiniz.
+
         const missionContainer = document.getElementById('mission-grid');
         const missionsRef = ref(db, 'gameContent/missions');
 
@@ -280,7 +283,7 @@
 
         function renderForms(data) {
             let allMissionsHTML = "";
-            for (let i = 1; i <= 10; i++) {
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
                 const mission = data[i] || {};
                 const currentImg = mission.image || ``;
 
@@ -292,7 +295,7 @@
                 let visualLabel = "Görev Görseli (Resim URL'i veya iframe kodu)";
                 let visualHelper = "";
 
-                if (i === 10) {
+                if (i === TOTAL_MISSIONS) {
                     questionLabel = "Görev 10 Açıklaması";
                     answerLabel = "Doğru Koordinat (enlem,boylam)";
                     answerPlaceholder = "Örn: 39.121138,27.179661";
@@ -336,13 +339,13 @@
                             ${visualHelper ? `<p class="helper-text">${visualHelper}</p>` : ''}
                         </div>
                         
-                        <div class="form-group" style="display:${i === 10 ? 'flex' : 'none'}">
+                        <div class="form-group" style="display:${i === TOTAL_MISSIONS ? 'flex' : 'none'}">
                             <label for="training-video-url-${i}">Görev 10: Eğitim Videosu Linki</label>
                             <input type="text" id="training-video-url-${i}" value="${mission.trainingVideoUrl || 'assets/video/10_gorev.mp4'}" placeholder="Örn: assets/video/10_gorev.mp4">
                             <p class="helper-text">"Eğitim İzle" düğmesinin açacağı video dosyası veya YouTube linki.</p>
                         </div>
 
-                        <div class="form-group" style="display:${i === 10 ? 'flex' : 'none'}">
+                        <div class="form-group" style="display:${i === TOTAL_MISSIONS ? 'flex' : 'none'}">
                             <label for="profiler-tool-url-${i}">Görev 10: Profil Aracı Linki</label>
                             <input type="text" id="profiler-tool-url-${i}" value="${mission.profilerToolUrl || 'https://www.heywhatsthat.com/profiler.html'}" placeholder="Örn: https://www.heywhatsthat.com/profiler.html">
                             <p class="helper-text">"Profil Çıkar" düğmesinin açacağı web sitesi linki.</p>
@@ -358,7 +361,7 @@
             missionContainer.innerHTML = allMissionsHTML;
 
             // Formlar DOM'a eklendikten sonra, her birinin önizlemesini tetikle.
-            for (let i = 1; i <= 10; i++) {
+            for (let i = 1; i <= TOTAL_MISSIONS; i++) {
                 setTimeout(() => updatePreview(i), 0);
             }
             
@@ -403,7 +406,7 @@
             const btn = document.querySelector('.save-btn');
             try {
                 const missions = {};
-                for (let i = 1; i <= 10; i++) {
+                for (let i = 1; i <= TOTAL_MISSIONS; i++) {
                     const qEl = document.getElementById(`q-${i}`);
                     const aEl = document.getElementById(`a-${i}`);
                     const hEl = document.getElementById(`h-${i}`);
@@ -426,7 +429,7 @@
                         requireAll: modeEl.checked,
                     };
 
-                    if (i === 10) {
+                    if (i === TOTAL_MISSIONS) {
                         const trainingUrlEl = document.getElementById(`training-video-url-${i}`);
                         const profilerUrlEl = document.getElementById(`profiler-tool-url-${i}`);
                         if (trainingUrlEl && profilerUrlEl) {
