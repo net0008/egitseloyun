@@ -13,6 +13,34 @@
         body {
             background: #050505;
             font-size: var(--cms-text-size);
+            transition: background 0.3s, color 0.3s;
+        }
+        /* --- Işık Modu (Light Mode) Override --- */
+        body.light-mode {
+            background: #f4f4f9;
+            color: #111;
+            --neon-green: #006400; /* Koyu Yeşil (Okunabilirlik için) */
+            --panel-bg: #ffffff;
+            --border-color: #ccc;
+        }
+        body.light-mode .cms-header { border-bottom-color: #aaa; }
+        body.light-mode .font-controls { background: rgba(255, 255, 255, 0.8); border-color: #aaa; }
+        body.light-mode .control-group label { color: #333; }
+        body.light-mode .mission-card {
+            background: #fff;
+            border-color: #ddd;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        body.light-mode .card-header { border-bottom-color: #eee; }
+        body.light-mode .form-group input, 
+        body.light-mode .form-group textarea {
+            background: #fff;
+            color: #333;
+            border-color: #ccc;
+        }
+        body.light-mode .sticky-footer {
+            background: rgba(240, 240, 240, 0.95);
+            border-top: 2px solid #006400;
         }
         .cms-container {
             max-width: 1600px;
@@ -34,6 +62,7 @@
         .font-controls {
             display: flex;
             gap: 20px;
+            align-items: center;
             background: rgba(0, 20, 0, 0.6);
             padding: 10px 20px;
             border: 1px solid var(--border-color);
@@ -176,6 +205,9 @@
                 <div class="control-group">
                     <label for="text-range">Metin Boyutu: <span id="text-val">16</span>px</label>
                     <input type="range" id="text-range" min="12" max="24" step="1" value="16">
+                </div>
+                <div class="control-group" style="justify-content: center;">
+                    <button id="theme-toggle" class="cyber-btn" style="padding: 5px 15px; font-size: 0.9rem;">☀️ Işık Modu</button>
                 </div>
             </div>
         </div>
@@ -458,6 +490,22 @@
         // Event Listeners
         titleRange.addEventListener('input', updateFonts);
         textRange.addEventListener('input', updateFonts);
+
+        // --- Theme Toggle Logic ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const savedTheme = localStorage.getItem('cms_theme');
+
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            themeToggleBtn.innerText = '🌙 Karanlık Mod';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            themeToggleBtn.innerText = isLight ? '🌙 Karanlık Mod' : '☀️ Işık Modu';
+            localStorage.setItem('cms_theme', isLight ? 'light' : 'dark');
+        });
 
         // --- Crypto Access Panel Logic ---
         const correctPassword = '2061907';
