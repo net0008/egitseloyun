@@ -43,7 +43,27 @@ function logBox(message, type = 'system', atTop = false) {
     const span = document.createElement('span');
     span.textContent = `[${timestamp}] `;
     div.appendChild(span);
-    div.appendChild(document.createTextNode(message));
+
+    // Görev brifinglerinde "GÖREV X:" kısmını farklı renkte göstermek için mesajı ayır.
+    if (type === 'briefing' && message.startsWith('GÖREV')) {
+        const parts = message.split(/:(.*)/s); // Sadece ilk kolonda böl
+        if (parts.length > 1) {
+            const taskTitle = parts[0];
+            const taskDescription = parts[1] || '';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = taskTitle + ':';
+            titleSpan.style.color = '#e0e0e0'; // Diğer beyaz metinlerle uyumlu renk
+            titleSpan.style.marginRight = '8px'; // Başlık ve metin arasına boşluk ekle
+
+            div.appendChild(titleSpan);
+            div.appendChild(document.createTextNode(taskDescription.trim()));
+        } else {
+            div.appendChild(document.createTextNode(message));
+        }
+    } else {
+        div.appendChild(document.createTextNode(message));
+    }
 
     if (atTop) {
         const terminalHeader = document.querySelector('.terminal-header');
