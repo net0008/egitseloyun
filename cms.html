@@ -222,6 +222,10 @@
                 <div class="control-group" style="justify-content: center;">
                     <button id="theme-toggle" class="cyber-btn" style="padding: 5px 15px; font-size: 0.9rem;">☀️ Işık Modu</button>
                 </div>
+                <div class="control-group">
+                    <label for="mission-count">Görev Sayısı: <span id="mission-count-val">10</span></label>
+                    <input type="number" id="mission-count" min="5" max="20" value="10" style="width: 80px; padding: 5px; font-size: 1rem; text-align: center;">
+                </div>
             </div>
         </div>
 
@@ -239,15 +243,33 @@
     <script type="module">
         import { db, ref, set, onValue } from './assets/js/firebase-config.js';
 
-        // --- GÖREV SAYISI AYARI ---
-        const TOTAL_MISSIONS = 10; // Toplam görev sayısını buradan değiştirebilirsiniz.
-
+        let missionDataCache = {};
         const missionContainer = document.getElementById('mission-grid');
         const missionsRef = ref(db, 'gameContent/missions');
 
+        // --- Dinamik Görev Sayısı Kontrolleri ---
+        const missionCountInput = document.getElementById('mission-count');
+        const missionCountVal = document.getElementById('mission-count-val');
+
+        // Kaydedilmiş görev sayısını yükle ve arayüzü güncelle
+        const savedMissionCount = localStorage.getItem('cms_mission_count') || '10';
+        missionCountInput.value = savedMissionCount;
+        missionCountVal.textContent = savedMissionCount;
+
+        // Kullanıcı sayıyı değiştirirken etiketi canlı güncelle
+        missionCountInput.addEventListener('input', () => {
+            missionCountVal.textContent = missionCountInput.value;
+        });
+
+        // Kullanıcı değişikliği onayladığında (enter/click out) arayüzü yeniden çiz
+        missionCountInput.addEventListener('change', () => {
+            localStorage.setItem('cms_mission_count', missionCountInput.value);
+            renderForms(missionDataCache);
+        });
+
         onValue(missionsRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            renderForms(data);
+            missionDataCache = snapshot.val() || {};
+            renderForms(missionDataCache);
         }, {
             onlyOnce: true // Sayfa ilk açıldığında veriyi bir kez çek
         });
@@ -282,6 +304,7 @@
         }
 
         function renderForms(data) {
+            const TOTAL_MISSIONS = parseInt(missionCountInput.value, 10) || 10;
             let allMissionsHTML = "";
             for (let i = 1; i <= TOTAL_MISSIONS; i++) {
                 const mission = data[i] || {};
@@ -405,6 +428,7 @@
         window.saveAllMissions = function() {
             const btn = document.querySelector('.save-btn');
             try {
+                const TOTAL_MISSIONS = parseInt(missionCountInput.value, 10) || 10;
                 const missions = {};
                 for (let i = 1; i <= TOTAL_MISSIONS; i++) {
                     const qEl = document.getElementById(`q-${i}`);
