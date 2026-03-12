@@ -50,6 +50,12 @@ function logBox(message, type = 'system', atTop = false) {
         if (terminalHeader && terminalHeader.parentNode) {
             // Bildirimi "GÖREV GÜNLÜĞÜ" başlığının üzerine ekle
             terminalHeader.parentNode.insertBefore(div, terminalHeader);
+            // Bu tür bildirimler genellikle geçicidir, 5 saniye sonra kaldır.
+            setTimeout(() => {
+                div.style.transition = 'opacity 0.5s ease';
+                div.style.opacity = '0';
+                setTimeout(() => div.remove(), 500);
+            }, 5000);
         } else {
             // Başlık bulunamazsa eski davranışa geri dön
             terminal.insertBefore(div, terminal.firstChild);
