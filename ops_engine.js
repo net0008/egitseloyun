@@ -63,14 +63,15 @@ function logBox(message, type = 'system', atTop = false) {
         }
     } else {
         terminal.appendChild(div);
-        // Başarı bildirimleri ("success") geçicidir ve birkaç saniye sonra kaybolmalıdır.
-        // Bu, görev geçişlerindeki zamanlama sorunlarından etkilenmemelerini sağlar.
-        if (type === 'success') {
+        // Başarı ("success") ve geçici sistem bildirimleri birkaç saniye sonra kaybolmalıdır.
+        // Bu, görev geçişlerindeki zamanlama sorunlarından etkilenmemelerini ve ekranı kirletmemelerini sağlar.
+        const isTemporarySystemMessage = type === 'system' && message.includes('Yeni görev verisi');
+        if (type === 'success' || isTemporarySystemMessage) {
             setTimeout(() => {
                 div.style.transition = 'opacity 0.5s ease';
                 div.style.opacity = '0';
                 setTimeout(() => div.remove(), 500);
-            }, 4000); // 4 saniye sonra kaybolur.
+            }, 3000); // 3 saniye sonra kaybolur.
         }
         terminal.scrollTop = terminal.scrollHeight;
     }
