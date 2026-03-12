@@ -6,8 +6,13 @@
     <title>CMS | Görev Yönetim Paneli</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        :root {
+            --cms-title-size: 24px;
+            --cms-text-size: 16px;
+        }
         body {
             background: #050505;
+            font-size: var(--cms-text-size);
         }
         .cms-container {
             max-width: 1600px;
@@ -24,7 +29,29 @@
         }
         .cms-header h1 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: calc(var(--cms-title-size) * 1.5);
+        }
+        .font-controls {
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 20, 0, 0.6);
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .control-group label {
+            font-size: 0.8rem;
+            color: var(--neon-green);
+            font-weight: bold;
+        }
+        .control-group input[type="range"] {
+            cursor: pointer;
+            accent-color: var(--neon-green);
         }
         .mission-grid {
             display: grid;
@@ -47,6 +74,9 @@
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
         }
+        .card-header h3 {
+            font-size: var(--cms-title-size);
+        }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { margin-bottom: 5px; font-weight: bold; }
         .form-group input, .form-group textarea {
@@ -57,6 +87,7 @@
             padding: 10px;
             font-family: inherit;
             resize: vertical;
+            font-size: var(--cms-text-size);
         }
         .form-group textarea { min-height: 80px; }
         .mode-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -137,6 +168,16 @@
     <div class="cms-container" style="display: none;">
         <div class="cms-header">
             <h1>Görev Yönetim Paneli</h1>
+            <div class="font-controls">
+                <div class="control-group">
+                    <label for="title-range">Başlık Boyutu: <span id="title-val">24</span>px</label>
+                    <input type="range" id="title-range" min="18" max="42" step="1" value="24">
+                </div>
+                <div class="control-group">
+                    <label for="text-range">Metin Boyutu: <span id="text-val">16</span>px</label>
+                    <input type="range" id="text-range" min="12" max="24" step="1" value="16">
+                </div>
+            </div>
         </div>
 
         <div id="mission-grid" class="mission-grid">
@@ -384,6 +425,40 @@
     <script src="components/footer.js"></script>
 
     <script>
+        // --- Font Size Adjustment Logic ---
+        const titleRange = document.getElementById('title-range');
+        const textRange = document.getElementById('text-range');
+        const titleValDisplay = document.getElementById('title-val');
+        const textValDisplay = document.getElementById('text-val');
+        const rootEl = document.documentElement;
+
+        // Load saved settings
+        const savedTitleSize = localStorage.getItem('cms_title_size') || '24';
+        const savedTextSize = localStorage.getItem('cms_text_size') || '16';
+
+        function updateFonts() {
+            const tSize = titleRange.value;
+            const txtSize = textRange.value;
+
+            rootEl.style.setProperty('--cms-title-size', `${tSize}px`);
+            rootEl.style.setProperty('--cms-text-size', `${txtSize}px`);
+            
+            titleValDisplay.textContent = tSize;
+            textValDisplay.textContent = txtSize;
+
+            localStorage.setItem('cms_title_size', tSize);
+            localStorage.setItem('cms_text_size', txtSize);
+        }
+
+        // Initialize
+        titleRange.value = savedTitleSize;
+        textRange.value = savedTextSize;
+        updateFonts();
+
+        // Event Listeners
+        titleRange.addEventListener('input', updateFonts);
+        textRange.addEventListener('input', updateFonts);
+
         // --- Crypto Access Panel Logic ---
         const correctPassword = '2061907';
         const accessPanel = document.getElementById('crypto-access-panel');
