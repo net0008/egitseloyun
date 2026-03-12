@@ -17,26 +17,39 @@
         }
         /* --- Işık Modu (Light Mode) Override --- */
         body.light-mode {
-            background: #f4f4f9;
+            background: #f0f2f5; /* Daha yumuşak bir arka plan */
             color: #111;
             --neon-green: #006400; /* Koyu Yeşil (Okunabilirlik için) */
             --panel-bg: #ffffff;
             --border-color: #ccc;
         }
         body.light-mode .cms-header { border-bottom-color: #aaa; }
-        body.light-mode .font-controls { background: rgba(255, 255, 255, 0.8); border-color: #aaa; }
+        body.light-mode .font-controls { background: #fff; border-color: #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         body.light-mode .control-group label { color: #333; }
         body.light-mode .mission-card {
             background: #fff;
             border-color: #ddd;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        body.light-mode .card-header { border-bottom-color: #eee; }
+        body.light-mode .card-header { border-bottom-color: #e9ecef; }
+        body.light-mode .card-header span { color: #495057; } /* "Sıralı Kombinasyon" metnini koyulaştır */
+        
+        /* Form elemanlarının okunabilirliğini artır */
+        body.light-mode .form-group label {
+            color: #212529; /* Daha koyu etiket rengi */
+            font-weight: 600; /* Yarı-kalın yazı */
+        }
         body.light-mode .form-group input, 
         body.light-mode .form-group textarea {
-            background: #fff;
-            color: #333;
-            border-color: #ccc;
+            background: #f8f9fa; /* Hafif kırık beyaz */
+            color: #212529; /* Daha koyu metin */
+            border-color: #ced4da; /* Daha belirgin kenarlık */
+        }
+        body.light-mode .helper-text, body.light-mode .preview-text {
+            color: #6c757d; /* Yardımcı metinleri standartlaştır */
+        }
+        body.light-mode .cyber-btn:hover, body.light-mode .save-btn {
+            color: #fff; /* Buton üzerine gelince ve kaydet butonunda beyaz metin */
         }
         body.light-mode .sticky-footer {
             background: rgba(240, 240, 240, 0.95);
