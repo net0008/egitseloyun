@@ -74,7 +74,6 @@ main, .operation-layout, .dashboard-container {
 .cyber-footer-content p {
     margin: 0;
     font-weight: bold;
-    color: var(--neon-green); /* Footer metninin her zaman yeşil olmasını garantile */
     text-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
 }
 
