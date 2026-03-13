@@ -451,23 +451,17 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
         return;
     }
 
-    const correctAnswers = (mission.answers || "").split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
-    const userInput = rawInput.toLowerCase();
-    let isCorrect = false;
+    const normalized = (s) => s.toLocaleLowerCase("tr").replace(/\s+/g, " ").trim();
 
-    if (mission.requireAll) {
-        // SIRALI KOMBİNASYON MODU
-        let lastIndex = -1;
-        isCorrect = correctAnswers.every(answer => {
-            const idx = userInput.indexOf(answer, lastIndex + 1);
-            if (idx === -1) return false;
-            lastIndex = idx;
-            return true;
-        });
-    } else {
-        // STANDART MOD: Cevaplardan herhangi biri kullanıcı girdisinde geçiyorsa.
-        isCorrect = correctAnswers.some(answer => userInput.includes(answer));
-    }
+    // Kullanıcı girdisini ve cevapları normalize edip token'lara ayır.
+    const userTokens = normalized(rawInput).split(',').map(x => x.trim()).filter(Boolean);
+    const answerTokens = (mission.answers || "").split(',').map(x => normalized(x)).filter(Boolean);
+
+    const isCorrect = mission.requireAll
+        // SIRALI KOMBİNASYON MODU: Tüm token'lar doğru sırada ve sayıda eşleşmeli.
+        ? (userTokens.length === answerTokens.length && answerTokens.every((ans, i) => userTokens[i] === ans))
+        // STANDART MOD: Cevap token'larından herhangi biri kullanıcı girdisinde varsa.
+        : answerTokens.some(ans => userTokens.includes(ans));
 
     if (isCorrect) {
         const nextGorevNo = cur + 1;
