@@ -403,6 +403,19 @@ main, .operation-layout, .dashboard-container {
     box-shadow: 0 0 15px var(--neon-green);
 }
 
+/* Görev 10 aktif olduğunda araçların konumu ve stili */
+.extra-tools.mission-10-layout {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 50%);
+    background: var(--panel-bg);
+    padding: 5px 15px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    width: max-content; /* Butonların yan yana durmasını sağlar */
+}
+
 input[type="text"], input[type="number"], textarea, select {
     background: #000;
     color: var(--neon-green);

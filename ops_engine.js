@@ -583,6 +583,8 @@ function renderUI() {
         if (mission10Input) mission10Input.style.display = 'flex';
         if (standardVisual) standardVisual.style.display = 'none';
         if (mission10Visual) mission10Visual.style.display = 'flex';
+        const standardInputEl = document.getElementById('kripto-val');
+        if (standardInputEl) standardInputEl.value = ""; // Görev değiştiğinde input'u temizle
         if (terminalHeader) terminalHeader.style.marginTop = '0'; // Reset margin
         
         // Move and style the tools container
@@ -639,6 +641,8 @@ function renderUI() {
         if (mission10Input) mission10Input.style.display = 'none';
         if (standardVisual) standardVisual.style.display = 'block';
         if (mission10Visual) mission10Visual.style.display = 'none';
+        const mission10InputEl = document.getElementById('coords-input');
+        if (mission10InputEl) mission10InputEl.value = ""; // Görev değiştiğinde input'u temizle
         if (terminalHeader) terminalHeader.style.marginTop = ''; // Use default margin
         
         // Move tools back and reset styles
