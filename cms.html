@@ -73,11 +73,12 @@
             font-size: calc(var(--cms-title-size) * 1.5);
         }
         .font-controls {
-            display: flex;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px 25px;
             align-items: center;
             background: rgba(0, 20, 0, 0.6);
-            padding: 10px 20px;
+            padding: 15px 25px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
         }
@@ -90,6 +91,20 @@
             font-size: 0.8rem;
             color: var(--neon-green);
             font-weight: bold;
+        }
+        .font-controls #mission-count {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .font-controls #theme-toggle {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .control-group input[type="range"] {
             cursor: pointer;
@@ -212,20 +227,18 @@
             <h1>Görev Yönetim Paneli</h1>
             <div class="font-controls">
                 <div class="control-group">
-                    <label for="title-range">Başlık Boyutu: <span id="title-val">24</span>px</label>
+                    <label for="title-range">Başlık: <span id="title-val">24</span>px</label>
                     <input type="range" id="title-range" min="18" max="42" step="1" value="24">
                 </div>
                 <div class="control-group">
-                    <label for="text-range">Metin Boyutu: <span id="text-val">16</span>px</label>
+                    <label for="text-range">Metin: <span id="text-val">16</span>px</label>
                     <input type="range" id="text-range" min="12" max="24" step="1" value="16">
-                </div>
-                <div class="control-group" style="justify-content: center;">
-                    <button id="theme-toggle" class="cyber-btn" style="padding: 5px 15px; font-size: 0.9rem;">☀️ Işık Modu</button>
                 </div>
                 <div class="control-group">
                     <label for="mission-count">Görev Sayısı: <span id="mission-count-val">10</span></label>
-                    <input type="number" id="mission-count" min="5" max="20" value="10" style="width: 80px; padding: 5px; font-size: 1rem; text-align: center;">
+                    <input type="number" id="mission-count" min="5" max="20" value="10">
                 </div>
+                <button id="theme-toggle" class="cyber-btn">☀️ Işık Modu</button>
             </div>
         </div>
 
