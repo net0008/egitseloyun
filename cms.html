@@ -62,8 +62,8 @@
         }
         .cms-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
@@ -71,21 +71,25 @@
         .cms-header h1 {
             margin: 0;
             font-size: calc(var(--cms-title-size) * 1.5);
+            width: 100%;
         }
         .font-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
             align-items: center;
+            justify-content: flex-start;
             background: rgba(0, 20, 0, 0.6);
-            padding: 15px 25px;
+            padding: 10px 20px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
+            width: 100%;
+            margin-top: 20px;
         }
         .control-group {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            align-items: center;
+            gap: 10px;
         }
         .control-group label {
             font-size: 0.8rem;
@@ -93,22 +97,20 @@
             font-weight: bold;
         }
         .font-controls #mission-count {
-            width: 100%;
-            padding: 8px;
+            width: 70px;
+            padding: 5px;
             font-size: 1rem;
             text-align: center;
         }
         .font-controls #theme-toggle {
-            padding: 8px 15px;
+            padding: 5px 15px;
             font-size: 0.9rem;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin-left: auto; /* Butonu sağa yasla */
         }
         .control-group input[type="range"] {
             cursor: pointer;
             accent-color: var(--neon-green);
+            width: 120px;
         }
         .mission-grid {
             display: grid;
