@@ -145,8 +145,7 @@
     <div class="terminal-log" id="terminal-output"></div>
 
     <div id="standard-mission-input" class="mission-input" style="display: flex; gap: 10px; margin-top: 15px;">
-        <!-- Label kaldırıldı veya placeholder içine alındı daha temiz görünüm için -->
-        <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off">
+        <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off" style="flex-grow: 1;">
         <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
     </div>
 
@@ -163,7 +162,7 @@
         <button class="cyber-btn primary" id="btn-ai-verify">Yapay Zeka</button>
     </div>
 
-    <div class="extra-tools">
+    <div class="extra-tools" style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 PUAN)</button>
         <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
     </div>
