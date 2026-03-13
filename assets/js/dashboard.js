@@ -4,7 +4,7 @@
  * Karargâh Canlı İzleme, Veri Senkronizasyonu ve Operasyonel Yönetim         *
  * *************************************************************************** */
 
-import { db, ref, set, onValue } from "./firebase-config.js";
+import { db, ref, set, onValue, update } from "./firebase-config.js";
 
 // --- 0. HAFIZA VE SAHA BELLEĞİ BAŞLATICI ---
 // Sayfa yüklendiğinde tarayıcı yerel depolamasında bekleyen CSV taslaklarını kontrol eder.
@@ -156,26 +156,31 @@ document.getElementById("btn-init-op")?.addEventListener("click", () => {
 
     const teams = [...new Set(localStudents.map(s => s["Takım Adı"]))].filter(Boolean);
     const initialScores = {};
-    
+
     teams.forEach(t => {
-        initialScores[t] = { 
-            puan: 1000, 
-            bolge: "2A", 
-            gorevNo: 1, 
+        initialScores[t] = {
+            puan: 1000,
+            bolge: "2A",
+            gorevNo: 1,
             durum: "Bağlantı Bekleniyor",
             ipucuSayisi: 0,
             hataSayisi: 0 // Hata takip sistemi karargah için mühürlendi.
         };
     });
 
-    set(ref(db, "operasyon/skorlar"), initialScores);
-    set(ref(db, "operasyon/kadro"), localStudents).then(() => {
-        localStorage.removeItem("rosterDraft");
-        alert("OPERASYON BAŞLATILDI: Tüm sahadaki analistler görev emri aldı.");
-    }).catch(err => {
-        console.error("Firebase Başlatma Hatası:", err);
-        alert("KRİTİK HATA: Karargah veri gönderemiyor!");
-    });
+    const payload = {
+        kadro: localStudents,
+        skorlar: initialScores,
+    };
+
+    update(ref(db, "operasyon"), payload)
+        .then(() => {
+            localStorage.removeItem("rosterDraft");
+            alert("OPERASYON BAŞLATILDI");
+        })
+        .catch(() => {
+            alert("KRİTİK HATA");
+        });
 });
 
 // --- 5. SİSTEM SIFIRLAMA (WIPE OUT) ---
