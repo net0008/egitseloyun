@@ -116,6 +116,16 @@ main, .operation-layout, .dashboard-container {
     z-index: 10;
 }
 
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--neon-green);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    min-height: 75px; /* Paneller arası başlık hizalaması için */
+}
+
 .team-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -420,11 +430,8 @@ th, td {
     color: var(--neon-green);
     text-transform: uppercase;
     font-size: 1.3rem;
-    border-bottom: 1px solid var(--neon-green);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-    /* Harita çerçevesiyle hizalamak için yaklaşık üst boşluk */
-    margin-top: 88px;
+    /* Kenarlık, dolgu ve kenar boşlukları artık .panel-header tarafından yönetiliyor */
+    margin: 0;
 }
 
 .terminal-log {

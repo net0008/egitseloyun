@@ -85,14 +85,18 @@
     <main class="operation-layout">
         <section class="visual-panel">
             <div id="standard-visual-content">
-                <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
-                <div class="star-rating" id="star-container">
-                    <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
+                        <div class="star-rating" id="star-container" style="margin: 5px 0 0 0;">
+                            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+                        </div>
+                    </div>
+                    <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem; text-align: right; margin: 0;">
+                        Puan: <span id="current-score" class="neon-text">1000</span><br>
+                        <span id="current-sector">1. Görev 2A Bölgesi</span>
+                    </p>
                 </div>
-                <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem;">
-                    Puan: <span id="current-score" class="neon-text">1000</span> | 
-                    <span id="current-sector">1. Görev 2A Bölgesi</span>
-                </p>
                 <div class="visual-title-box" id="visual-title">Görsel Analizi Bekleniyor...</div>
                 <div class="map-frame">
                     <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
@@ -140,9 +144,11 @@
         </section>
 
         <section class="command-panel">
-    <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
+            <div class="panel-header">
+                <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
+            </div>
 
-    <div class="terminal-log" id="terminal-output"></div>
+            <div class="terminal-log" id="terminal-output"></div>
 
     <div id="standard-mission-input" class="mission-input" style="display: flex; gap: 10px; margin-top: 15px;">
         <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off" style="flex-grow: 1;">
