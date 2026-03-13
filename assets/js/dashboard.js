@@ -9,6 +9,7 @@ import { db, ref, set, onValue } from "./firebase-config.js";
 // --- 0. HAFIZA VE SAHA BELLEĞİ BAŞLATICI ---
 // Sayfa yüklendiğinde tarayıcı yerel depolamasında bekleyen CSV taslaklarını kontrol eder.
 let localStudents = JSON.parse(localStorage.getItem("rosterDraft") || "[]");
+let liveScoresCache = {}; // Canlı skor verilerini tutacak önbellek
 
 // --- 1. VERİ NORMALİZASYON VE ANALİZ SİSTEMİ ---
 // CSV başlıklarını sistemdeki standart anahtarlarla eşleştiren takma ad (alias) kütüphanesi.
@@ -104,13 +105,20 @@ onValue(ref(db, "operasyon/kadro"), (snapshot) => {
         localStudents = snapshot.val();
         localStorage.removeItem("rosterDraft"); // Veritabanı mühürlendiği için yerel taslağı temizle.
         console.log("[KARARGAH]: Canlı kadro veritabanından senkronize edildi.");
-        
-        onValue(ref(db, "operasyon/skorlar"), (scoreSnap) => {
-            renderDashboard(scoreSnap.val() || {});
-        });
     } else {
-        renderDashboard(); // Veritabanı boşsa mevcut yerel durumu göster.
+        // Veritabanında kadro yoksa, yerel öğrenci listesini temizle.
+        // Bu, 'renderDashboard'un "veri bekleniyor" mesajını göstermesini sağlar.
+        localStudents = [];
     }
+    // Arayüzü mevcut skor önbelleği ile yeniden çiz.
+    renderDashboard(liveScoresCache);
+});
+
+// Skor verilerini dinle
+onValue(ref(db, "operasyon/skorlar"), (scoreSnap) => {
+    liveScoresCache = scoreSnap.val() || {};
+    // Arayüzü mevcut kadro ile yeniden çiz.
+    renderDashboard(liveScoresCache);
 });
 
 // --- 4. DOSYA VE OPERASYON YÖNETİMİ ---
