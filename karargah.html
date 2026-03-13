@@ -76,10 +76,11 @@
         <div class="crypto-panel">
             <h2>GİZLİ ERİŞİM GEREKLİ</h2>
             <p>Karargâh sistemlerine erişim için kimlik doğrulaması yapın.</p>
-            <div class="crypto-input-group">
-                <input type="password" id="access-password" placeholder="Giriş Kodu...">
-                <button id="btn-access-verify" class="cyber-btn">GİRİŞ</button>
+            <div class="crypto-input-group" style="flex-direction: column; gap: 15px;">
+                <input type="email" id="access-email" placeholder="E-posta Adresi..." autocomplete="email">
+                <input type="password" id="access-password" placeholder="Giriş Kodu..." autocomplete="current-password">
             </div>
+            <button id="btn-access-verify" class="cyber-btn" style="margin-top: 1.5rem; width: 100%;">GİRİŞ</button>
             <p id="crypto-error-msg" class="crypto-error"></p>
         </div>
     </div>
@@ -144,13 +145,16 @@
     <script src="components/header.js"></script>
     <script src="components/footer.js"></script>
 
-    <script>
+    <script type="module">
+        import { auth } from './assets/js/firebase-config.js';
+        import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
         // --- Crypto Access Panel Logic ---
-        const correctPassword = '2061907';
         const accessPanel = document.getElementById('crypto-access-panel');
         const mainContent = document.querySelector('.dashboard-container');
         const commsToggle = document.querySelector('.comms-toggle');
         const headerPlaceholder = document.getElementById('header-placeholder');
+        const emailInput = document.getElementById('access-email');
         const passwordInput = document.getElementById('access-password');
         const verifyBtn = document.getElementById('btn-access-verify');
         const errorMsg = document.getElementById('crypto-error-msg');
@@ -162,30 +166,46 @@
             headerPlaceholder.style.display = 'block';
         }
 
-        function attemptLogin() {
-            if (passwordInput.value === correctPassword) {
-                localStorage.setItem('bergama2050_access_token', 'granted');
-                grantAccess();
-            } else {
-                errorMsg.textContent = 'Erişim Reddedildi - Yetkisiz Giriş Saptandı';
-                passwordInput.value = '';
-                const cryptoPanel = document.querySelector('.crypto-panel');
-                if (cryptoPanel) {
-                    cryptoPanel.classList.add('shake');
-                    setTimeout(() => cryptoPanel.classList.remove('shake'), 500);
-                }
+        function showLoginError(message) {
+            errorMsg.textContent = message;
+            passwordInput.value = '';
+            const cryptoPanel = document.querySelector('.crypto-panel');
+            if (cryptoPanel) {
+                cryptoPanel.classList.add('shake');
+                setTimeout(() => cryptoPanel.classList.remove('shake'), 500);
             }
         }
 
-        // Sayfa yüklendiğinde tarayıcı hafızasını kontrol et
-        if (localStorage.getItem('bergama2050_access_token') === 'granted') {
-            grantAccess();
+        async function attemptLogin() {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            if (!email || !password) return showLoginError('E-posta ve şifre alanları zorunludur.');
+            
+            errorMsg.textContent = ''; // Clear previous errors
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Firebase Auth Hatası:", error.code);
+                let friendlyMessage = 'Erişim Reddedildi - Yetkisiz Giriş Saptandı';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    friendlyMessage = 'Hatalı e-posta veya şifre.';
+                } else if (error.code === 'auth/invalid-email') {
+                    friendlyMessage = 'Geçersiz e-posta formatı.';
+                }
+                showLoginError(friendlyMessage);
+            }
         }
 
-        verifyBtn.addEventListener('click', attemptLogin);
-        passwordInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                attemptLogin();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Yetkili kullanıcı giriş yaptı:", user.email);
+                grantAccess();
+            } else {
+                accessPanel.style.display = 'flex';
+                mainContent.style.display = 'none';
+                commsToggle.style.display = 'none';
+                headerPlaceholder.style.display = 'none';
             }
         });
 
@@ -194,10 +214,16 @@
         if(logoutBtn) {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                localStorage.removeItem('bergama2050_access_token');
-                window.location.reload();
+                auth.signOut();
             });
         }
+
+        verifyBtn.addEventListener('click', attemptLogin);
+        [emailInput, passwordInput].forEach(input => {
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') attemptLogin();
+            });
+        });
 
         // --- Side Menu Logic ---
         const commsMenu = document.getElementById('side-comms-menu');

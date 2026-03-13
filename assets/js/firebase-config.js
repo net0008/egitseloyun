@@ -1,6 +1,7 @@
 // assets/js/firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyC7Jz1nPK7qv8Qtx5tJdmeFU7os-AuVNKE",
@@ -15,6 +16,7 @@ const firebaseConfig = {
 // Firebase başlatma
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 // Gerekli fonksiyonları dışa aktarma
-export { db, ref, set, onValue, update, get };
+export { db, auth, ref, set, onValue, update, get };
