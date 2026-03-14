@@ -15,4 +15,13 @@ document.addEventListener('click', function(e) {
             window.location.replace(targetURL);
         }
     }
+
+    // Menüdeki "Öğretmen Rehberi" linki için tıklama olayı.
+    // Linkin HTML'de `id="ogretmen-rehberi-link"`'e sahip olduğu varsayılmıştır.
+    // "Saha kılavuzu gibi açılıp kapanacak" davranışının, yeni bir tarayıcı
+    // sekmesinde açılıp kapatılabilmesi olduğu varsayılmıştır.
+    if (e.target.closest('#ogretmen-rehberi-link')) {
+        e.preventDefault();
+        window.open('assets/pdf/cografi_becerilerin_dijital_donusumu.pdf', '_blank');
+    }
 });
