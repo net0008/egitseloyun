@@ -178,6 +178,7 @@
     <div id="manual-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="btn-close-manual">X KAPAT</span>
+            <span class="close-btn" id="btn-close-manual">X</span>
             <iframe id="pdf-viewer" src="assets/pdf/saha_kilavuzu.pdf" width="100%" height="90%" frameborder="0"></iframe>
         </div>
     </div>
@@ -195,6 +196,8 @@
         openBtn.onclick = () => modal.style.display = "block";
         closeBtn.onclick = () => modal.style.display = "none";
         window.onclick = (e) => { if (e == modal) modal.style.display = "none"; }
+        if (closeBtn) closeBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; }
     </script>
 </body>
 </html>
