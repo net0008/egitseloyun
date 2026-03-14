@@ -653,6 +653,14 @@ function renderUI() {
             extraTools.style.borderRadius = '';
             extraTools.style.border = '';
         }
+
+        // PowerPoint'e giden "Saha Kılavuzu" linkini PDF olarak güncelle.
+        // Misyon 10'un kendi özel videosu olduğu için bu kural 1-9 arası misyonlar için geçerlidir.
+        const trainingBtn = document.getElementById('btn-training-video');
+        if (trainingBtn) {
+            trainingBtn.href = 'assets/pdf/cografi_becerilerin_dijital_donusumu.pdf';
+            trainingBtn.target = '_blank';
+        }
     }
     
     updateScoreDisplay(teamScoreData);
