@@ -1,7 +1,7 @@
 /* *****************************************************************************
- * footer.js - Sürüm: v1.4.1                                                   *
+ * footer.js - Sürüm: v1.4.3                                                   *
  * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * Operasyonel Alt Bilgi (Footer) Protokolü - Kırık olan Öğretmen Rehberi linki kaldırıldı. *
+ * Operasyonel Alt Bilgi (Footer) Protokolü - Öğretmen Rehberi linki yan menüye taşındı. *
  * *************************************************************************** */
 function loadFooter() {
     const placeholder = document.getElementById('footer-placeholder');

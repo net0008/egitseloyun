@@ -22,4 +22,13 @@ document.addEventListener("DOMContentLoaded", function() {
     `;
     const headerElement = document.getElementById('header-placeholder');
     if (headerElement) headerElement.innerHTML = headerHTML;
+
+    // --- YAN MENÜYE ÖĞRETMEN REHBERİ EKLEME ---
+    // Not: Bu menü ana HTML dosyasında statik olarak yer aldığı varsayılmıştır.
+    const sideMenuUl = document.querySelector('.side-comms-menu ul');
+    if (sideMenuUl) {
+        const teacherGuideLi = document.createElement('li');
+        teacherGuideLi.innerHTML = `<a href="assets/pdf/cografi_becerilerin_dijital_donusumu.pdf" target="_blank" rel="noopener noreferrer">Öğretmen Rehberi</a>`;
+        sideMenuUl.appendChild(teacherGuideLi);
+    }
 });
