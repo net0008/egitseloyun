@@ -184,7 +184,7 @@
         <div style="padding-top: 60px;">
             <h3>Nasıl Oynanır?</h3>
             <ul>
-                <li><a href="#" class="teacher-guide-link">1. Öğretmen Rehberi</a></li>
+                <li><a href="#" id="btn-open-teacher-guide">1. Öğretmen Rehberi</a></li>
                 <li><a href="assets/pdf/sinif_listesi.xlsm" target="_blank">2. Takım Oluşturma (Excel)</a></li>
                 <li><a href="assets/pdf/sinif_listesi.csv" target="_blank">3. Takım Oluşturma (CSV)</a></li>
                 <li><a href="assets/video/izohips.mp4" target="_blank">4. Görev Videosu</a></li>
@@ -251,6 +251,14 @@
 
     <div class="sticky-footer" style="display: none;">
         <button class="save-btn" onclick="saveAllMissions()" disabled>Veriler Yükleniyor...</button>
+    </div>
+
+    <!-- Öğretmen Rehberi Modal -->
+    <div id="teacher-guide-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="btn-close-teacher-guide">X</span>
+            <iframe src="assets/pdf/cografi_becerilerin_dijital_donusumu.pdf" width="100%" height="90%" frameborder="0"></iframe>
+        </div>
     </div>
 
     <div id="footer-placeholder"></div>
@@ -626,6 +634,28 @@
                 commsMenu.classList.toggle('active');
             });
         }
+
+        // --- Teacher Guide Modal Logic ---
+        const teacherModal = document.getElementById("teacher-guide-modal");
+        const openTeacherGuideBtn = document.getElementById("btn-open-teacher-guide");
+        const closeTeacherGuideBtn = document.getElementById("btn-close-teacher-guide");
+
+        if (openTeacherGuideBtn && teacherModal) {
+            openTeacherGuideBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                teacherModal.style.display = "block";
+            });
+        }
+        if (closeTeacherGuideBtn && teacherModal) {
+            closeTeacherGuideBtn.onclick = () => {
+                teacherModal.style.display = "none";
+            };
+        }
+        window.addEventListener('click', (e) => {
+            if (e.target == teacherModal) {
+                teacherModal.style.display = "none";
+            }
+        });
     </script>
 </body>
 </html>
