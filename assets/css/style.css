@@ -776,3 +776,299 @@ th {
 .modal-content .close-btn:hover { background: var(--warning-red); color: #000; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- 15. SAHA CANLI DURUM ÇUBUĞU (LIVE DETECTOR) --- */
+.field-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin: 20px 0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+.field-status-banner.available {
+    background: rgba(0, 40, 0, 0.7);
+    border: 1px solid var(--neon-green);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+}
+
+.field-status-banner.busy {
+    background: rgba(40, 0, 0, 0.75);
+    border: 1px solid var(--warning-red);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+}
+
+.field-status-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.field-status-banner.available .field-status-indicator {
+    background-color: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+    animation: pulse-green 1.8s infinite;
+}
+
+.field-status-banner.busy .field-status-indicator {
+    background-color: var(--warning-red);
+    box-shadow: 0 0 10px var(--warning-red);
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-green {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+}
+
+.field-status-title {
+    font-weight: bold;
+    font-family: 'Exo 2', sans-serif;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.field-status-banner.available .field-status-title { color: var(--neon-green); }
+.field-status-banner.busy .field-status-title { color: var(--warning-red); }
+
+/* --- 16. RANDEVU SİSTEMİ & TAKVİM MODALI --- */
+.reservation-btn-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.cyber-btn.calendar-btn {
+    border-color: var(--info-blue);
+    color: var(--info-blue);
+    font-size: 0.95rem;
+    padding: 12px 22px;
+    background: rgba(0, 212, 255, 0.05);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-btn.calendar-btn:hover {
+    background: var(--info-blue);
+    color: #000;
+    box-shadow: 0 0 20px var(--info-blue), 0 0 35px rgba(0, 212, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.reservation-modal-box {
+    max-width: 880px;
+    height: 85vh;
+    overflow-y: auto;
+    background: rgba(4, 8, 6, 0.96);
+    border: 1px solid var(--info-blue);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.35), inset 0 0 30px rgba(0, 212, 255, 0.05);
+    border-radius: 8px;
+    padding: 25px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Modal içi neon scrollbar */
+.reservation-modal-box::-webkit-scrollbar,
+.slot-list::-webkit-scrollbar {
+    width: 6px;
+}
+.reservation-modal-box::-webkit-scrollbar-track,
+.slot-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.6);
+}
+.reservation-modal-box::-webkit-scrollbar-thumb,
+.slot-list::-webkit-scrollbar-thumb {
+    background: var(--info-blue);
+    border-radius: 3px;
+}
+
+.reservation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .reservation-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.res-form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+
+.res-form-group label {
+    color: var(--info-blue);
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 6px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.res-form-group input, .res-form-group select {
+    background: rgba(0, 15, 20, 0.7);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    color: #fff;
+    padding: 11px 14px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.res-form-group input:focus, .res-form-group select:focus {
+    border-color: var(--info-blue);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    background: rgba(0, 25, 35, 0.9);
+}
+
+.slot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 310px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.slot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(0, 20, 30, 0.5);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: all 0.25s ease;
+}
+
+.slot-item:hover {
+    border-color: var(--info-blue);
+    transform: translateX(3px);
+}
+
+.slot-item.booked {
+    border-color: rgba(255, 62, 62, 0.4);
+    background: rgba(35, 5, 5, 0.55);
+    opacity: 0.9;
+}
+
+.slot-item.booked:hover {
+    border-color: var(--warning-red);
+}
+
+.slot-item.booked .slot-status {
+    color: var(--warning-red);
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 62, 62, 0.6);
+}
+
+.slot-item.free .slot-status {
+    color: var(--neon-green);
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+}
+
+/* --- 17. TAKTİK BRİFİNG & BAŞARI KARNESİ (GÖREV 10 FİNAL) --- */
+.achievement-card {
+    background: rgba(5, 10, 15, 0.95);
+    border: 2px solid var(--neon-green);
+    box-shadow: 0 0 30px rgba(57, 255, 20, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
+    border-radius: 8px;
+    padding: 25px;
+    max-width: 650px;
+    width: 100%;
+    margin: 15px auto;
+    text-align: center;
+    position: relative;
+}
+
+.badge-container {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.maarif-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(57, 255, 20, 0.2));
+    border: 1px solid var(--info-blue);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    padding: 10px 20px;
+    border-radius: 30px;
+}
+
+.badge-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 5px var(--neon-green));
+}
+
+.badge-text-title {
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+}
+
+.badge-code {
+    color: var(--neon-green);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.report-item {
+    background: rgba(0, 20, 0, 0.5);
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    padding: 10px 15px;
+    border-radius: 4px;
+}
+
+.report-item .report-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+}
+
+.report-item .report-val {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+    margin-top: 3px;
+    display: block;
+}
+
+.report-item .report-val.highlight {
+    color: var(--neon-green);
+    text-shadow: 0 0 8px var(--neon-green);
+}

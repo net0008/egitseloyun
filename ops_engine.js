@@ -32,6 +32,21 @@ let lastGorevNo = 0;
 let mapLoadTimeout = null;
 let lastVisualSignature = '';
 let mapRenderToken = 0;
+let operationStartTime = Date.now();
+let missionStartTime = Date.now();
+
+// Dış Platform (Iframe) postMessage İletişim Protokolü
+function notifyParentPlatform(gorevNo, kpScore, isCompleted) {
+    if (window.parent) {
+        window.parent.postMessage({
+            type: 'IZOHIPS_MISSION_UPDATE',
+            teamName: teamName,
+            gorevNo: gorevNo,
+            kp: kpScore || 0,
+            completed: isCompleted || gorevNo >= 10
+        }, '*');
+    }
+}
 
 // --- 1.A YARDIMCI FONKSİYONLAR ---
 function getTotalMissions() {
@@ -334,8 +349,9 @@ document.getElementById('btn-hint')?.addEventListener('click', async () => {
 
         update(scoreRef, {
             ipucuSayisi: usedHints + 1,
-            puan: (teamScoreData.puan || 1000) - 50,
-            durum: `İpucu Alındı (${usedHints + 1})`
+            puan: Math.max(0, (teamScoreData.puan || 1000) - 50),
+            durum: `İpucu Alındı (${usedHints + 1})`,
+            sonAktiflik: new Date().toISOString()
         });
     } else {
         if (currentGorev === 10) {
@@ -378,12 +394,16 @@ document.getElementById('btn-ai-verify')?.addEventListener('click', async () => 
     }
 
     // Parse user input: expecting "lat, lon"
-    // Kullanıcıdan gelebilecek "39.121369° N 27.179983° E" gibi formatları işlemek için temizleme yapılır.
     const cleanedInput = rawInput.replace(/[°NESW]/gi, ' ').replace(/,/g, ' ');
     const parts = cleanedInput.split(/\s+/).filter(Boolean);
     if (parts.length !== 2) {
         logBox("HATA: Geçersiz format. Lütfen 'enlem, boylam' formatında veri girin.", "warning");
-        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: (teamScoreData.hataSayisi || 0) + 1, puan: (teamScoreData.puan || 1000) - 10 });
+        update(scoreRef, {
+            durum: "Hatalı Profil Verisi",
+            hataSayisi: (teamScoreData.hataSayisi || 0) + 1,
+            puan: Math.max(0, (teamScoreData.puan || 1000) - 20),
+            sonAktiflik: new Date().toISOString()
+        });
         return;
     }
 
@@ -392,7 +412,12 @@ document.getElementById('btn-ai-verify')?.addEventListener('click', async () => 
 
     if (isNaN(lat) || isNaN(lon)) {
         logBox("HATA: Enlem ve boylam sayısal değerler olmalıdır.", "warning");
-        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: (teamScoreData.hataSayisi || 0) + 1, puan: (teamScoreData.puan || 1000) - 10 });
+        update(scoreRef, {
+            durum: "Hatalı Profil Verisi",
+            hataSayisi: (teamScoreData.hataSayisi || 0) + 1,
+            puan: Math.max(0, (teamScoreData.puan || 1000) - 20),
+            sonAktiflik: new Date().toISOString()
+        });
         return;
     }
 
@@ -406,30 +431,52 @@ document.getElementById('btn-ai-verify')?.addEventListener('click', async () => 
     const correctLat = parseFloat(correctAnswers[0]);
     const correctLon = parseFloat(correctAnswers[1]);
 
-    // Check with a margin of error
+    // Check with a margin of error (~111 meters)
     const latError = Math.abs(lat - correctLat);
     const lonError = Math.abs(lon - correctLon);
-    const tolerance = 0.001; // ~111 meters margin of error
+    const tolerance = 0.001;
 
     if (latError <= tolerance && lonError <= tolerance) {
-        // Correct
+        // Doğru - Süre Bonusu & Hatasız Çarpanı Hesabı
+        const missionElapsedSec = Math.round((Date.now() - missionStartTime) / 1000);
+        let bonusKP = 0;
+        if (missionElapsedSec < 60) {
+            bonusKP += 50; // Hızlı tamamlama bonusu
+        } else if (missionElapsedSec < 120) {
+            bonusKP += 25;
+        }
+        if ((teamScoreData.hataSayisi || 0) === 0 && (teamScoreData.ipucuSayisi || 0) === 0) {
+            bonusKP += 50; // Kusursuz tamamlama çarpan bonusu
+        }
+
         const nextGorevNo = cur + 1;
-        const nextPuan = (teamScoreData.puan || 1000) + 200;
+        const nextPuan = (teamScoreData.puan || 1000) + 200 + bonusKP;
         const nextBolge = "TAMAMLANDI";
-        update(scoreRef, {
+        
+        await update(scoreRef, {
             gorevNo: nextGorevNo,
             bolge: nextBolge,
             puan: nextPuan,
             durum: "Profil Çıkarma Başarılı",
-            ipucuSayisi: 0
+            ipucuSayisi: 0,
+            sonAktiflik: new Date().toISOString()
         });
-        logBox("YAPAY ZEKA ANALİZİ BAŞARILI! Profil doğrulandı. Operasyon tamamlanıyor...", "success");
+
+        notifyParentPlatform(nextGorevNo, nextPuan, true);
+
+        const bonusMsg = bonusKP > 0 ? ` (+${bonusKP} Hız & İsabet Bonusu KP)` : '';
+        logBox(`YAPAY ZEKA ANALİZİ BAŞARILI! Profil doğrulandı.${bonusMsg} Operasyon tamamlanıyor...`, "success");
     } else {
-        // Incorrect
+        // Yanlış
         const hCount = (teamScoreData.hataSayisi || 0) + 1;
-        const newPuan = (teamScoreData.puan || 1000) - 50;
-        update(scoreRef, { durum: "Hatalı Profil Verisi", hataSayisi: hCount, puan: newPuan });
-        logBox("HATA: Yapay zeka analizi başarısız. Konum verisi eşleşmiyor. (-50 Puan)", "warning");
+        const newPuan = Math.max(0, (teamScoreData.puan || 1000) - 50);
+        update(scoreRef, {
+            durum: "Hatalı Profil Verisi",
+            hataSayisi: hCount,
+            puan: newPuan,
+            sonAktiflik: new Date().toISOString()
+        });
+        logBox("HATA: Yapay zeka analizi başarısız. Konum verisi eşleşmiyor. (-50 KP)", "warning");
     }
     inputEl.value = "";
 });
@@ -458,29 +505,53 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
     const answerTokens = (mission.answers || "").split(',').map(x => normalized(x)).filter(Boolean);
 
     const isCorrect = mission.requireAll
-        // SIRALI KOMBİNASYON MODU: Tüm token'lar doğru sırada ve sayıda eşleşmeli.
+        // SIRALI KOMBİNASYON MODU
         ? (userTokens.length === answerTokens.length && answerTokens.every((ans, i) => userTokens[i] === ans))
-        // STANDART MOD: Cevap token'larından herhangi biri kullanıcı girdisinde varsa.
+        // STANDART MOD
         : answerTokens.some(ans => userTokens.includes(ans));
 
     if (isCorrect) {
+        // Süre Bonusu & Hatasız Görev Tamamlama Bonusu
+        const missionElapsedSec = Math.round((Date.now() - missionStartTime) / 1000);
+        let bonusKP = 0;
+        if (missionElapsedSec < 45) {
+            bonusKP += 50; // Hızlı tamamlama bonusu
+        } else if (missionElapsedSec < 90) {
+            bonusKP += 25;
+        }
+
         const nextGorevNo = cur + 1;
         const totalMissions = getTotalMissions();
-        const nextPuan = (teamScoreData.puan || 1000) + 200;
+        const nextPuan = (teamScoreData.puan || 1000) + 200 + bonusKP;
         const nextBolge = nextGorevNo > totalMissions ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
-        update(scoreRef, {
+        
+        await update(scoreRef, {
             gorevNo: nextGorevNo,
             bolge: nextBolge,
             puan: nextPuan,
             durum: "Başarılı Analiz",
-            ipucuSayisi: 0
+            ipucuSayisi: 0,
+            sonAktiflik: new Date().toISOString()
         });
-        logBox("VERİ DOĞRULANDI! Bir sonraki göreve geçiliyor...", "success");
+
+        // Görev geçişini ana pencereye (iframe parent) bildir
+        notifyParentPlatform(nextGorevNo, nextPuan, nextGorevNo > totalMissions);
+
+        // Bir sonraki görev için sayacı sıfırla
+        missionStartTime = Date.now();
+
+        const bonusMsg = bonusKP > 0 ? ` (+${bonusKP} Hız Bonusu KP)` : '';
+        logBox(`VERİ DOĞRULANDI!${bonusMsg} Bir sonraki göreve geçiliyor...`, "success");
     } else {
         const hCount = (teamScoreData.hataSayisi || 0) + 1;
-        const newPuan = (teamScoreData.puan || 1000) - 50;
-        update(scoreRef, { durum: "Hatalı Analiz Girişi", hataSayisi: hCount, puan: newPuan });
-        logBox("HATA: Analiz verisi geçersiz. (-50 Puan)", "warning");
+        const newPuan = Math.max(0, (teamScoreData.puan || 1000) - 50);
+        update(scoreRef, {
+            durum: "Hatalı Analiz Girişi",
+            hataSayisi: hCount,
+            puan: newPuan,
+            sonAktiflik: new Date().toISOString()
+        });
+        logBox("HATA: Analiz verisi geçersiz. (-50 KP)", "warning");
     }
     inputEl.value = "";
 });
@@ -528,9 +599,29 @@ function renderUI() {
         logBox("Tebrikler! Bergama 2050 operasyonunu başarıyla tamamladınız. Skorunuz karargaha iletildi.", "success");
 
         const finalScoreEl = document.getElementById('final-score');
-        if (finalScoreEl) finalScoreEl.textContent = teamScoreData.puan || 1000;
+        if (finalScoreEl) finalScoreEl.textContent = `${teamScoreData.puan || 1000} KP`;
 
-        // Find and display the champion
+        // Taktik Brifing & Başarı Karnesi Detayları
+        const reportTeamName = document.getElementById('report-team-name');
+        const reportTotalKp = document.getElementById('report-total-kp');
+        const reportDuration = document.getElementById('report-duration');
+        const reportHints = document.getElementById('report-hints');
+
+        if (reportTeamName) reportTeamName.textContent = teamName;
+        if (reportTotalKp) reportTotalKp.textContent = `${teamScoreData.puan || 1000} KP`;
+        if (reportHints) reportHints.textContent = teamScoreData.ipucuSayisi || 0;
+
+        // Harcanan Süre Hesaplama
+        const totalElapsedSec = Math.max(0, Math.round((Date.now() - operationStartTime) / 1000));
+        const elapsedMins = Math.floor(totalElapsedSec / 60);
+        const elapsedSecs = totalElapsedSec % 60;
+        const durationStr = `${String(elapsedMins).padStart(2, '0')}:${String(elapsedSecs).padStart(2, '0')} dk`;
+        if (reportDuration) reportDuration.textContent = durationStr;
+
+        // Parent platforma tamamlama sinyali fırlat
+        notifyParentPlatform(gorevNo, teamScoreData.puan || 1000, true);
+
+        // Şampiyonluk & Sıralama Listesi (KP Standardı)
         const allScoresRef = ref(db, 'operasyon/skorlar');
         get(allScoresRef).then((snapshot) => {
             if (snapshot.exists()) {
@@ -550,13 +641,12 @@ function renderUI() {
                 const championSection = document.getElementById('champion-section');
 
                 if (championListEl && championSection) {
-                    championListEl.innerHTML = ''; // Önceki içeriği temizle
+                    championListEl.innerHTML = '';
                     teamsRanked.forEach((team, index) => {
                         const p = document.createElement('p');
                         p.style.marginBottom = '5px';
-                        // Birinciye taç simgesi ekle
                         const rankDisplay = index === 0 ? '👑' : `${index + 1}.`;
-                        p.innerHTML = `<span style="color: #fff; width: 2.5em; display: inline-block;">${rankDisplay}</span> <span style="font-weight: bold; color: var(--neon-green);">${team.name}</span> - <span class="neon-text" style="color: var(--info-blue);">${team.score}</span> Puan`;
+                        p.innerHTML = `<span style="color: #fff; width: 2.2em; display: inline-block;">${rankDisplay}</span> <span style="font-weight: bold; color: var(--neon-green);">${team.name}</span> - <span class="neon-text" style="color: var(--info-blue);">${team.score} KP</span>`;
                         championListEl.appendChild(p);
                     });
                     championSection.style.display = 'block';
@@ -722,6 +812,9 @@ function initOperation() {
                     }
                 }
             }
+
+            // Dış platformu mevcut durumla bilgilendir
+            notifyParentPlatform(currentGorevNo, teamScoreData.puan || 1000, currentGorevNo > totalMissions);
 
             renderUI(); // Görev verisi zaten gelmiş olabilir, arayüzü çizmeyi dene.
         } else {

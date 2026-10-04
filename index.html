@@ -48,19 +48,110 @@
             <h1 class="glitch-title" data-text="BAĞLANTI KURULUYOR...">BAĞLANTI KURULUYOR...</h1>
             <p>Operasyon Biriminizi Seçin</p>
             
+            <!-- Canlı Saha Durumu Dedektörü -->
+            <div id="field-status-banner" class="field-status-banner available">
+                <span class="field-status-indicator"></span>
+                <div>
+                    <span id="field-status-title" class="field-status-title">OPERASYON HATTI AÇIK</span>
+                    <span id="field-status-desc">Saha taranıyor...</span>
+                </div>
+            </div>
+
             <div class="team-grid">
-    <button class="cyber-btn team-btn" data-team="Grup Manas">GRUP MANAS</button>
-    <button class="cyber-btn team-btn" data-team="Dede Korkut">DEDE KORKUT</button>
-    <button class="cyber-btn team-btn" data-team="Türk Tim">TÜRK TİM</button>
-    <button class="cyber-btn team-btn" data-team="Serhadlar">SERHADLAR</button>
-    <button class="cyber-btn team-btn" data-team="Mete Han">METE HAN</button>
-    <button class="cyber-btn team-btn" data-team="Kurtalan Ekspres">KURTALAN EKSPRES</button>
-</div>
+                <button class="cyber-btn team-btn" data-team="Grup Manas">GRUP MANAS</button>
+                <button class="cyber-btn team-btn" data-team="Dede Korkut">DEDE KORKUT</button>
+                <button class="cyber-btn team-btn" data-team="Türk Tim">TÜRK TİM</button>
+                <button class="cyber-btn team-btn" data-team="Serhadlar">SERHADLAR</button>
+                <button class="cyber-btn team-btn" data-team="Mete Han">METE HAN</button>
+                <button class="cyber-btn team-btn" data-team="Kurtalan Ekspres">KURTALAN EKSPRES</button>
+            </div>
+
+            <!-- Sınıf Seansı Rezerve Et Butonu -->
+            <div class="reservation-btn-container">
+                <button id="btn-open-reservation" class="cyber-btn calendar-btn">📅 Sınıf Seansı Rezerve Et</button>
+            </div>
 
         </div>
     </main>
 
     <div id="footer-placeholder"></div>
+
+    <!-- Sınıf Seansı Randevu Modalı -->
+    <div id="reservation-modal" class="modal">
+        <div class="modal-content reservation-modal-box">
+            <span class="close-btn" id="btn-close-reservation">X</span>
+            <h2 style="color: var(--info-blue); border-bottom: 1px solid var(--info-blue); padding-bottom: 10px; margin-bottom: 15px; font-family: 'Exo 2', sans-serif;">
+                📅 SINIF SEANSI REZERVASYON MERKEZİ
+            </h2>
+            <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px;">
+                MEB Yenilikçi Öğrenme Sınıfları ve Maarif Modeli kapsamında tek bir sınıfın (6 takım) çakışmasız simülasyonu için ders saatinizi rezerve edin.
+            </p>
+
+            <div class="reservation-grid">
+                <!-- Sol Kolon: Yeni Randevu Formu -->
+                <div style="background: rgba(0,0,0,0.5); padding: 15px; border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px;">
+                    <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 15px;">Yeni Seans Kaydı</h3>
+                    
+                    <div class="res-form-group">
+                        <label for="res-tarih">Tarih</label>
+                        <input type="date" id="res-tarih" required>
+                    </div>
+
+                    <div class="res-form-group">
+                        <label for="res-ders-saati">MEB Ders Saati</label>
+                        <select id="res-ders-saati" required>
+                            <option value="">Saat Dilimi Seçin...</option>
+                            <option value="08:30 - 09:10">1. Ders (08:30 - 09:10)</option>
+                            <option value="09:20 - 10:00">2. Ders (09:20 - 10:00)</option>
+                            <option value="10:10 - 10:50">3. Ders (10:10 - 10:50)</option>
+                            <option value="11:00 - 11:40">4. Ders (11:00 - 11:40)</option>
+                            <option value="11:50 - 12:30">5. Ders (11:50 - 12:30)</option>
+                            <option value="13:10 - 13:50">6. Ders (13:10 - 13:50)</option>
+                            <option value="14:00 - 14:40">7. Ders (14:00 - 14:40)</option>
+                            <option value="14:50 - 15:30">8. Ders (14:50 - 15:30)</option>
+                            <option value="15:40 - 16:20">9. Ders (15:40 - 16:20)</option>
+                        </select>
+                    </div>
+
+                    <div class="res-form-group">
+                        <label for="res-okul-adi">Okul Adı</label>
+                        <input type="text" id="res-okul-adi" placeholder="Örn: Bergama Fen Lisesi" required>
+                    </div>
+
+                    <div class="res-form-group">
+                        <label for="res-ogretmen-adi">Öğretmen Adı Soyadı</label>
+                        <input type="text" id="res-ogretmen-adi" placeholder="Örn: Hasbi Erdoğmuş" required>
+                    </div>
+
+                    <div class="res-form-group">
+                        <label for="res-sinif-sube">Sınıf / Şube</label>
+                        <input type="text" id="res-sinif-sube" placeholder="Örn: 9/A" required>
+                    </div>
+
+                    <div id="res-form-msg" style="margin-bottom: 10px; font-size: 0.85rem; font-weight: bold; min-height: 20px;"></div>
+
+                    <button id="btn-save-reservation" class="cyber-btn" style="width: 100%; background: var(--info-blue); color: #000; border-color: var(--info-blue);">
+                        💾 SEANSI REZERVE ET
+                    </button>
+                </div>
+
+                <!-- Sağ Kolon: Günlük / Haftalık Takvim Durumu -->
+                <div style="background: rgba(0,0,0,0.5); padding: 15px; border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="color: var(--neon-green); font-size: 1rem; margin: 0;">Seçilen Günün Seansları</h3>
+                        <span id="res-filter-date-label" style="color: var(--info-blue); font-size: 0.85rem;"></span>
+                    </div>
+                    <div class="slot-list" id="res-slots-list">
+                        <!-- Saat dilimi kartları dinamik doldurulur -->
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 0.8rem; color: #aaa;">
+                        <span style="color: var(--neon-green);">● Yeşil:</span> Seans Boşta &nbsp;|&nbsp; 
+                        <span style="color: var(--warning-red);">● Kırmızı:</span> Seans Rezerve Edilmiş
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Öğretmen Rehberi Modal -->
     <div id="teacher-guide-modal" class="modal">

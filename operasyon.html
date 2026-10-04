@@ -90,7 +90,7 @@
                         </div>
                     </div>
                     <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem; text-align: right; margin: 0;">
-                        Puan: <span id="current-score" class="neon-text">1000</span><br>
+                        Kazanım Puanı: <span id="current-score" class="neon-text">1000</span> KP<br>
                         <span id="current-sector">1. Görev 2A Bölgesi</span>
                     </p>
                 </div>
@@ -119,24 +119,60 @@
                 </div>
             </div>
 
-            <div id="game-over-content" style="display: none; flex-direction: column; align-items: center; text-align: center; padding: 20px; height: 100%;">
-                <div class="star-rating" style="font-size: 2.5rem; margin-bottom: 20px;">
-                    <span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span>
-                </div>
-                <h2 style="color: var(--neon-green); text-shadow: var(--matrix-glow);">OPERASYON BAŞARIYLA TAMAMLANDI</h2>
-                <p class="sys-msg" style="font-size: 1.2rem;">Final Puanı: <span id="final-score" class="neon-text">1000</span></p>
-                <div id="champion-section" style="display: none; margin-top: 25px; border: 1px solid var(--info-blue); padding: 15px 25px; background: rgba(0, 212, 255, 0.1); border-radius: 10px; width: 80%; max-width: 400px;">
-                    <h3 style="color: var(--info-blue); margin-bottom: 10px; font-size: 1rem; text-transform: uppercase;">Günün Şampiyonu</h3>
-                    <div id="champion-list" style="font-size: 1rem; text-align: left;">
-                        <!-- Şampiyon takımlar buraya JS ile eklenecek -->
+            <div id="game-over-content" style="display: none; flex-direction: column; align-items: center; text-align: center; padding: 15px; height: 100%; overflow-y: auto;">
+                <div class="achievement-card">
+                    <div class="star-rating" style="font-size: 2.2rem; margin-bottom: 10px;">
+                        <span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span><span class="star filled">★</span>
+                    </div>
+                    <h2 style="color: var(--neon-green); text-shadow: var(--matrix-glow); font-family: 'Exo 2', sans-serif; font-size: 1.5rem; margin-bottom: 5px;">
+                        TAKTIK BRİFİNG & BAŞARI KARNESİ
+                    </h2>
+                    <p style="color: #bbb; font-size: 0.85rem; margin-bottom: 15px;">Bergama 2050 İzohips Operasyonu Başarıyla Tamamlandı</p>
+
+                    <!-- Maarif Modeli Başarı Rozeti -->
+                    <div class="badge-container">
+                        <div class="maarif-badge">
+                            <span class="badge-icon">🎖️</span>
+                            <div style="text-align: left;">
+                                <div class="badge-text-title">TÜRKİYE YÜZYILI MAARİF MODELİ</div>
+                                <div class="badge-code">COĞ.9.2.x Harita Becerisi Rozeti</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Başarı Karnesi İstatistikleri -->
+                    <div class="report-grid">
+                        <div class="report-item">
+                            <span class="report-label">Operasyon Timi</span>
+                            <span class="report-val" id="report-team-name">-</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Kazanılan Toplam KP</span>
+                            <span class="report-val highlight" id="report-total-kp">1000 KP</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Harcanan Süre</span>
+                            <span class="report-val" id="report-duration">--:--</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Kullanılan İpucu</span>
+                            <span class="report-val" id="report-hints">0</span>
+                        </div>
+                    </div>
+
+                    <div id="champion-section" style="display: none; margin-top: 15px; border: 1px solid var(--info-blue); padding: 12px 18px; background: rgba(0, 212, 255, 0.08); border-radius: 8px;">
+                        <h3 style="color: var(--info-blue); margin-bottom: 8px; font-size: 0.9rem; text-transform: uppercase;">Günün Sıralaması (KP Liderleri)</h3>
+                        <div id="champion-list" style="font-size: 0.85rem; text-align: left;">
+                            <!-- Şampiyon takımlar buraya JS ile eklenecek -->
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLScnFgo8PtzUH97DUMCjF1sBM4ry53CkPNEbBIe0J_5wNlhuWw/viewform?usp=header" target="_blank" class="cyber-btn" style="background: var(--info-blue); color: #000; border-color: var(--info-blue); font-size: 0.85rem; padding: 10px 20px;">
+                            📋 Görev Raporunu Doldur
+                        </a>
                     </div>
                 </div>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLScnFgo8PtzUH97DUMCjF1sBM4ry53CkPNEbBIe0J_5wNlhuWw/viewform?usp=header" target="_blank" class="cyber-btn" style="margin-top: 30px; background: var(--info-blue); color: #000; border-color: var(--info-blue);">Görev Raporunu Doldur</a>
-                <p style="margin-top: 20px; color: var(--neon-green); line-height: 1.7; font-size: 0.9rem; max-width: 600px; flex-grow: 1; display: flex; align-items: center;">
-                   İzohipsleri çözdün, sırtları aştın, profilleri çıkardın... Peki, bu dijital dünyayı daha iyi hale getirmek ister misin? Senin fikirlerin, projemizin bir sonraki güncellemesi için yakıt olacak.
-                   <br><br>
-                   Günlük hayatta coğrafyanın ne kadar eğlenceli olabileceğini herkese kanıtlamak için bu formu doldur, sesini Karargâh'a duyur!
-                </p>
             </div>
         </section>
 
@@ -166,7 +202,7 @@
     </div>
 
     <div class="extra-tools" style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 PUAN)</button>
+        <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 KP)</button>
         <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
     </div>
 </section>
