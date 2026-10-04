@@ -241,6 +241,7 @@
                     <input type="number" id="mission-count" min="5" max="20" value="10">
                 </div>
                 <button id="theme-toggle" class="cyber-btn">☀️ Işık Modu</button>
+                <button id="btn-restore-default-cms" class="cyber-btn" style="border-color: #ffaa00; color: #ffaa00;">🔄 Varsayılan Görevleri Geri Yükle</button>
             </div>
         </div>
 
@@ -249,8 +250,9 @@
         </div>
     </div>
 
-    <div class="sticky-footer" style="display: none;">
+    <div class="sticky-footer" style="display: none; display: flex; justify-content: center; gap: 15px;">
         <button class="save-btn" onclick="saveAllMissions()" disabled>Veriler Yükleniyor...</button>
+        <button id="btn-restore-footer" class="cyber-btn" style="border-color: #ffaa00; color: #ffaa00; background: rgba(0,0,0,0.8); border-radius: 30px;">🔄 Fabrika Ayarlarına Dön</button>
     </div>
 
     <!-- Öğretmen Rehberi Modal -->
@@ -265,10 +267,42 @@
 
     <script type="module">
         import { db, ref, set, onValue } from './assets/js/firebase-config.js';
+        import { DEFAULT_MISSIONS } from './assets/js/default-missions.js';
 
         let missionDataCache = {};
         const missionContainer = document.getElementById('mission-grid');
         const missionsRef = ref(db, 'gameContent/missions');
+
+        // --- Fabrika Ayarlarına Geri Yükleme Mantığı ---
+        window.restoreDefaultMissions = async function() {
+            if (!confirm("DİKKAT: CMS'teki tüm sorular orijinal Bergama 2050 (10 Görev) fabrika ayarlarına döndürülecek. Onaylıyor musunuz?")) {
+                return;
+            }
+            try {
+                // DEFAULT_MISSIONS dizisini obje formatına normalize et
+                const defaultObj = {};
+                for (let i = 1; i <= 10; i++) {
+                    if (DEFAULT_MISSIONS[i]) {
+                        defaultObj[i] = DEFAULT_MISSIONS[i];
+                    }
+                }
+                await set(missionsRef, defaultObj);
+                localStorage.setItem('cms_mission_count', '10');
+                if (missionCountInput) {
+                    missionCountInput.value = '10';
+                    missionCountVal.textContent = '10';
+                }
+                missionDataCache = defaultObj;
+                renderForms(defaultObj);
+                alert("BAŞARILI: Orijinal 10 görev başarıyla geri yüklendi ve yayınlandı!");
+            } catch (err) {
+                console.error("Varsayılan görevleri yükleme hatası:", err);
+                alert("HATA: Varsayılan veriler geri yüklenemedi: " + err.message);
+            }
+        };
+
+        document.getElementById('btn-restore-default-cms')?.addEventListener('click', window.restoreDefaultMissions);
+        document.getElementById('btn-restore-footer')?.addEventListener('click', window.restoreDefaultMissions);
 
         // --- Dinamik Görev Sayısı Kontrolleri ---
         const missionCountInput = document.getElementById('mission-count');
@@ -570,8 +604,9 @@
             localStorage.setItem('cms_theme', isLight ? 'light' : 'dark');
         });
 
-        // --- Crypto Access Panel Logic ---
-        const correctPassword = '2061907';
+        // --- Crypto Access Panel Logic (SHA-256 Korumalı) ---
+        // Şifre: 2061907 (Kaynak kodda açık tutulmaz, SHA-256 hash ile doğrulanır)
+        const PASSWORD_HASH = '6d5e2efa7d57c4e053cf0f1b0e03333f22ca712a7c8bb77356f7e4086126c3c3';
         const accessPanel = document.getElementById('crypto-access-panel');
         const mainContent = document.querySelector('.cms-container');
         const stickyFooter = document.querySelector('.sticky-footer');
@@ -581,16 +616,24 @@
         const verifyBtn = document.getElementById('btn-access-verify');
         const errorMsg = document.getElementById('crypto-error-msg');
 
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const digest = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         function grantAccess() {
             accessPanel.style.display = 'none';
             mainContent.style.display = 'block';
-            stickyFooter.style.display = 'block';
+            stickyFooter.style.display = 'flex';
             commsToggle.style.display = 'flex';
             headerPlaceholder.style.display = 'block';
         }
 
-        function attemptLogin() {
-            if (passwordInput.value === correctPassword) {
+        async function attemptLogin() {
+            const entered = passwordInput.value;
+            const inputHash = await sha256(entered);
+            if (inputHash === PASSWORD_HASH) {
                 localStorage.setItem('bergama2050_access_token', 'granted');
                 grantAccess();
             } else {

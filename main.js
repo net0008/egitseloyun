@@ -55,6 +55,26 @@ function getTodayString() {
     return `${y}-${m}-${d}`;
 }
 
+// Tarihi GG.AA.YYYY biçimine dönüştür (2026-10-05 -> 05.10.2026)
+function formatDateTR(dateStr) {
+    if (!dateStr) return '';
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+    return dateStr;
+}
+
+// Kişisel bilgileri gizleme/maskeleme fonksiyonu (Örn: "Bergama Lisesi" -> "B****** L*****")
+function maskWords(text) {
+    if (!text) return '';
+    return String(text).trim().split(/\s+/).map(word => {
+        if (!word) return '';
+        if (word.length <= 1) return word + '*';
+        return word[0] + '*'.repeat(Math.max(3, word.length - 1));
+    }).join(' ');
+}
+
 // Rastgele benzersiz Randevu Kodu Üretici (Örn: B2050-9A-8419)
 function generateAccessCode(sinifSube) {
     const cleanSube = (sinifSube || "TR").replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || "TR";
@@ -93,11 +113,8 @@ async function evaluateFieldStatus() {
                     activeSlotReservation = { ...res, key };
 
                     // 15 DAKİKA KURALI:
-                    // Randevu saati başladıktan sonra ilk 15 dakika içinde oyun başlatılmış mı?
                     const minutesPassedSinceStart = currentMinutes - startTotal;
 
-                    // Oyunun başlatılıp başlatılmadığını kontrol et:
-                    // (res.baslatildi === true VEYA son 20 dakika içinde operasyon/skorlar altında aktivite var mı?)
                     let hasActivity = !!res.baslatildi;
                     if (!hasActivity && scoresCache) {
                         const fifteenMinsAgo = Date.now() - (15 * 60 * 1000);
@@ -114,15 +131,13 @@ async function evaluateFieldStatus() {
                     }
 
                     if (minutesPassedSinceStart >= 15 && !hasActivity) {
-                        // 15 dakika geçmiş ve kimse başlatmamış -> Randevuyu İptal Et!
                         console.warn(`[RANDEVU İPTALİ]: 15 dakika içinde başlatılmadığı için ${res.dersSaati} randevusu iptal edildi.`);
                         set(ref(db, `operasyon/randevular/${key}/durum`), 'iptal_edildi');
                         activeSlotReservation = null;
-                        // İptal edildiği için bu randevu sahayı meşgul etmez
                     } else {
-                        // Randevu geçerli ve aktif
                         isBusy = true;
-                        busyReason = `[${res.okulAdi || 'Okul'} - ${res.sinifSube || 'Sınıf'}] için rezerve edilmiş randevu dilimindesiniz (${res.dersSaati}).`;
+                        const maskedOkul = maskWords(res.okulAdi || 'Okul');
+                        busyReason = `[${maskedOkul} (${res.sinifSube || 'Sınıf'})] için rezerve edilmiş randevu dilimindesiniz (${res.dersSaati}).`;
                         break;
                     }
                 }
@@ -162,7 +177,6 @@ async function evaluateFieldStatus() {
         if (statusDesc) {
             statusDesc.innerHTML = `Dikkat: ${busyReason} Randevulu sınıf iseniz lütfen aşağıdaki alana randevu kodunuzu giriniz; aksi halde seans bitimini bekleyiniz veya takvimden randevu ayarlayınız.`;
         }
-        // Saha meşgulken kod kutusunu görünür yap
         if (codeEntryBox) codeEntryBox.style.display = 'block';
     } else {
         statusBanner.className = 'field-status-banner available';
@@ -170,7 +184,6 @@ async function evaluateFieldStatus() {
         if (statusDesc) {
             statusDesc.textContent = 'Operasyon Hattı Açık: Saha şu an boşta. Takımınızı seçip doğrudan göreve başlayabilirsiniz.';
         }
-        // Saha boşken normal giriş serbest, kod kutusu gizlenebilir veya opsiyonel kalabilir
         if (codeEntryBox) codeEntryBox.style.display = 'none';
     }
 }
@@ -178,7 +191,7 @@ async function evaluateFieldStatus() {
 // 2. TAKVİM VE SEANS LİSTESİ RENDER
 function renderSlotsForDate(selectedDate) {
     if (!resSlotsList) return;
-    if (resFilterDateLabel) resFilterDateLabel.textContent = selectedDate;
+    if (resFilterDateLabel) resFilterDateLabel.textContent = formatDateTR(selectedDate);
 
     resSlotsList.innerHTML = '';
 
@@ -200,11 +213,16 @@ function renderSlotsForDate(selectedDate) {
         div.className = `slot-item ${isBooked ? 'booked' : 'free'}`;
 
         if (isBooked) {
+            // Gizlilik maskelemesi: B**** L***** (9/A) - H**** E*******
+            const maskedOkul = maskWords(resInfo.okulAdi || '');
+            const maskedOgretmen = maskWords(resInfo.ogretmenAdi || '');
+            const sinifText = resInfo.sinifSube ? `(${resInfo.sinifSube})` : '';
+
             div.innerHTML = `
                 <div>
                     <span style="font-weight:bold; color:#fff;">⏰ ${slot}</span>
                     <div style="font-size:0.75rem; color:#ff9999; margin-top:2px;">
-                        🏫 ${resInfo.okulAdi || ''} (${resInfo.sinifSube || ''}) - ${resInfo.ogretmenAdi || ''}
+                        🏫 ${maskedOkul} ${sinifText} ${maskedOgretmen ? '- ' + maskedOgretmen : ''}
                     </div>
                 </div>
                 <span class="slot-status">DOLU</span>

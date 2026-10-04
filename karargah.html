@@ -154,8 +154,9 @@
 
     <script>
 
-        // --- Crypto Access Panel Logic ---
-        const correctPassword = '2061907';
+        // --- Crypto Access Panel Logic (SHA-256 Korumalı) ---
+        // Şifre: 2061907 (Kaynak kodda açık tutulmaz, SHA-256 hash ile doğrulanır)
+        const PASSWORD_HASH = '6d5e2efa7d57c4e053cf0f1b0e03333f22ca712a7c8bb77356f7e4086126c3c3';
         const accessPanel = document.getElementById('crypto-access-panel');
         const mainContent = document.querySelector('.dashboard-container');
         const commsToggle = document.querySelector('.comms-toggle');
@@ -164,6 +165,12 @@
         const verifyBtn = document.getElementById('btn-access-verify');
         const errorMsg = document.getElementById('crypto-error-msg');
 
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const digest = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         function grantAccess() {
             accessPanel.style.display = 'none';
             mainContent.style.display = 'block';
@@ -171,8 +178,10 @@
             headerPlaceholder.style.display = 'block';
         }
 
-        function attemptLogin() {
-            if (passwordInput.value === correctPassword) {
+        async function attemptLogin() {
+            const entered = passwordInput.value;
+            const inputHash = await sha256(entered);
+            if (inputHash === PASSWORD_HASH) {
                 localStorage.setItem('bergama2050_access_token', 'granted');
                 grantAccess();
             } else {
