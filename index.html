@@ -68,7 +68,7 @@
 
             <!-- Sınıf Seansı Rezerve Et Butonu -->
             <div class="reservation-btn-container">
-                <button id="btn-open-reservation" class="cyber-btn calendar-btn">📅 Sınıf Seansı Rezerve Et</button>
+                <button id="btn-open-reservation" class="cyber-btn" style="width: 100%; letter-spacing: 1.5px;">📅 SINIF SEANSI REZERVE ET</button>
             </div>
 
         </div>
@@ -80,7 +80,7 @@
     <div id="reservation-modal" class="modal">
         <div class="modal-content reservation-modal-box">
             <span class="close-btn" id="btn-close-reservation">X</span>
-            <h2 style="color: var(--info-blue); border-bottom: 1px solid var(--info-blue); padding-bottom: 10px; margin-bottom: 15px; font-family: 'Exo 2', sans-serif;">
+            <h2 style="color: var(--neon-green); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; font-family: inherit; letter-spacing: 1px;">
                 📅 SINIF SEANSI REZERVASYON MERKEZİ
             </h2>
             <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px;">
@@ -89,8 +89,8 @@
 
             <div class="reservation-grid">
                 <!-- Sol Kolon: Yeni Randevu Formu -->
-                <div style="background: rgba(0,0,0,0.5); padding: 15px; border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px;">
-                    <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 15px;">Yeni Seans Kaydı</h3>
+                <div style="background: rgba(0,0,0,0.6); padding: 18px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 15px; text-transform: uppercase;">Yeni Seans Kaydı</h3>
                     
                     <div class="res-form-group">
                         <label for="res-tarih">Tarih</label>
@@ -130,21 +130,21 @@
 
                     <div id="res-form-msg" style="margin-bottom: 10px; font-size: 0.85rem; font-weight: bold; min-height: 20px;"></div>
 
-                    <button id="btn-save-reservation" class="cyber-btn" style="width: 100%; background: var(--info-blue); color: #000; border-color: var(--info-blue);">
+                    <button id="btn-save-reservation" class="cyber-btn" style="width: 100%;">
                         💾 SEANSI REZERVE ET
                     </button>
                 </div>
 
                 <!-- Sağ Kolon: Günlük / Haftalık Takvim Durumu -->
-                <div style="background: rgba(0,0,0,0.5); padding: 15px; border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 6px; display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="color: var(--neon-green); font-size: 1rem; margin: 0;">Seçilen Günün Seansları</h3>
-                        <span id="res-filter-date-label" style="color: var(--info-blue); font-size: 0.85rem;"></span>
+                <div style="background: rgba(0,0,0,0.6); padding: 18px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 8px;">
+                        <h3 style="color: var(--neon-green); font-size: 1rem; margin: 0; text-transform: uppercase;">Günün Seansları</h3>
+                        <span id="res-filter-date-label" style="color: var(--neon-green); font-size: 0.85rem; font-weight: bold;"></span>
                     </div>
                     <div class="slot-list" id="res-slots-list">
                         <!-- Saat dilimi kartları dinamik doldurulur -->
                     </div>
-                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); font-size: 0.8rem; color: #aaa;">
+                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(57, 255, 20, 0.3); font-size: 0.8rem; color: #aaa;">
                         <span style="color: var(--neon-green);">● Yeşil:</span> Seans Boşta &nbsp;|&nbsp; 
                         <span style="color: var(--warning-red);">● Kırmızı:</span> Seans Rezerve Edilmiş
                     </div>

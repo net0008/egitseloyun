@@ -782,32 +782,32 @@ th {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 12px 20px;
-    border-radius: 6px;
+    padding: 12px 18px;
     margin: 20px 0;
     text-align: left;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     line-height: 1.4;
     transition: all 0.3s ease;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .field-status-banner.available {
-    background: rgba(0, 40, 0, 0.7);
+    background: rgba(0, 20, 0, 0.75);
     border: 1px solid var(--neon-green);
-    color: #fff;
+    color: var(--neon-green);
     box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
 }
 
 .field-status-banner.busy {
-    background: rgba(40, 0, 0, 0.75);
+    background: rgba(25, 0, 0, 0.8);
     border: 1px solid var(--warning-red);
-    color: #fff;
-    box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+    color: var(--warning-red);
+    box-shadow: 0 0 15px rgba(255, 62, 62, 0.25);
 }
 
 .field-status-indicator {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -826,20 +826,32 @@ th {
 
 @keyframes pulse-green {
     0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(57, 255, 20, 0); }
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
 }
 
 .field-status-title {
     font-weight: bold;
-    font-family: 'Exo 2', sans-serif;
     letter-spacing: 1px;
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
 }
 
-.field-status-banner.available .field-status-title { color: var(--neon-green); }
-.field-status-banner.busy .field-status-title { color: var(--warning-red); }
+.field-status-banner.available .field-status-title {
+    color: var(--neon-green);
+    text-shadow: 0 0 5px var(--neon-green);
+}
+
+.field-status-banner.busy .field-status-title {
+    color: var(--warning-red);
+    text-shadow: 0 0 5px var(--warning-red);
+}
+
+.field-status-banner p, 
+.field-status-banner span {
+    font-family: 'Courier New', Courier, monospace;
+}
 
 /* --- 16. RANDEVU SİSTEMİ & TAKVİM MODALI --- */
 .reservation-btn-container {
@@ -848,56 +860,36 @@ th {
     justify-content: center;
 }
 
-.cyber-btn.calendar-btn {
-    border-color: var(--info-blue);
-    color: var(--info-blue);
-    font-size: 0.95rem;
-    padding: 12px 22px;
-    background: rgba(0, 212, 255, 0.05);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-    position: relative;
-    overflow: hidden;
-}
-
-.cyber-btn.calendar-btn:hover {
-    background: var(--info-blue);
-    color: #000;
-    box-shadow: 0 0 20px var(--info-blue), 0 0 35px rgba(0, 212, 255, 0.5);
-    transform: translateY(-2px);
-}
-
 .reservation-modal-box {
-    max-width: 880px;
+    max-width: 860px;
     height: 85vh;
     overflow-y: auto;
-    background: rgba(4, 8, 6, 0.96);
-    border: 1px solid var(--info-blue);
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.35), inset 0 0 30px rgba(0, 212, 255, 0.05);
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid var(--neon-green);
+    box-shadow: 0 0 35px rgba(57, 255, 20, 0.35);
     padding: 25px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    color: var(--neon-green);
+    font-family: 'Courier New', Courier, monospace;
 }
 
-/* Modal içi neon scrollbar */
+/* Modal içi siber yeşil scrollbar */
 .reservation-modal-box::-webkit-scrollbar,
 .slot-list::-webkit-scrollbar {
     width: 6px;
 }
 .reservation-modal-box::-webkit-scrollbar-track,
 .slot-list::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.6);
+    background: #000;
 }
 .reservation-modal-box::-webkit-scrollbar-thumb,
 .slot-list::-webkit-scrollbar-thumb {
-    background: var(--info-blue);
-    border-radius: 3px;
+    background: var(--neon-green);
 }
 
 .reservation-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 25px;
+    gap: 20px;
     margin-top: 20px;
 }
 
@@ -914,29 +906,30 @@ th {
 }
 
 .res-form-group label {
-    color: var(--info-blue);
-    font-size: 0.8rem;
+    color: var(--neon-green);
+    font-size: 0.82rem;
     font-weight: bold;
     margin-bottom: 6px;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
 }
 
-.res-form-group input, .res-form-group select {
-    background: rgba(0, 15, 20, 0.7);
-    border: 1px solid rgba(0, 212, 255, 0.4);
-    color: #fff;
-    padding: 11px 14px;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 0.95rem;
+.res-form-group input, 
+.res-form-group select {
+    background: #000;
+    border: 1px solid var(--border-color);
+    color: var(--neon-green);
+    padding: 10px 12px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    outline: none;
     transition: all 0.3s ease;
 }
 
-.res-form-group input:focus, .res-form-group select:focus {
-    border-color: var(--info-blue);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
-    background: rgba(0, 25, 35, 0.9);
+.res-form-group input:focus, 
+.res-form-group select:focus {
+    border-color: var(--neon-green);
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
 }
 
 .slot-list {
@@ -952,23 +945,22 @@ th {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
-    background: rgba(0, 20, 30, 0.5);
-    border: 1px solid rgba(0, 212, 255, 0.25);
-    border-radius: 4px;
+    padding: 10px 12px;
+    background: rgba(0, 20, 0, 0.4);
+    border: 1px solid var(--border-color);
     font-size: 0.85rem;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .slot-item:hover {
-    border-color: var(--info-blue);
-    transform: translateX(3px);
+    border-color: var(--neon-green);
+    background: rgba(0, 35, 0, 0.5);
 }
 
 .slot-item.booked {
-    border-color: rgba(255, 62, 62, 0.4);
-    background: rgba(35, 5, 5, 0.55);
-    opacity: 0.9;
+    border-color: rgba(255, 62, 62, 0.5);
+    background: rgba(30, 0, 0, 0.5);
 }
 
 .slot-item.booked:hover {
@@ -978,27 +970,27 @@ th {
 .slot-item.booked .slot-status {
     color: var(--warning-red);
     font-weight: bold;
-    text-shadow: 0 0 8px rgba(255, 62, 62, 0.6);
+    text-shadow: 0 0 5px var(--warning-red);
 }
 
 .slot-item.free .slot-status {
     color: var(--neon-green);
     font-weight: bold;
-    text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+    text-shadow: 0 0 5px var(--neon-green);
 }
 
 /* --- 17. TAKTİK BRİFİNG & BAŞARI KARNESİ (GÖREV 10 FİNAL) --- */
 .achievement-card {
-    background: rgba(5, 10, 15, 0.95);
+    background: var(--panel-bg);
     border: 2px solid var(--neon-green);
-    box-shadow: 0 0 30px rgba(57, 255, 20, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
-    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
     padding: 25px;
     max-width: 650px;
     width: 100%;
     margin: 15px auto;
     text-align: center;
     position: relative;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .badge-container {
@@ -1011,11 +1003,10 @@ th {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(57, 255, 20, 0.2));
-    border: 1px solid var(--info-blue);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    background: rgba(0, 30, 0, 0.6);
+    border: 1px solid var(--neon-green);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
     padding: 10px 20px;
-    border-radius: 30px;
 }
 
 .badge-icon {
@@ -1032,7 +1023,6 @@ th {
 
 .badge-code {
     color: var(--neon-green);
-    font-family: 'Exo 2', sans-serif;
     font-size: 0.8rem;
     letter-spacing: 1.5px;
 }
@@ -1046,15 +1036,14 @@ th {
 }
 
 .report-item {
-    background: rgba(0, 20, 0, 0.5);
-    border: 1px solid rgba(57, 255, 20, 0.3);
+    background: rgba(0, 20, 0, 0.6);
+    border: 1px solid var(--border-color);
     padding: 10px 15px;
-    border-radius: 4px;
 }
 
 .report-item .report-label {
     font-size: 0.75rem;
-    color: #888;
+    color: #aaa;
     text-transform: uppercase;
     letter-spacing: 1px;
     display: block;
