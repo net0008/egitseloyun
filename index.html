@@ -66,9 +66,19 @@
                 <button class="cyber-btn team-btn" data-team="Kurtalan Ekspres">KURTALAN EKSPRES</button>
             </div>
 
-            <!-- Sınıf Seansı Rezerve Et Butonu -->
+            <!-- Randevu Kodu ile Giriş Alanı (Saha meşgulken veya randevu saatinde giriş için) -->
+            <div id="code-entry-box" style="margin-top: 15px; padding: 12px; background: rgba(0, 20, 0, 0.4); border: 1px dashed var(--border-color); border-radius: 4px; display: none;">
+                <label for="input-access-code" style="font-size: 0.8rem; color: var(--neon-green); display: block; margin-bottom: 6px; letter-spacing: 1px;">🔑 RANDEVU KODU İLE GİRİŞ:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="input-access-code" placeholder="Örn: B2050-9A-1010" style="flex-grow: 1; padding: 8px 10px; font-size: 0.85rem; text-transform: uppercase;">
+                    <button id="btn-verify-access-code" class="cyber-btn" style="padding: 8px 14px; font-size: 0.85rem;">GİRİŞ</button>
+                </div>
+                <div id="code-entry-msg" style="font-size: 0.78rem; margin-top: 6px; min-height: 18px;"></div>
+            </div>
+
+            <!-- Oyun İçin Randevu Ayarla Butonu -->
             <div class="reservation-btn-container">
-                <button id="btn-open-reservation" class="cyber-btn" style="width: 100%; letter-spacing: 1.5px;">📅 SINIF SEANSI REZERVE ET</button>
+                <button id="btn-open-reservation" class="cyber-btn" style="width: 100%; letter-spacing: 1.5px;">📅 OYUN İÇİN RANDEVU AYARLA</button>
             </div>
 
         </div>
@@ -76,21 +86,21 @@
 
     <div id="footer-placeholder"></div>
 
-    <!-- Sınıf Seansı Randevu Modalı -->
+    <!-- Oyun İçin Randevu Modalı -->
     <div id="reservation-modal" class="modal">
         <div class="modal-content reservation-modal-box">
             <span class="close-btn" id="btn-close-reservation">X</span>
             <h2 style="color: var(--neon-green); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; font-family: inherit; letter-spacing: 1px;">
-                📅 SINIF SEANSI REZERVASYON MERKEZİ
+                📅 OPERASYON RANDEVU MERKEZİ
             </h2>
-            <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px;">
-                MEB Yenilikçi Öğrenme Sınıfları ve Maarif Modeli kapsamında tek bir sınıfın (6 takım) çakışmasız simülasyonu için ders saatinizi rezerve edin.
+            <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.6; border-left: 3px solid var(--neon-green); padding-left: 12px; background: rgba(0, 30, 0, 0.3); padding-top: 8px; padding-bottom: 8px;">
+                Teknik kısıtlamalardan değil, doğrudan sunucu ve altyapı maliyetlerinden ötürü bu simülasyonu aynı anda yalnızca tek bir sınıf deneyimleyebilmektedir. Bu nedenle saha boş durumdaysa doğrudan oynayabilirsiniz. Saha kullanımda ise lütfen randevu oluşturarak size iletilen randevu kodunu not ediniz. Belirlediğiniz gün ve ders saatinde oyuna bu kod ile erişim sağlayabilirsiniz. Randevu saatiniz başladıktan sonra en geç 15 dakika içinde oyunu başlatmanız gerekmektedir; aksi takdirde randevunuz otomatik olarak iptal edilecektir.
             </p>
 
             <div class="reservation-grid">
                 <!-- Sol Kolon: Yeni Randevu Formu -->
                 <div style="background: rgba(0,0,0,0.6); padding: 18px; border: 1px solid var(--border-color); border-radius: 4px;">
-                    <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 15px; text-transform: uppercase;">Yeni Seans Kaydı</h3>
+                    <h3 style="color: var(--neon-green); font-size: 1rem; margin-bottom: 15px; text-transform: uppercase;">Yeni Görev Randevusu</h3>
                     
                     <div class="res-form-group">
                         <label for="res-tarih">Tarih</label>
@@ -131,22 +141,22 @@
                     <div id="res-form-msg" style="margin-bottom: 10px; font-size: 0.85rem; font-weight: bold; min-height: 20px;"></div>
 
                     <button id="btn-save-reservation" class="cyber-btn" style="width: 100%;">
-                        💾 SEANSI REZERVE ET
+                        💾 RANDEVUYU ONAYLA
                     </button>
                 </div>
 
                 <!-- Sağ Kolon: Günlük / Haftalık Takvim Durumu -->
                 <div style="background: rgba(0,0,0,0.6); padding: 18px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; flex-direction: column;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(57, 255, 20, 0.2); padding-bottom: 8px;">
-                        <h3 style="color: var(--neon-green); font-size: 1rem; margin: 0; text-transform: uppercase;">Günün Seansları</h3>
+                        <h3 style="color: var(--neon-green); font-size: 1rem; margin: 0; text-transform: uppercase;">Günün Operasyon Saatleri</h3>
                         <span id="res-filter-date-label" style="color: var(--neon-green); font-size: 0.85rem; font-weight: bold;"></span>
                     </div>
                     <div class="slot-list" id="res-slots-list">
                         <!-- Saat dilimi kartları dinamik doldurulur -->
                     </div>
                     <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed rgba(57, 255, 20, 0.3); font-size: 0.8rem; color: #aaa;">
-                        <span style="color: var(--neon-green);">● Yeşil:</span> Seans Boşta &nbsp;|&nbsp; 
-                        <span style="color: var(--warning-red);">● Kırmızı:</span> Seans Rezerve Edilmiş
+                        <span style="color: var(--neon-green);">● Yeşil:</span> Operasyon Hattı Boşta &nbsp;|&nbsp; 
+                        <span style="color: var(--warning-red);">● Kırmızı:</span> Görev Dolu
                     </div>
                 </div>
             </div>
