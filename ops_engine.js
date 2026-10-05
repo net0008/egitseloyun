@@ -1,16 +1,16 @@
 /* *****************************************************************************
- * ops_engine.js - Sürüm: v4.0.0 (Kararlı Birleştirilmiş Sürüm)                *
- * Hasbi Erdoğmuş | 17 Yıllık Tecrübe - Hibrit Eğitim Mimarı Sürümü           *
- * CMS ve Karargah Senkronizasyon Protokolü Onarıldı.                         *
- * *************************************************************************** *
- * Bu modül, Firebase Realtime Database üzerinden saha ve karargah arasındaki *
- * senkronizasyonu yönetir. Hata ve İpucu sayıları anlık olarak mühürlenir.   *
+ * ops_engine.js - Sürüm: v4.2.0 (Tekil & Çok Oyunculu Tam Eşzamanlı Sürüm)    *
+ * Hasbi Erdoğmuş | Modern Soru Atlası Entegre Sürümü                          *
+ * - OpenTopoMap Fiziki Altlık (Dikili - Akhisar)                              *
+ * - Dinamik Topoğrafik Kesit Profili (SVG)                                    *
+ * - 4 Seçenekli Profil Eşleştirme Testi (Görev 11)                           *
+ * - Esnek Cevap Doğrulama (Eğim, Tepe/Zirve, Z>Y>V)                           *
  * *************************************************************************** */
 
 import { db, ref, onValue, update, get } from './assets/js/firebase-config.js';
+import { DEFAULT_MISSIONS } from './assets/js/default-missions.js';
 
 // --- 0. BAĞLANTI PARAMETRELERİ VE SABİTLER ---
-// URL üzerinden gelen takım ismini yakalayarak veri tünelini aktif eder.
 const params = new URLSearchParams(window.location.search);
 const teamName = decodeURIComponent(params.get('team') || "");
 if (!teamName) {
@@ -22,8 +22,8 @@ const scoreRef = ref(db, `operasyon/skorlar/${teamName}`);
 const missionsRef = ref(db, 'gameContent/missions');
 const terminal = document.getElementById('terminal-output');
 
-// Veri Önbellekleri
-let globalMissionData = null;
+// Veri Önbellekleri (Varsayılan olarak DEFAULT_MISSIONS ile başlar, asla boş kalmaz)
+let globalMissionData = { ...DEFAULT_MISSIONS };
 let teamScoreData = null;
 
 // Durum Değişkenleri
@@ -35,6 +35,16 @@ let mapRenderToken = 0;
 let operationStartTime = Date.now();
 let missionStartTime = Date.now();
 
+// 10. ve 11. Görev Durumları
+let selectedPoints = { dikili: false, akhisar: false };
+let profileGenerated = false;
+let selectedProfileOpt = null;
+let leafletMapInstance = null;
+let leafletMarkers = { a: null, b: null, line: null };
+
+const COORD_DIKILI = [39.0725, 26.8906];
+const COORD_AKHISAR = [38.9242, 27.8406];
+
 // Dış Platform (Iframe) postMessage İletişim Protokolü
 function notifyParentPlatform(gorevNo, kpScore, isCompleted) {
     if (window.parent) {
@@ -43,14 +53,13 @@ function notifyParentPlatform(gorevNo, kpScore, isCompleted) {
             teamName: teamName,
             gorevNo: gorevNo,
             kp: kpScore || 0,
-            completed: isCompleted || gorevNo >= 10
+            completed: isCompleted || gorevNo > getTotalMissions()
         }, '*');
     }
 }
 
-// --- 1.A YARDIMCI FONKSİYONLAR ---
 function getTotalMissions() {
-    return globalMissionData ? Object.keys(globalMissionData).length : 10;
+    return 11;
 }
 
 // --- 1. GÖRSELLEŞTİRME VE ARAYÜZ YÖNETİMİ ---
@@ -64,17 +73,16 @@ function logBox(message, type = 'system', atTop = false) {
     span.textContent = `[${timestamp}] `;
     div.appendChild(span);
 
-    // Görev brifinglerinde "GÖREV X:" kısmını farklı renkte göstermek için mesajı ayır.
     if (type === 'briefing' && message.startsWith('GÖREV')) {
-        const parts = message.split(/:(.*)/s); // Sadece ilk kolonda böl
+        const parts = message.split(/:(.*)/s);
         if (parts.length > 1) {
             const taskTitle = parts[0];
             const taskDescription = parts[1] || '';
 
             const titleSpan = document.createElement('span');
             titleSpan.textContent = taskTitle + ':';
-            titleSpan.style.color = '#e0e0e0'; // Diğer beyaz metinlerle uyumlu renk
-            titleSpan.style.marginRight = '8px'; // Başlık ve metin arasına boşluk ekle
+            titleSpan.style.color = '#e0e0e0';
+            titleSpan.style.marginRight = '8px';
 
             div.appendChild(titleSpan);
             div.appendChild(document.createTextNode(taskDescription.trim()));
@@ -85,47 +93,31 @@ function logBox(message, type = 'system', atTop = false) {
         div.appendChild(document.createTextNode(message));
     }
 
-    if (atTop) {
-        const terminalHeader = document.querySelector('.terminal-header');
-        if (terminalHeader && terminalHeader.parentNode) {
-            // Bildirimi "GÖREV GÜNLÜĞÜ" başlığının üzerine ekle
-            terminalHeader.parentNode.insertBefore(div, terminalHeader);
-            // Bu tür bildirimler genellikle geçicidir, 5 saniye sonra kaldır.
-            setTimeout(() => {
-                div.style.transition = 'opacity 0.5s ease';
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 500);
-            }, 5000);
-        } else {
-            // Başlık bulunamazsa eski davranışa geri dön
-            terminal.insertBefore(div, terminal.firstChild);
-            terminal.scrollTop = 0;
-        }
-    } else {
-        terminal.appendChild(div);
-        // Başarı ("success") ve geçici sistem bildirimleri birkaç saniye sonra kaybolmalıdır.
-        // Bu, görev geçişlerindeki zamanlama sorunlarından etkilenmemelerini ve ekranı kirletmemelerini sağlar.
-        const isTemporarySystemMessage = type === 'system' && message.includes('Yeni görev verisi');
-        if (type === 'success' || isTemporarySystemMessage) {
-            setTimeout(() => {
-                div.style.transition = 'opacity 0.5s ease';
-                div.style.opacity = '0';
-                setTimeout(() => div.remove(), 500);
-            }, 3000); // 3 saniye sonra kaybolur.
-        }
-        terminal.scrollTop = terminal.scrollHeight;
+    terminal.appendChild(div);
+    if (type === 'success') {
+        setTimeout(() => {
+            div.style.transition = 'opacity 0.5s ease';
+            div.style.opacity = '0';
+            setTimeout(() => div.remove(), 500);
+        }, 4000);
     }
+    terminal.scrollTop = terminal.scrollHeight;
 }
 
 function updateScoreDisplay(data) {
     if (!data) return;
-    document.getElementById('current-score').innerText = data.puan || 1000;
+    const scoreEl = document.getElementById('current-score');
+    if (scoreEl) scoreEl.innerText = data.puan || 1000;
+
     const totalMissions = getTotalMissions();
-    const sectorText = (data.gorevNo || 1) > totalMissions ? 'OPERASYON TAMAMLANDI' : `${data.gorevNo || 1}. Görev ${data.bolge || '2A'} Bölgesi`;
-    document.getElementById('current-sector').innerText = sectorText;
+    const curNo = data.gorevNo || 1;
+    const sectorText = curNo > totalMissions ? 'OPERASYON TAMAMLANDI' : `${curNo}. Görev ${data.bolge || '2A'} Bölgesi`;
+    const sectorEl = document.getElementById('current-sector');
+    if (sectorEl) sectorEl.innerText = sectorText;
+
     const starContainer = document.getElementById('star-container');
     if (starContainer) {
-        const stars = Math.min(5, Math.ceil(5 * (data.gorevNo || 1) / totalMissions));
+        const stars = Math.min(5, Math.ceil(5 * curNo / totalMissions));
         let starHTML = '';
         for (let i = 0; i < 5; i++) {
             starHTML += `<span class="star ${i < stars ? 'filled' : ''}">★</span>`;
@@ -165,24 +157,13 @@ function parseMissionVisual(cmsContent = '') {
 }
 
 function resetMapState(keepIframeSrc = true) {
-    const elements = {
-        mapImg: document.getElementById('active-map'),
-        mapFrame: document.getElementById('active-frame'),
-        scanLine: document.querySelector('.scan-line'),
-        mapOverlayBarrier: document.querySelector('.map-overlay-barrier'),
-        zoomControls: document.querySelector('.zoom-controls'),
-    };
-
-    if (elements.mapImg) {
-        elements.mapImg.style.display = 'none';
+    const mapImg = document.getElementById('active-map');
+    const mapFrame = document.getElementById('active-frame');
+    if (mapImg) mapImg.style.display = 'none';
+    if (mapFrame) {
+        mapFrame.style.display = 'none';
+        if (!keepIframeSrc) mapFrame.src = 'about:blank';
     }
-    if (elements.mapFrame) {
-        elements.mapFrame.style.display = 'none';
-        if (!keepIframeSrc) elements.mapFrame.src = 'about:blank';
-    }
-    if (elements.scanLine) elements.scanLine.style.display = 'none';
-    if (elements.mapOverlayBarrier) elements.mapOverlayBarrier.style.display = 'none';
-    if (elements.zoomControls) elements.zoomControls.style.display = 'none';
 }
 
 function updateMapVisuals(gorevNo) {
@@ -193,15 +174,14 @@ function updateMapVisuals(gorevNo) {
     if (loader) loader.style.display = 'flex';
 
     const totalMissions = getTotalMissions();
-    if (gorevNo > totalMissions) {
+    if (gorevNo > totalMissions || gorevNo >= 10) {
         resetMapState(false);
         lastVisualSignature = '';
         if (loader) loader.style.display = 'none';
         return;
     }
 
-    // Görsel başlığını güncelle
-    const missionTitle = globalMissionData[gorevNo]?.title || `GÖREV ${gorevNo} GÖRSELİ`;
+    const missionTitle = globalMissionData[gorevNo]?.title || `GÖREV ${gorevNo} ANALİZİ`;
     const titleBox = document.getElementById('visual-title');
     if (titleBox) {
         titleBox.textContent = missionTitle;
@@ -216,9 +196,6 @@ function updateMapVisuals(gorevNo) {
         if (loader) loader.style.display = 'none';
         if (titleBox) {
             titleBox.textContent = 'GÖRSEL ANALİZİ BEKLENİYOR...';
-        }
-        if (parsedVisual.type === 'invalid') {
-            logBox('HATA: İframe kodu geçersiz. Lütfen src içeren doğru iframe kaydedin.', 'warning');
         }
         return;
     }
@@ -237,7 +214,6 @@ function updateMapVisuals(gorevNo) {
 
     mapRenderToken += 1;
     const token = mapRenderToken;
-
     resetMapState(true);
 
     if (parsedVisual.type === 'iframe') {
@@ -251,7 +227,6 @@ function updateMapVisuals(gorevNo) {
             mapFrame.onerror = () => {
                 if (token !== mapRenderToken) return;
                 if (loader) loader.style.display = 'none';
-                logBox('UYARI: Harita iframe yüklenemedi. Linki kontrol edin.', 'warning');
             };
             if (mapFrame.src !== parsedVisual.url) {
                 mapFrame.src = parsedVisual.url;
@@ -267,11 +242,6 @@ function updateMapVisuals(gorevNo) {
                 if (token !== mapRenderToken) return;
                 if (loader) loader.style.display = 'none';
             };
-            mapImg.onerror = () => {
-                if (token !== mapRenderToken) return;
-                if (loader) loader.style.display = 'none';
-                logBox('UYARI: Görsel yüklenemedi. URL veya erişim iznini kontrol edin.', 'warning');
-            };
             if (mapImg.src !== parsedVisual.url) {
                 mapImg.src = parsedVisual.url;
             } else if (loader) {
@@ -281,22 +251,17 @@ function updateMapVisuals(gorevNo) {
     }
 
     lastVisualSignature = parsedVisual.signature;
-
     mapLoadTimeout = setTimeout(() => {
         if (token !== mapRenderToken) return;
         if (loader) loader.style.display = 'none';
     }, 4000);
 }
 
+// Yeni göreve geçiş brifingi - SAĞ TARAFI TEMİZLER, SADECE AKTİF GÖREVE AİT UNSURLARI YÜKLER
 function triggerBriefing(gorevNo, force = false) {
-    // Eğer zorunlu değilse ve görev numarası aynıysa VEYA görev verisi henüz yüklenmediyse çık.
     if ((!force && lastGorevNo === gorevNo) || !globalMissionData) return;
 
-    // Eğer yeni bir göreve geçildiyse veya CMS'den zorunlu bir yenileme geldiyse terminali temizle.
-    if (lastGorevNo !== gorevNo || force) {
-        if(terminal) terminal.innerHTML = "";
-        logBox("Yeni görev verisi alınıyor...", "system");
-    }
+    if (terminal) terminal.innerHTML = "";
     lastGorevNo = gorevNo;
 
     const mission = globalMissionData[gorevNo];
@@ -304,183 +269,286 @@ function triggerBriefing(gorevNo, force = false) {
         logBox(`HATA: Görev ${gorevNo} için içerik bulunamadı.`, "warning");
         return;
     }
-    
-    const text = mission.question || "Görev brifingi bekleniyor...";
-    logBox(`GÖREV ${gorevNo}: ${text}`, "briefing");
+
+    const titleText = mission.title || `GÖREV ${gorevNo}`;
+    logBox(`GÖREV ${gorevNo} / ${getTotalMissions()} AKTİF // ${titleText}`, 'system');
+    logBox(`GÖREV ${gorevNo}: ${mission.question}`, 'briefing');
 }
 
-// --- 2. ETKİLEŞİM VE OYUN MANTIĞI ---
+// --- 10. GÖREV LEAFLET & DİNAMİK PROFİL MODÜLÜ ---
+function initOpenTopoMap() {
+    const container = document.getElementById('opentopo-map');
+    if (!container || typeof L === 'undefined') return;
 
-document.getElementById('btn-hint')?.addEventListener('click', async () => {
-    if (!teamScoreData || !globalMissionData) return;
-    
-    const currentGorev = teamScoreData.gorevNo || 1;
-    const mission = globalMissionData[currentGorev];
-    if (!mission || !mission.hints) {
-        logBox("Bu görev için ipucu bulunmuyor.", "warning");
+    if (leafletMapInstance) {
+        leafletMapInstance.invalidateSize();
+        updateLeafletMission10State();
         return;
     }
 
-    const hints = mission.hints.split('\n').filter(h => h.trim() !== '');
-    const usedHints = teamScoreData.ipucuSayisi || 0;
-
-    if (usedHints < hints.length) {
-        const hintText = hints[usedHints];
-
-        if (currentGorev === 10) {
-            const briefing = document.getElementById('mission-10-briefing');
-            const hintContainer = document.getElementById('mission-10-hint-container');
-            const hintDisplay = document.getElementById('mission-10-hint-display');
-
-            if (briefing) briefing.style.display = 'none';
-            if (hintContainer) hintContainer.style.display = 'block';
-            
-            if (hintDisplay) {
-                const p = document.createElement('p');
-                p.style.borderLeft = '3px solid var(--info-blue)';
-                p.style.paddingLeft = '10px';
-                p.style.marginBottom = '10px';
-                p.textContent = hintText;
-                hintDisplay.appendChild(p);
-            }
-        } else {
-            logBox(`İPUCU: ${hintText}`, "hint");
-        }
-
-        update(scoreRef, {
-            ipucuSayisi: usedHints + 1,
-            puan: Math.max(0, (teamScoreData.puan || 1000) - 50),
-            durum: `İpucu Alındı (${usedHints + 1})`,
-            sonAktiflik: new Date().toISOString()
+    try {
+        const map = L.map('opentopo-map', {
+            center: [38.998, 27.365],
+            zoom: 9,
+            minZoom: 8,
+            maxZoom: 15,
+            zoomControl: true,
         });
+
+        L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: '&copy; OpenTopoMap | CC-BY-SA',
+        }).addTo(map);
+
+        map.fitBounds([COORD_DIKILI, COORD_AKHISAR], { padding: [30, 30] });
+
+        leafletMapInstance = map;
+
+        setTimeout(() => {
+            if (leafletMapInstance) leafletMapInstance.invalidateSize();
+        }, 300);
+
+        updateLeafletMission10State();
+    } catch (e) {
+        console.error("OpenTopoMap başlatma hatası:", e);
+    }
+}
+
+function updateLeafletMission10State() {
+    if (!leafletMapInstance || typeof L === 'undefined') return;
+
+    if (leafletMarkers.a) leafletMarkers.a.remove();
+    if (leafletMarkers.b) leafletMarkers.b.remove();
+    if (leafletMarkers.line) leafletMarkers.line.remove();
+
+    const isConnected = profileGenerated || (selectedPoints.dikili && selectedPoints.akhisar);
+
+    // Dikili İkonu
+    const iconDikili = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+            <div style="cursor: pointer; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 9999px; font-family: monospace; font-size: 11px; font-weight: bold; background: ${
+                selectedPoints.dikili ? '#39FF14' : '#000000cc'
+            }; color: ${selectedPoints.dikili ? '#000' : '#fbbf24'}; border: 2px solid ${
+                selectedPoints.dikili ? '#39FF14' : '#f59e0b'
+            }; box-shadow: 0 0 12px ${selectedPoints.dikili ? '#39FF14' : 'rgba(245,158,11,0.6)'}; white-space: nowrap;">
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor;"></span>
+                <span>A: DİKİLİ (0m)</span>
+                ${selectedPoints.dikili ? '<span>✓</span>' : ''}
+            </div>
+        `,
+        iconSize: [0, 0],
+    });
+
+    leafletMarkers.a = L.marker(COORD_DIKILI, { icon: iconDikili })
+        .addTo(leafletMapInstance)
+        .on('click', () => togglePoint('dikili'));
+
+    // Akhisar İkonu
+    const iconAkhisar = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+            <div style="cursor: pointer; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 9999px; font-family: monospace; font-size: 11px; font-weight: bold; background: ${
+                selectedPoints.akhisar ? '#39FF14' : '#000000cc'
+            }; color: ${selectedPoints.akhisar ? '#000' : '#fbbf24'}; border: 2px solid ${
+                selectedPoints.akhisar ? '#39FF14' : '#f59e0b'
+            }; box-shadow: 0 0 12px ${selectedPoints.akhisar ? '#39FF14' : 'rgba(245,158,11,0.6)'}; white-space: nowrap;">
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor;"></span>
+                <span>B: AKHİSAR (95m)</span>
+                ${selectedPoints.akhisar ? '<span>✓</span>' : ''}
+            </div>
+        `,
+        iconSize: [0, 0],
+    });
+
+    leafletMarkers.b = L.marker(COORD_AKHISAR, { icon: iconAkhisar })
+        .addTo(leafletMapInstance)
+        .on('click', () => togglePoint('akhisar'));
+
+    if (isConnected) {
+        leafletMarkers.line = L.polyline([COORD_DIKILI, COORD_AKHISAR], {
+            color: '#39FF14',
+            weight: 4,
+            dashArray: '8, 6',
+            opacity: 0.95,
+        }).addTo(leafletMapInstance);
+    }
+
+    renderMission10SvgProfile();
+}
+
+function togglePoint(pt) {
+    selectedPoints[pt] = true;
+    if (selectedPoints.dikili && selectedPoints.akhisar) {
+        profileGenerated = true;
+        logBox("⚡ Dikili (0m - Kıyı) ve Akhisar (95m - Ova) noktaları birleştirildi! OpenTopoMap A-B Lazer Doğrultusu ve Kesit Profili hazır.", "success");
     } else {
-        if (currentGorev === 10) {
-            const hintDisplay = document.getElementById('mission-10-hint-display');
-            if (hintDisplay && !hintDisplay.querySelector('.no-more-hints')) {
-                const p = document.createElement('p');
-                p.className = 'no-more-hints';
-                p.style.color = 'var(--warning-red)';
-                p.style.marginTop = '15px';
-                p.textContent = '[SİSTEM]: Bu görev için başka ipucu kalmadı.';
-                hintDisplay.appendChild(p);
-            }
+        logBox(`📍 Hedef [${pt === 'dikili' ? 'DİKİLİ (0m - Kıyı)' : 'AKHİSAR (95m - Ova)'}] kilitlendi. Şimdi diğer noktayı seçiniz.`, "system");
+    }
+    updateLeafletMission10State();
+    updateMission10InputControls();
+}
+
+function connectPointsDirectly() {
+    selectedPoints = { dikili: true, akhisar: true };
+    profileGenerated = true;
+    logBox("⚡ Dikili (0m) ve Akhisar (95m) noktaları otomatik olarak bağlandı! OpenTopoMap A-B Topografik Kesit Profili oluşturuldu.", "success");
+    updateLeafletMission10State();
+    updateMission10InputControls();
+}
+
+function updateMission10InputControls() {
+    const isConnected = profileGenerated || (selectedPoints.dikili && selectedPoints.akhisar);
+    const statusText = document.getElementById('m10-status-text');
+    const btnConnect = document.getElementById('btn-connect-line');
+    const btnConfirm = document.getElementById('btn-confirm-m10');
+
+    if (statusText) {
+        statusText.textContent = isConnected ? 'HAT AKTİF ✓' : 'BEKLENİYOR...';
+    }
+    if (btnConnect && btnConfirm) {
+        if (isConnected) {
+            btnConnect.style.display = 'none';
+            btnConfirm.style.display = 'block';
         } else {
-            logBox("Tüm ipuçları zaten alındı.", "warning");
+            btnConnect.style.display = 'block';
+            btnConfirm.style.display = 'none';
         }
     }
-});
+}
 
-document.getElementById('btn-ai-verify')?.addEventListener('click', async () => {
-    const inputEl = document.getElementById('coords-input');
-    const rawInput = inputEl.value.trim();
-    if (!rawInput) return;
+function renderMission10SvgProfile() {
+    const container = document.getElementById('mission-10-chart-body');
+    if (!container) return;
 
-    if (!teamScoreData || !globalMissionData) {
-        logBox("Sistem verileri henüz hazır değil, lütfen bekleyin.", "warning");
-        return;
+    const isConnected = profileGenerated || (selectedPoints.dikili && selectedPoints.akhisar);
+
+    if (isConnected) {
+        container.innerHTML = `
+            <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+                <svg viewBox="0 0 400 95" style="width: 100%; height: 85px; overflow: visible;">
+                    <defs>
+                        <linearGradient id="profileFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#39FF14" stop-opacity="0.45" />
+                            <stop offset="100%" stop-color="#39FF14" stop-opacity="0.02" />
+                        </linearGradient>
+                    </defs>
+                    <line x1="30" y1="14" x2="380" y2="14" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,2" />
+                    <line x1="30" y1="47" x2="380" y2="47" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,2" />
+                    <line x1="30" y1="80" x2="380" y2="80" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,2" />
+                    <text x="25" y="17" fill="#64748b" font-size="8" text-anchor="end" font-family="monospace">680m</text>
+                    <text x="25" y="50" fill="#64748b" font-size="8" text-anchor="end" font-family="monospace">350m</text>
+                    <text x="25" y="83" fill="#64748b" font-size="8" text-anchor="end" font-family="monospace">0m (Deniz)</text>
+                    <polygon points="40,80 110,74 190,45 240,14 300,58 365,71 365,80 40,80" fill="url(#profileFill)" />
+                    <polyline points="40,80 110,74 190,45 240,14 300,58 365,71" fill="none" stroke="#39FF14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="40" cy="80" r="3.5" fill="#39FF14" stroke="#000" stroke-width="1" />
+                    <text x="40" y="92" fill="#38bdf8" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">A: Dikili (0m)</text>
+                    <circle cx="110" cy="74" r="2.5" fill="#38bdf8" />
+                    <text x="110" y="66" fill="#94a3b8" font-size="7" text-anchor="middle" font-family="monospace">Bakırçay Tabanı (60m)</text>
+                    <circle cx="240" cy="14" r="4" fill="#f59e0b" stroke="#000" stroke-width="1" />
+                    <text x="240" y="8" fill="#f59e0b" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">Yunt Dağları (680m)</text>
+                    <circle cx="365" cy="71" r="3.5" fill="#39FF14" stroke="#000" stroke-width="1" />
+                    <text x="365" y="63" fill="#38bdf8" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">B: Akhisar (95m)</text>
+                </svg>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #10b981; font-family: monospace; margin-top: 4px;">
+                    <span>✓ KESİT PROFİLİ ÇIKARILDI (0m &rarr; 680m Dağ Kütlesi &rarr; 95m Ova)</span>
+                    <span style="color: #94a3b8;">Doğrultu: Ege Kıyısı &rarr; İç Kesim</span>
+                </div>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; font-size: 0.8rem; font-family: monospace;">
+                <p style="color: #f59e0b; margin: 0 0 5px 0;">⚠️ Kesit profili henüz oluşturulmadı.</p>
+                <p style="margin: 0;">Haritadaki <strong style="color: #fde047;">A (Dikili - 0m)</strong> ve <strong style="color: #fde047;">B (Akhisar - 95m)</strong> hedeflerine tıklayın veya aşağıdaki butonu kullanın.</p>
+            </div>
+        `;
     }
+}
 
-    const cur = teamScoreData.gorevNo || 1;
-    const totalMissions = getTotalMissions();
-    if (cur !== totalMissions) {
-        logBox(`HATA: Profil çıkarma modülü sadece ${totalMissions}. görevde aktiftir.`, "warning");
-        return;
-    }
-
-    const mission = globalMissionData[cur];
-    if (!mission) {
-        logBox("Görev verisi yüklenemedi, cevap kontrol edilemiyor.", "warning");
-        return;
-    }
-
-    // Parse user input: expecting "lat, lon"
-    const cleanedInput = rawInput.replace(/[°NESW]/gi, ' ').replace(/,/g, ' ');
-    const parts = cleanedInput.split(/\s+/).filter(Boolean);
-    if (parts.length !== 2) {
-        logBox("HATA: Geçersiz format. Lütfen 'enlem, boylam' formatında veri girin.", "warning");
-        update(scoreRef, {
-            durum: "Hatalı Profil Verisi",
-            hataSayisi: (teamScoreData.hataSayisi || 0) + 1,
-            puan: Math.max(0, (teamScoreData.puan || 1000) - 20),
-            sonAktiflik: new Date().toISOString()
-        });
-        return;
-    }
-
-    const lat = parseFloat(parts[0]);
-    const lon = parseFloat(parts[1]);
-
-    if (isNaN(lat) || isNaN(lon)) {
-        logBox("HATA: Enlem ve boylam sayısal değerler olmalıdır.", "warning");
-        update(scoreRef, {
-            durum: "Hatalı Profil Verisi",
-            hataSayisi: (teamScoreData.hataSayisi || 0) + 1,
-            puan: Math.max(0, (teamScoreData.puan || 1000) - 20),
-            sonAktiflik: new Date().toISOString()
-        });
-        return;
-    }
-
-    // Get correct answer from CMS
-    const correctAnswers = (mission.answers || "").split(',').map(a => a.trim()).filter(Boolean);
-    if (correctAnswers.length !== 2) {
-        logBox("KRİTİK HATA: Görev 10 için cevaplar doğru formatta değil. CMS'i kontrol edin.", "warning");
-        return;
-    }
-
-    const correctLat = parseFloat(correctAnswers[0]);
-    const correctLon = parseFloat(correctAnswers[1]);
-
-    // Check with a margin of error (~111 meters)
-    const latError = Math.abs(lat - correctLat);
-    const lonError = Math.abs(lon - correctLon);
-    const tolerance = 0.001;
-
-    if (latError <= tolerance && lonError <= tolerance) {
-        // Doğru - Süre Bonusu & Hatasız Çarpanı Hesabı
-        const missionElapsedSec = Math.round((Date.now() - missionStartTime) / 1000);
-        let bonusKP = 0;
-        if (missionElapsedSec < 60) {
-            bonusKP += 50; // Hızlı tamamlama bonusu
-        } else if (missionElapsedSec < 120) {
-            bonusKP += 25;
+// 11. Görev Profil Seçimi
+window.selectProfileOption = function(opt) {
+    selectedProfileOpt = opt;
+    ['A', 'B', 'C', 'D'].forEach(o => {
+        const card = document.getElementById(`card-opt-${o.toLowerCase()}`);
+        const btn = document.getElementById(`btn-opt-${o}`);
+        if (card) {
+            if (o === opt) card.classList.add('selected');
+            else card.classList.remove('selected');
         }
-        if ((teamScoreData.hataSayisi || 0) === 0 && (teamScoreData.ipucuSayisi || 0) === 0) {
-            bonusKP += 50; // Kusursuz tamamlama çarpan bonusu
+        if (btn) {
+            if (o === opt) btn.classList.add('active');
+            else btn.classList.remove('active');
         }
+    });
 
-        const nextGorevNo = cur + 1;
-        const nextPuan = (teamScoreData.puan || 1000) + 200 + bonusKP;
-        const nextBolge = "TAMAMLANDI";
-        
+    const statusEl = document.getElementById('m11-status-text');
+    if (statusEl) statusEl.textContent = `SEÇİLEN: PROFİL ${opt}`;
+
+    const confirmBtn = document.getElementById('btn-confirm-m11');
+    if (confirmBtn) confirmBtn.removeAttribute('disabled');
+};
+
+// --- 2. CEVAP DOĞRULAMA VE ETKİLEŞİM MANTIĞI ---
+
+// 10. Görev Onayı
+async function handleConfirmMission10() {
+    const bonus = 300;
+    const nextPuan = (teamScoreData?.puan || 1000) + bonus;
+    logBox(`DİKİLİ - AKHİSAR PROFİL HATTI DOĞRULANDI! (+${bonus} KP) Final Görev 11'e geçiliyor...`, "success");
+
+    await update(scoreRef, {
+        gorevNo: 11,
+        bolge: "2K",
+        puan: nextPuan,
+        durum: "Profil Hattı Tamamlandı",
+        ipucuSayisi: 0,
+        sonAktiflik: new Date().toISOString()
+    });
+
+    notifyParentPlatform(11, nextPuan, false);
+}
+
+// 11. Görev Onayı
+async function handleConfirmMission11() {
+    if (!selectedProfileOpt) return;
+
+    if (selectedProfileOpt === 'A') {
+        const bonus = 300;
+        const nextPuan = (teamScoreData?.puan || 1000) + bonus;
+        logBox(`TEBRİKLER! Profil A doğrudur: Kıyıdan (0m) başlar, Yunt Dağları kütlesini aşarak ~680m yükseltiye ulaşır ve iç kesimdeki Akhisar Ovası tabanına (~95m) iner. (+${bonus} KP)`, "success");
+
         await update(scoreRef, {
-            gorevNo: nextGorevNo,
-            bolge: nextBolge,
+            gorevNo: 12,
+            bolge: "TAMAMLANDI",
             puan: nextPuan,
-            durum: "Profil Çıkarma Başarılı",
+            durum: "Operasyon Başarıyla Tamamlandı",
             ipucuSayisi: 0,
             sonAktiflik: new Date().toISOString()
         });
 
-        notifyParentPlatform(nextGorevNo, nextPuan, true);
-
-        const bonusMsg = bonusKP > 0 ? ` (+${bonusKP} Hız & İsabet Bonusu KP)` : '';
-        logBox(`YAPAY ZEKA ANALİZİ BAŞARILI! Profil doğrulandı.${bonusMsg} Operasyon tamamlanıyor...`, "success");
+        notifyParentPlatform(12, nextPuan, true);
     } else {
-        // Yanlış
-        const hCount = (teamScoreData.hataSayisi || 0) + 1;
-        const newPuan = Math.max(0, (teamScoreData.puan || 1000) - 50);
-        update(scoreRef, {
-            durum: "Hatalı Profil Verisi",
+        const hCount = (teamScoreData?.hataSayisi || 0) + 1;
+        const newPuan = Math.max(0, (teamScoreData?.puan || 1000) - 50);
+
+        await update(scoreRef, {
+            durum: "Hatalı Profil Seçimi",
             hataSayisi: hCount,
             puan: newPuan,
             sonAktiflik: new Date().toISOString()
         });
-        logBox("HATA: Yapay zeka analizi başarısız. Konum verisi eşleşmiyor. (-50 KP)", "warning");
-    }
-    inputEl.value = "";
-});
 
+        const reason = selectedProfileOpt === 'B'
+            ? 'HATA (Profil B): Dikili kıyıda yer alır, profil 500 metreden başlayamaz! (-50 KP)'
+            : selectedProfileOpt === 'C'
+            ? 'HATA (Profil C): Akhisar bir dağ doruğu değil çöküntü ovasıdır; profil sürekli durmaksızın yükselemez! (-50 KP)'
+            : 'HATA (Profil D): Akhisar denize kıyısı olan bir yer değildir ve Dikili dağda başlamaz! (-50 KP)';
+        logBox(reason, 'warning');
+    }
+}
+
+// Standart Doğrulama (Görev 1-9)
 document.getElementById('btn-verify')?.addEventListener('click', async () => {
     const inputEl = document.getElementById('kripto-val');
     const rawInput = inputEl.value.trim();
@@ -499,30 +567,39 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
     }
 
     const normalized = (s) => s.toLocaleLowerCase("tr").replace(/\s+/g, " ").trim();
-
-    // Kullanıcı girdisini ve cevapları normalize edip token'lara ayır.
+    const compactText = normalized(rawInput).replace(/\s+/g, '');
     const userTokens = normalized(rawInput).split(',').map(x => x.trim()).filter(Boolean);
     const answerTokens = (mission.answers || "").split(',').map(x => normalized(x)).filter(Boolean);
 
-    const isCorrect = mission.requireAll
-        // SIRALI KOMBİNASYON MODU
-        ? (userTokens.length === answerTokens.length && answerTokens.every((ans, i) => userTokens[i] === ans))
-        // STANDART MOD
-        : answerTokens.some(ans => userTokens.includes(ans));
+    let isCorrect = false;
+
+    // Görev 3 Özel Kontrolü: İçinde "eğim" geçen ("eğim azalır" hariç) kelimeleri doğru kabul et
+    if (cur === 3) {
+        const uText = normalized(rawInput);
+        if (uText.includes("eğim") || uText.includes("egim")) {
+            if (!uText.includes("eğim azal") && !uText.includes("egim azal")) {
+                isCorrect = true;
+            }
+        }
+    }
+
+    // Görev 9 Özel Kontrolü: Z > Y > V veya Y > Z > V
+    if (cur === 9) {
+        if (compactText === 'z>y>v' || compactText === 'y>z>v') {
+            isCorrect = true;
+        }
+    }
+
+    if (!isCorrect) {
+        isCorrect = mission.requireAll
+            ? (userTokens.length === answerTokens.length && answerTokens.every((ans, i) => userTokens[i] === ans))
+            : answerTokens.some(ans => userTokens.includes(ans) || compactText === ans.replace(/\s+/g, ''));
+    }
 
     if (isCorrect) {
-        // Süre Bonusu & Hatasız Görev Tamamlama Bonusu
-        const missionElapsedSec = Math.round((Date.now() - missionStartTime) / 1000);
-        let bonusKP = 0;
-        if (missionElapsedSec < 45) {
-            bonusKP += 50; // Hızlı tamamlama bonusu
-        } else if (missionElapsedSec < 90) {
-            bonusKP += 25;
-        }
-
         const nextGorevNo = cur + 1;
         const totalMissions = getTotalMissions();
-        const nextPuan = (teamScoreData.puan || 1000) + 200 + bonusKP;
+        const nextPuan = (teamScoreData.puan || 1000) + 200;
         const nextBolge = nextGorevNo > totalMissions ? "TAMAMLANDI" : `2${String.fromCharCode(65 + nextGorevNo - 1)}`;
         
         await update(scoreRef, {
@@ -534,14 +611,8 @@ document.getElementById('btn-verify')?.addEventListener('click', async () => {
             sonAktiflik: new Date().toISOString()
         });
 
-        // Görev geçişini ana pencereye (iframe parent) bildir
         notifyParentPlatform(nextGorevNo, nextPuan, nextGorevNo > totalMissions);
-
-        // Bir sonraki görev için sayacı sıfırla
-        missionStartTime = Date.now();
-
-        const bonusMsg = bonusKP > 0 ? ` (+${bonusKP} Hız Bonusu KP)` : '';
-        logBox(`VERİ DOĞRULANDI!${bonusMsg} Bir sonraki göreve geçiliyor...`, "success");
+        logBox(`VERİ DOĞRULANDI! (+200 KP) Bir sonraki göreve geçiliyor...`, "success");
     } else {
         const hCount = (teamScoreData.hataSayisi || 0) + 1;
         const newPuan = Math.max(0, (teamScoreData.puan || 1000) - 50);
@@ -561,47 +632,90 @@ const kriptoInput = document.getElementById('kripto-val');
 if (kriptoInput) {
     kriptoInput.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
-            event.preventDefault(); // Formun gönderilmesini engelle
+            event.preventDefault();
             document.getElementById('btn-verify')?.click();
         }
     });
 }
 
-// --- 3. ANA OPERASYON BAŞLATICISI ---
+// 10. ve 11. Görev Buton Olayları
+document.getElementById('btn-connect-line')?.addEventListener('click', connectPointsDirectly);
+document.getElementById('btn-confirm-m10')?.addEventListener('click', handleConfirmMission10);
+document.getElementById('btn-confirm-m11')?.addEventListener('click', handleConfirmMission11);
 
-function renderUI() {
-    if (!teamScoreData || !globalMissionData) {
-        console.log("Arayüz çizimi için bekleniyor. Skor:", !!teamScoreData, "Görevler:", !!globalMissionData);
+// İpucu Talebi
+document.getElementById('btn-hint')?.addEventListener('click', async () => {
+    if (!teamScoreData || !globalMissionData) return;
+    
+    const cur = teamScoreData.gorevNo || 1;
+    const mission = globalMissionData[cur];
+    if (!mission || !mission.hints) {
+        logBox("Bu görev için ipucu bulunmuyor.", "warning");
         return;
     }
-    console.log("Tüm veriler hazır. Arayüz çiziliyor.");
-    
+
+    const hints = mission.hints.split('\n').filter(h => h.trim());
+    const used = teamScoreData.ipucuSayisi || 0;
+
+    if (used < hints.length) {
+        const newHints = used + 1;
+        const newPuan = Math.max(0, (teamScoreData.puan || 1000) - 50);
+        await update(scoreRef, {
+            ipucuSayisi: newHints,
+            puan: newPuan,
+            durum: "İpucu Kullanıldı",
+            sonAktiflik: new Date().toISOString()
+        });
+        logBox(`İPUCU [${newHints}/${hints.length}]: ${hints[used]} (-50 KP)`, 'hint');
+    } else {
+        logBox("Mevcut tüm ipuçlarını kullandınız.", "warning");
+    }
+});
+
+// Saha Kılavuzu Modalı
+const modal = document.getElementById('manual-modal');
+document.getElementById('btn-open-manual')?.addEventListener('click', () => {
+    if (modal) modal.style.display = 'block';
+});
+document.getElementById('btn-close-manual')?.addEventListener('click', () => {
+    if (modal) modal.style.display = 'none';
+});
+window.addEventListener('click', (e) => {
+    if (e.target === modal && modal) modal.style.display = 'none';
+});
+
+// --- 3. ANA OPERASYON ARAYÜZ YÖNETİCİSİ ---
+
+function renderUI() {
+    if (!teamScoreData || !globalMissionData) return;
+
     const gorevNo = teamScoreData.gorevNo || 1;
     const totalMissions = getTotalMissions();
-    
+
     const standardInput = document.getElementById('standard-mission-input');
     const mission10Input = document.getElementById('mission-10-input');
+    const mission11Input = document.getElementById('mission-11-input');
+
     const standardVisual = document.getElementById('standard-visual-content');
     const mission10Visual = document.getElementById('mission-10-visual-content');
+    const mission11Visual = document.getElementById('mission-11-visual-content');
     const gameOverContent = document.getElementById('game-over-content');
-    const terminalHeader = document.querySelector('.terminal-header');
-    const extraTools = document.querySelector('.extra-tools');
-    const commandPanel = document.querySelector('.command-panel');
 
     if (gorevNo > totalMissions) {
-        // Game finished
+        // Oyun Bitti
         if (standardVisual) standardVisual.style.display = "none";
         if (mission10Visual) mission10Visual.style.display = "none";
+        if (mission11Visual) mission11Visual.style.display = "none";
         if (gameOverContent) gameOverContent.style.display = "flex";
 
+        if (standardInput) standardInput.style.display = "none";
+        if (mission10Input) mission10Input.style.display = "none";
+        if (mission11Input) mission11Input.style.display = "none";
+
         resetMapState(false);
-        if(terminal) terminal.innerHTML = "";
+        if (terminal) terminal.innerHTML = "";
         logBox("Tebrikler! Bergama 2050 operasyonunu başarıyla tamamladınız. Skorunuz karargaha iletildi.", "success");
 
-        const finalScoreEl = document.getElementById('final-score');
-        if (finalScoreEl) finalScoreEl.textContent = `${teamScoreData.puan || 1000} KP`;
-
-        // Taktik Brifing & Başarı Karnesi Detayları
         const reportTeamName = document.getElementById('report-team-name');
         const reportTotalKp = document.getElementById('report-total-kp');
         const reportDuration = document.getElementById('report-duration');
@@ -611,217 +725,98 @@ function renderUI() {
         if (reportTotalKp) reportTotalKp.textContent = `${teamScoreData.puan || 1000} KP`;
         if (reportHints) reportHints.textContent = teamScoreData.ipucuSayisi || 0;
 
-        // Harcanan Süre Hesaplama
         const totalElapsedSec = Math.max(0, Math.round((Date.now() - operationStartTime) / 1000));
         const elapsedMins = Math.floor(totalElapsedSec / 60);
         const elapsedSecs = totalElapsedSec % 60;
-        const durationStr = `${String(elapsedMins).padStart(2, '0')}:${String(elapsedSecs).padStart(2, '0')} dk`;
-        if (reportDuration) reportDuration.textContent = durationStr;
+        if (reportDuration) reportDuration.textContent = `${String(elapsedMins).padStart(2, '0')}:${String(elapsedSecs).padStart(2, '0')} dk`;
 
-        // Parent platforma tamamlama sinyali fırlat
         notifyParentPlatform(gorevNo, teamScoreData.puan || 1000, true);
+        return;
+    }
 
-        // Şampiyonluk & Sıralama Listesi (KP Standardı)
-        const allScoresRef = ref(db, 'operasyon/skorlar');
-        get(allScoresRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                const scoresObject = snapshot.val();
-                const teamsRanked = [];
-                for (const teamNameKey in scoresObject) {
-                    teamsRanked.push({
-                        name: teamNameKey,
-                        score: scoresObject[teamNameKey].puan || 0
-                    });
-                }
+    if (gameOverContent) gameOverContent.style.display = "none";
 
-                // Takımları puana göre yüksekten alçağa sırala
-                teamsRanked.sort((a, b) => b.score - a.score);
+    if (gorevNo === 10) {
+        // 10. Görev
+        if (standardVisual) standardVisual.style.display = "none";
+        if (mission10Visual) mission10Visual.style.display = "flex";
+        if (mission11Visual) mission11Visual.style.display = "none";
 
-                const championListEl = document.getElementById('champion-list');
-                const championSection = document.getElementById('champion-section');
+        if (standardInput) standardInput.style.display = "none";
+        if (mission10Input) mission10Input.style.display = "flex";
+        if (mission11Input) mission11Input.style.display = "none";
 
-                if (championListEl && championSection) {
-                    championListEl.innerHTML = '';
-                    teamsRanked.forEach((team, index) => {
-                        const p = document.createElement('p');
-                        p.style.marginBottom = '5px';
-                        const rankDisplay = index === 0 ? '👑' : `${index + 1}.`;
-                        p.innerHTML = `<span style="color: #fff; width: 2.2em; display: inline-block;">${rankDisplay}</span> <span style="font-weight: bold; color: var(--neon-green);">${team.name}</span> - <span class="neon-text" style="color: var(--info-blue);">${team.score} KP</span>`;
-                        championListEl.appendChild(p);
-                    });
-                    championSection.style.display = 'block';
-                }
-            }
-        });
+        initOpenTopoMap();
+        updateMission10InputControls();
+    } else if (gorevNo === 11) {
+        // 11. Görev
+        if (standardVisual) standardVisual.style.display = "none";
+        if (mission10Visual) mission10Visual.style.display = "none";
+        if (mission11Visual) mission11Visual.style.display = "flex";
 
         if (standardInput) standardInput.style.display = "none";
         if (mission10Input) mission10Input.style.display = "none";
-        if (extraTools) extraTools.style.display = "none";
-        return; // Stop further rendering
-    }
-
-    // Toggle mission inputs based on gorevNo
-    if (gorevNo === totalMissions) {
-        // --- Mission 10 Layout ---
-        if (standardInput) standardInput.style.display = 'none';
-        if (mission10Input) mission10Input.style.display = 'flex';
-        if (standardVisual) standardVisual.style.display = 'none';
-        if (mission10Visual) mission10Visual.style.display = 'flex';
-        const standardInputEl = document.getElementById('kripto-val');
-        if (standardInputEl) standardInputEl.value = ""; // Görev değiştiğinde input'u temizle
-        if (terminalHeader) terminalHeader.style.marginTop = '0'; // Reset margin
-        
-        // Move and style the tools container
-        if (extraTools && mission10Visual && !mission10Visual.contains(extraTools)) {
-             mission10Visual.appendChild(extraTools); // Move tools to the right panel
-        }
-        if (extraTools) {
-            extraTools.style.position = 'absolute';
-            extraTools.style.bottom = '0';
-            extraTools.style.left = '50%';
-            extraTools.style.transform = 'translate(-50%, 50%)';
-            extraTools.style.background = 'var(--panel-bg)';
-            extraTools.style.padding = '5px 15px';
-            extraTools.style.borderRadius = '20px';
-            extraTools.style.border = '1px solid var(--border-color)';
-        }
-
-        // Handle hint display vs briefing display
-        const briefing = document.getElementById('mission-10-briefing');
-        const hintContainer = document.getElementById('mission-10-hint-container');
-        const hintDisplay = document.getElementById('mission-10-hint-display');
-        const usedHints = teamScoreData.ipucuSayisi || 0;
-        const missionHints = globalMissionData[totalMissions]?.hints?.split('\n').filter(h => h.trim() !== '') || [];
-
-        if (usedHints > 0 && hintDisplay && missionHints.length > 0) {
-            if (briefing) briefing.style.display = 'none';
-            if (hintContainer) hintContainer.style.display = 'block';
-            
-            hintDisplay.innerHTML = ''; // Clear previous
-            for (let i = 0; i < Math.min(usedHints, missionHints.length); i++) {
-                const p = document.createElement('p');
-                p.style.borderLeft = '3px solid var(--info-blue)';
-                p.style.paddingLeft = '10px';
-                p.style.marginBottom = '10px';
-                p.textContent = missionHints[i];
-                hintDisplay.appendChild(p);
-            }
-        } else {
-            if (briefing) briefing.style.display = 'block';
-            if (hintContainer) hintContainer.style.display = 'none';
-            if (hintDisplay) hintDisplay.innerHTML = '';
-        }
-
-        // Update Mission 10 button links from CMS
-        const missionData = globalMissionData[totalMissions];
-        const trainingBtn = document.getElementById('btn-training-video');
-        const profilerBtn = document.getElementById('btn-profiler-tool');
-        if (missionData && trainingBtn) trainingBtn.href = missionData.trainingVideoUrl || 'assets/video/10_gorev.mp4';
-        if (missionData && profilerBtn) profilerBtn.href = missionData.profilerToolUrl || 'https://www.heywhatsthat.com/profiler.html';
-
+        if (mission11Input) mission11Input.style.display = "flex";
     } else {
-        // --- Standard Mission Layout (1-9) ---
-        if (standardInput) standardInput.style.display = 'flex';
-        if (mission10Input) mission10Input.style.display = 'none';
-        if (standardVisual) standardVisual.style.display = 'block';
-        if (mission10Visual) mission10Visual.style.display = 'none';
-        const mission10InputEl = document.getElementById('coords-input');
-        if (mission10InputEl) mission10InputEl.value = ""; // Görev değiştiğinde input'u temizle
-        if (terminalHeader) terminalHeader.style.marginTop = ''; // Use default margin
-        
-        // Move tools back and reset styles
-        if (extraTools && commandPanel && !commandPanel.contains(extraTools)) {
-            commandPanel.appendChild(extraTools); // Move tools back to the left panel
-        }
-        if (extraTools) {
-            extraTools.style.position = '';
-            extraTools.style.bottom = '';
-            extraTools.style.left = '';
-            extraTools.style.transform = '';
-            extraTools.style.background = '';
-            extraTools.style.padding = '';
-            extraTools.style.borderRadius = '';
-            extraTools.style.border = '';
-        }
+        // 1-9. Görevler
+        if (standardVisual) standardVisual.style.display = "block";
+        if (mission10Visual) mission10Visual.style.display = "none";
+        if (mission11Visual) mission11Visual.style.display = "none";
 
-        // PowerPoint'e giden "Saha Kılavuzu" linkini PDF olarak güncelle.
-        // Misyon 10'un kendi özel videosu olduğu için bu kural 1-9 arası misyonlar için geçerlidir.
-        const trainingBtn = document.getElementById('btn-training-video');
-        if (trainingBtn) {
-            trainingBtn.href = 'assets/pdf/cografi_becerilerin_dijital_donusumu.pdf';
-            trainingBtn.target = '_blank';
-        }
-    }
-    
-    updateScoreDisplay(teamScoreData);
-    
-    if (gorevNo <= totalMissions) {
+        if (standardInput) standardInput.style.display = "flex";
+        if (mission10Input) mission10Input.style.display = "none";
+        if (mission11Input) mission11Input.style.display = "none";
+
         updateMapVisuals(gorevNo);
-        triggerBriefing(gorevNo);
     }
+
+    updateScoreDisplay(teamScoreData);
+    triggerBriefing(gorevNo);
 }
 
 function initOperation() {
-    // 1. Karargaha anında "Bağlantı Kuruldu" sinyali gönder.
     update(scoreRef, { durum: "Bağlantı Kuruldu", sonAktiflik: new Date().toISOString() });
     logBox("Karargah ile güvenli bağlantı kuruldu.", "system");
 
-    // 2. CMS'den görev içeriklerini dinle.
+    // CMS / Firebase görev içeriklerini dinle (Varsayılan olarak DEFAULT_MISSIONS ile harmanla)
     onValue(missionsRef, (snapshot) => {
-        const isUpdate = !!globalMissionData; // Bu ilk yükleme mi yoksa bir güncelleme mi?
+        const isUpdate = !!globalMissionData;
         if (snapshot.exists()) {
-            globalMissionData = snapshot.val();
-            console.log("Görev içerikleri (missions) yüklendi/güncellendi.");
-
-            // Eğer bu bir güncelleme ise (ilk yükleme değil) ve oyun zaten başladıysa,
-            // arayüzü yeni gelen CMS verisiyle yenilemeye zorla.
-            if (isUpdate && teamScoreData) {
-                console.log(`CMS güncellemesi algılandı. Görev ${currentGorevNo} için arayüz yenileniyor.`);
-                updateMapVisuals(currentGorevNo);
-                triggerBriefing(currentGorevNo, true); // force=true
-            } else {
-                renderUI(); // İlk yükleme ise, normal render akışını tetikle.
-            }
+            globalMissionData = { ...DEFAULT_MISSIONS, ...snapshot.val() };
         } else {
-            logBox("KRİTİK HATA: Görev içerikleri veritabanında bulunamadı!", "warning");
+            globalMissionData = { ...DEFAULT_MISSIONS };
+        }
+        if (isUpdate && teamScoreData) {
+            renderUI();
         }
     });
 
-    // 3. Takımın skor/durum verisini dinle.
+    // Takım skor ve durumunu dinle
     onValue(scoreRef, (snapshot) => {
         if (snapshot.exists()) {
-            const previousData = teamScoreData; // Önceki durumu sakla
+            const previousData = teamScoreData;
             teamScoreData = snapshot.val();
             currentGorevNo = teamScoreData.gorevNo || 1;
-            console.log("Takım skor/durum verisi yüklendi/güncellendi.");
 
-            // Rütbe (yıldız) kazanma kontrolü ve bildirimi
             if (previousData && (teamScoreData.gorevNo || 1) > (previousData.gorevNo || 1)) {
-                const totalMissions = getTotalMissions();
-                const oldStars = Math.min(5, Math.ceil(5 * (previousData.gorevNo || 1) / totalMissions));
-                const newStars = Math.min(5, Math.ceil(5 * (teamScoreData.gorevNo || 1) / totalMissions));
-
-                // Rütbe atlama anları: 3, 5, 7, 9. görevler ve final.
-                if (newStars > oldStars || ((teamScoreData.gorevNo || 1) > totalMissions && (previousData.gorevNo || 1) <= totalMissions)) {
-                    logBox("Tebrikler rütbe kazandınız.", "success", true);
-                    const starContainer = document.getElementById('star-container');
-                    if (starContainer) {
-                        starContainer.classList.add('star-pulse');
-                        // Animasyon bittikten sonra sınıfı kaldır
-                        setTimeout(() => starContainer.classList.remove('star-pulse'), 3000);
-                    }
-                }
+                logBox("Tebrikler yeni aşamaya geçtiniz!", "success", true);
             }
 
-            // Dış platformu mevcut durumla bilgilendir
-            notifyParentPlatform(currentGorevNo, teamScoreData.puan || 1000, currentGorevNo > totalMissions);
-
-            renderUI(); // Görev verisi zaten gelmiş olabilir, arayüzü çizmeyi dene.
+            notifyParentPlatform(currentGorevNo, teamScoreData.puan || 1000, currentGorevNo > getTotalMissions());
+            renderUI();
         } else {
-            logBox(`HATA: ${teamName} için skor verisi bulunamadı!`, "warning");
+            // Takım kaydı yoksa varsayılan skor oluştur
+            update(scoreRef, {
+                gorevNo: 1,
+                bolge: "2A",
+                puan: 1000,
+                ipucuSayisi: 0,
+                hataSayisi: 0,
+                durum: "Başladı",
+                sonAktiflik: new Date().toISOString()
+            });
         }
     });
 }
 
-// Operasyonu başlat!
 initOperation();

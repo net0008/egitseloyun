@@ -3,76 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Operasyon Terminali | Saha Analizi v3.3</title>
+    <title>Operasyon Terminali | Saha Analizi v4.0</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Okunabilirlik için Google Fonts ekliyoruz -->
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&family=Roboto:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* --- TİPOGRAFİ VE OKUNABİLİRLİK İYİLEŞTİRMELERİ --- */
         body.op-screen {
-            font-family: 'Roboto', sans-serif; /* Genel okuma fontu */
+            font-family: 'Roboto', sans-serif;
         }
         h1, h2, h3, .panel-tag, .terminal-header, .cyber-btn {
-            font-family: 'Exo 2', sans-serif; /* Başlık fontu */
+            font-family: 'Exo 2', sans-serif;
             letter-spacing: 1px;
         }
         
-        /* Panellerin okunabilirliğini artırmak için arka plan ve boşluk ayarları */
         .visual-panel, .command-panel {
-            background: rgba(5, 5, 10, 0.85); /* Hafif saydam koyu zemin */
-            backdrop-filter: blur(10px); /* Arka planı bulanıklaştırır (Glassmorphism) */
+            background: rgba(5, 5, 10, 0.9);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(57, 255, 20, 0.3);
-            border-radius: 8px; /* Keskin köşeleri yumuşat */
-            padding: 25px;
+            border-radius: 8px;
+            padding: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        /* Uzun metinlerin rengini beyaz yaparak göz yorgunluğunu azalt */
         p, li, .sys-msg {
             color: #e0e0e0; 
-            line-height: 1.6; /* Satır aralığını aç */
+            line-height: 1.6;
             font-size: 1rem;
         }
         
-        /* Vurgulu metinler neon kalsın */
         .neon-text, .terminal-msg span {
             color: var(--neon-green);
         }
 
-        /* Input alanlarını daha belirgin yap */
-        .mission-input input[type="text"] {
-            background: rgba(0, 20, 0, 0.6);
-            border: 1px solid var(--neon-green);
-            color: #fff;
-            font-size: 1.1rem;
-            padding: 15px;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
-        .mission-input input[type="text"]:focus {
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
-            background: rgba(0, 30, 0, 0.8);
-        }
-
-        .star-rating { font-size: 1.5rem; color: #444; margin: 10px 0; letter-spacing: 5px; }
-        .star.filled { color: #39FF14; text-shadow: 0 0 10px #39FF14; }
-        .warning-text { color: #ff3e3e; font-weight: bold; }
-        #map-loader {
-            position: absolute;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.65);
+        /* Ortalanmış ve Büyütülmüş Başlık */
+        .visual-title-box {
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 800;
             color: #39FF14;
-            z-index: 5;
             text-transform: uppercase;
             letter-spacing: 1px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
         }
-        #active-frame {
-            width: 100%;
-            height: 100%;
-            border: 0;
+
+        /* 11. Görev Profil Kartları */
+        .profile-option-card {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .profile-option-card:hover {
+            border-color: rgba(57, 255, 20, 0.6);
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .profile-option-card.selected {
+            border-color: #39FF14;
+            background: rgba(6, 78, 59, 0.6);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+        }
+
+        .opt-selector-btn {
+            background: #000;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            font-weight: 900;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .opt-selector-btn:hover {
+            border-color: #39FF14;
+        }
+        .opt-selector-btn.active {
+            background: #39FF14;
+            color: #000;
+            border-color: #39FF14;
+            box-shadow: 0 0 10px #39FF14;
         }
     </style>
 </head>
@@ -81,19 +104,22 @@
 
     <main class="operation-layout">
         <section class="visual-panel">
-            <div id="standard-visual-content">
-                <div class="panel-header">
-                    <div>
-                        <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
-                        <div class="star-rating" id="star-container" style="margin: 5px 0 0 0;">
-                            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
-                        </div>
+            {/* Ortak Üst Panel */}
+            <div class="panel-header" style="margin-bottom: 10px;">
+                <div>
+                    <div class="panel-tag" id="team-name-display">UYDU ANALİZİ: AKTİF</div>
+                    <div class="star-rating" id="star-container" style="margin: 5px 0 0 0;">
+                        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
                     </div>
-                    <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem; text-align: right; margin: 0;">
-                        Kazanım Puanı: <span id="current-score" class="neon-text">1000</span> KP<br>
-                        <span id="current-sector">1. Görev 2A Bölgesi</span>
-                    </p>
                 </div>
+                <p class="sys-msg" style="font-family: 'Exo 2', sans-serif; font-size: 1.1rem; text-align: right; margin: 0;">
+                    Kazanım Puanı: <span id="current-score" class="neon-text">1000</span> KP<br>
+                    <span id="current-sector">1. Görev 2A Bölgesi</span>
+                </p>
+            </div>
+
+            <!-- 1-9. Görevler Standart Harita Alanı -->
+            <div id="standard-visual-content">
                 <div class="visual-title-box" id="visual-title">Görsel Analizi Bekleniyor...</div>
                 <div class="map-frame">
                     <img id="active-map" alt="Analiz Bekleniyor..." style="display:none;">
@@ -104,21 +130,102 @@
                 <ul id="team-members-list" class="team-roster"></ul>
             </div>
 
-            <div id="mission-10-visual-content" style="display: none; flex-direction: column; height: 100%; padding: 10px; position: relative;">
-                <div id="mission-10-briefing" style="flex-grow: 1;">
-                    <h3 style="border-bottom: 1px solid var(--neon-green); padding-bottom: 10px; margin-bottom: 15px; color: var(--neon-green);">KRİTİK GÖREV: PROFİL ÇIKARMA</h3>
-                    <p style="font-size: 1rem; line-height: 1.8; color: #f0f0f0;">
-                        Genç Ajanlar, operasyonun en kritik kısmına geldik! Haritaya yukarıdan bakmak (izohipsler) bize arazinin nerede olduğunu söyler ama profil çıkarmak o arazinin "karakterini" anlatır.<br><br>
-                        Bir hız trenine binmeden önce uzaktan baktığınızda gördüğünüz o heyecan verici iniş ve çıkışlar aslında o rayların profilidir. Mühendisler o rayları tasarlarken izohips haritasına bakıp, trenin en hızlı nerede ineceğini bu profilleri çıkararak hesaplarlar. Profil olmasaydı, trenin nerede hızlanıp nerede yavaşlayacağını asla bilemezdik!<br><br>
-                        <b>Özetle:</b> İzohips haritası bir yerin "planı", profil ise o yerin "hikayesidir." Plan nerede olduğumuzu, profil ise oraya gitmenin ne kadar zor olacağını söyler.
-                    </p>
-                </div>
-                <div id="mission-10-hint-container" style="display: none; flex-grow: 1;">
-                    <h3 style="border-bottom: 1px solid var(--info-blue); padding-bottom: 10px; margin-bottom: 15px; color: var(--info-blue);">İPUCU SİSTEMİ</h3>
-                    <div id="mission-10-hint-display" style="font-size: 1rem; line-height: 1.7; color: #e0e0e0;"></div>
+            <!-- 10. Görev: Dikili-Akhisar OpenTopoMap & Kesit Profili -->
+            <div id="mission-10-visual-content" style="display: none; flex-direction: column; height: calc(100% - 70px); gap: 10px;">
+                <div class="visual-title-box">GÖREV 10: DİKİLİ - AKHİSAR PROFİL HATTI</div>
+                <div id="opentopo-map" style="width: 100%; height: 50%; min-height: 200px; border-radius: 6px; border: 1px solid rgba(57,255,20,0.5); overflow: hidden; background: #000; position: relative;"></div>
+                
+                <div id="mission-10-svg-container" style="width: 100%; flex-grow: 1; min-height: 140px; background: rgba(0,0,0,0.9); border: 1px solid rgba(57,255,20,0.4); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-bottom: 1px solid #1e293b; padding-bottom: 4px; font-family: monospace;">
+                        <span style="color: #39FF14; font-weight: bold;">DİNAMİK TOPOGRAFİK KESİT PROFİLİ (DİKİLİ &rarr; AKHİSAR)</span>
+                        <span style="color: #94a3b8;">UZUNLUK: ~88 KM</span>
+                    </div>
+                    <div id="mission-10-chart-body" style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                        <!-- SVG profili JS ile dinamik çizilir -->
+                    </div>
                 </div>
             </div>
 
+            <!-- 11. Görev: 4 Seçenekli Profil Testi -->
+            <div id="mission-11-visual-content" style="display: none; flex-direction: column; height: calc(100% - 70px); gap: 10px; overflow-y: auto;">
+                <div class="visual-title-box">GÖREV 11: KRİTİK FİNAL - PROFİL TESPİTİ</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #39FF14; font-family: monospace; padding: 4px 8px; background: #000; border: 1px solid rgba(57,255,20,0.3); border-radius: 4px;">
+                    <span>HEDEF: DOĞRU KESİT PROFİLİNİ SEÇİNİZ</span>
+                    <span>DİKİLİ (0m) &rarr; AKHİSAR (95m)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-grow: 1;">
+                    <!-- A -->
+                    <div class="profile-option-card" id="card-opt-a" onclick="window.selectProfileOption('A')">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="background: #39FF14; color: #000; font-weight: 900; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">A PROFİLİ</span>
+                            <span style="color: #10b981; font-family: monospace; font-size: 0.7rem;">0m &rarr; 680m &rarr; 95m</span>
+                        </div>
+                        <div style="height: 60px; width: 100%;">
+                            <svg viewBox="0 0 100 40" style="width: 100%; height: 100%;">
+                                <polygon points="10,35 35,32 60,8 85,26 90,26 90,35 10,35" fill="rgba(57,255,20,0.2)" />
+                                <polyline points="10,35 35,32 60,8 85,26" fill="none" stroke="#39FF14" stroke-width="2" stroke-linecap="round" />
+                                <circle cx="10" cy="35" r="2" fill="#38bdf8" />
+                                <circle cx="60" cy="8" r="2" fill="#f59e0b" />
+                                <circle cx="85" cy="26" r="2" fill="#38bdf8" />
+                            </svg>
+                        </div>
+                        <p style="font-size: 0.72rem; color: #cbd5e1; margin: 0; line-height: 1.3;">Kıyıdan (0m) başlar, Yunt Dağları kütlesini aşarak ~680 metreye tırmanır, ardından iç kısımdaki Akhisar Ovası tabanına (~95m) iner.</p>
+                    </div>
+
+                    <!-- B -->
+                    <div class="profile-option-card" id="card-opt-b" onclick="window.selectProfileOption('B')">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="background: #334155; color: #f1f5f9; font-weight: 900; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">B PROFİLİ</span>
+                            <span style="color: #94a3b8; font-family: monospace; font-size: 0.7rem;">500m &rarr; 200m &rarr; 750m</span>
+                        </div>
+                        <div style="height: 60px; width: 100%;">
+                            <svg viewBox="0 0 100 40" style="width: 100%; height: 100%;">
+                                <polygon points="10,14 45,30 90,6 90,35 10,35" fill="rgba(148,163,184,0.15)" />
+                                <polyline points="10,14 45,30 90,6" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" />
+                                <circle cx="10" cy="14" r="2" fill="#94a3b8" />
+                                <circle cx="90" cy="6" r="2" fill="#94a3b8" />
+                            </svg>
+                        </div>
+                        <p style="font-size: 0.72rem; color: #94a3b8; margin: 0; line-height: 1.3;">500 metre yüksek platodan başlar, derin vadiye iner ve 750 metreye tırmanır.</p>
+                    </div>
+
+                    <!-- C -->
+                    <div class="profile-option-card" id="card-opt-c" onclick="window.selectProfileOption('C')">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="background: #334155; color: #f1f5f9; font-weight: 900; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">C PROFİLİ</span>
+                            <span style="color: #94a3b8; font-family: monospace; font-size: 0.7rem;">0m &rarr; 400m &rarr; 1200m</span>
+                        </div>
+                        <div style="height: 60px; width: 100%;">
+                            <svg viewBox="0 0 100 40" style="width: 100%; height: 100%;">
+                                <line x1="0" y1="35" x2="100" y2="35" stroke="#475569" stroke-width="0.5" stroke-dasharray="2,2" />
+                                <polyline points="10,35 40,24 70,14 90,5" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" />
+                                <circle cx="10" cy="35" r="2" fill="#94a3b8" />
+                                <circle cx="90" cy="5" r="2" fill="#94a3b8" />
+                            </svg>
+                        </div>
+                        <p style="font-size: 0.72rem; color: #94a3b8; margin: 0; line-height: 1.3;">0 metreden başlayıp dağ doruğuna (1200m) kadar kesintisiz durmaksızın yükselir.</p>
+                    </div>
+
+                    <!-- D -->
+                    <div class="profile-option-card" id="card-opt-d" onclick="window.selectProfileOption('D')">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="background: #334155; color: #f1f5f9; font-weight: 900; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">D PROFİLİ</span>
+                            <span style="color: #94a3b8; font-family: monospace; font-size: 0.7rem;">700m &rarr; 300m &rarr; 0m</span>
+                        </div>
+                        <div style="height: 60px; width: 100%;">
+                            <svg viewBox="0 0 100 40" style="width: 100%; height: 100%;">
+                                <polygon points="10,8 45,20 90,36 90,36 10,36" fill="rgba(148,163,184,0.15)" />
+                                <polyline points="10,8 45,20 90,36" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" />
+                                <circle cx="10" cy="8" r="2" fill="#94a3b8" />
+                                <circle cx="90" cy="36" r="2" fill="#94a3b8" />
+                            </svg>
+                        </div>
+                        <p style="font-size: 0.72rem; color: #94a3b8; margin: 0; line-height: 1.3;">700 metre tepeden başlayıp tek yönlü inişle deniz seviyesinde (0m) biter.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zafer / Tamamlandı Ekranı -->
             <div id="game-over-content" style="display: none; flex-direction: column; align-items: center; text-align: center; padding: 15px; height: 100%; overflow-y: auto;">
                 <div class="achievement-card">
                     <div class="star-rating" style="font-size: 2.2rem; margin-bottom: 10px;">
@@ -162,9 +269,7 @@
 
                     <div id="champion-section" style="display: none; margin-top: 15px; border: 1px solid var(--info-blue); padding: 12px 18px; background: rgba(0, 212, 255, 0.08); border-radius: 8px;">
                         <h3 style="color: var(--info-blue); margin-bottom: 8px; font-size: 0.9rem; text-transform: uppercase;">Günün Sıralaması (KP Liderleri)</h3>
-                        <div id="champion-list" style="font-size: 0.85rem; text-align: left;">
-                            <!-- Şampiyon takımlar buraya JS ile eklenecek -->
-                        </div>
+                        <div id="champion-list" style="font-size: 0.85rem; text-align: left;"></div>
                     </div>
 
                     <div style="margin-top: 20px;">
@@ -176,6 +281,7 @@
             </div>
         </section>
 
+        <!-- Sağ Komuta & Terminal Paneli -->
         <section class="command-panel">
             <div class="panel-header">
                 <div class="terminal-header">GÖREV GÜNLÜĞÜ</div>
@@ -183,29 +289,50 @@
 
             <div class="terminal-log" id="terminal-output"></div>
 
-    <div id="standard-mission-input" class="mission-input" style="display: flex; gap: 10px; margin-top: 15px;">
-        <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off" style="flex-grow: 1;">
-        <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
-    </div>
+            <!-- Standart Görev Girişi (1-9) -->
+            <div id="standard-mission-input" class="mission-input" style="display: flex; gap: 10px; margin-top: 15px;">
+                <input type="text" id="kripto-val" placeholder="Analiz Sonucu..." autocomplete="off" style="flex-grow: 1;">
+                <button class="cyber-btn primary" id="btn-verify">ONAYLA</button>
+            </div>
 
-    <div id="mission-10-input" class="mission-input" style="display: none; flex-direction: column; gap: 15px; align-items: stretch;">
-        <div style="display: flex; gap: 10px; justify-content: center;">
-            <a href="assets/video/10_gorev.mp4" id="btn-training-video" target="_blank" class="cyber-btn">Eğitim İzle</a>
-            <a href="https://www.heywhatsthat.com/profiler.html" id="btn-profiler-tool" target="_blank" class="cyber-btn">Profil Çıkar</a>
-        </div>
-        <div style="border: 1px dashed var(--border-color); padding: 15px; text-align: center;">
-            <label for="fake-upload" class="cyber-btn secondary" style="width: 100%;">Profil Resmini Kaydet (Upload)</label>
-            <input type="file" id="fake-upload" hidden="">
-        </div>
-        <input type="text" id="coords-input" placeholder="Enlem boylam bilgisini yapıştır.">
-        <button class="cyber-btn primary" id="btn-ai-verify">Yapay Zeka</button>
-    </div>
+            <!-- 10. Görev Girişi: Profil Hattı Onayı -->
+            <div id="mission-10-input" class="mission-input" style="display: none; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #cbd5e1; font-family: monospace;">
+                    <span>📍 Adım 1: Dikili (0m) &amp; Akhisar (95m)</span>
+                    <span id="m10-status-text" style="color: #39FF14; font-weight: bold;">BEKLENİYOR...</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="btn-connect-line" class="cyber-btn" style="flex: 1; background: #f59e0b; color: #000; border-color: #f59e0b; font-weight: bold; font-size: 0.8rem;">
+                        ⚡ DİKİLİ-AKHİSAR HATTINI BAĞLA
+                    </button>
+                    <button id="btn-confirm-m10" class="cyber-btn primary" style="flex: 1; display: none; font-weight: 900; font-size: 0.8rem;">
+                        🎯 PROFİLİ ONAYLA &amp; GÖREV 11'E GEÇ (+300 KP)
+                    </button>
+                </div>
+            </div>
 
-    <div class="extra-tools" style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 KP)</button>
-        <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
-    </div>
-</section>
+            <!-- 11. Görev Girişi: Profil Eşleştirme Testi -->
+            <div id="mission-11-input" class="mission-input" style="display: none; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #cbd5e1; font-family: monospace;">
+                    <span>🎯 Final Kararı: Doğru Profili Seçiniz:</span>
+                    <span id="m11-status-text" style="color: #39FF14; font-weight: bold;">SEÇİM YAPILMADI</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                    <button class="opt-selector-btn" id="btn-opt-A" onclick="window.selectProfileOption('A')">A</button>
+                    <button class="opt-selector-btn" id="btn-opt-B" onclick="window.selectProfileOption('B')">B</button>
+                    <button class="opt-selector-btn" id="btn-opt-C" onclick="window.selectProfileOption('C')">C</button>
+                    <button class="opt-selector-btn" id="btn-opt-D" onclick="window.selectProfileOption('D')">D</button>
+                </div>
+                <button id="btn-confirm-m11" class="cyber-btn primary" style="width: 100%; font-weight: 900; font-size: 0.85rem;" disabled>
+                    🏆 FİNAL KARARINI ONAYLA (+300 KP)
+                </button>
+            </div>
+
+            <div class="extra-tools" style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button id="btn-hint" class="cyber-btn hint">İPUCU TALEBİ (-50 KP)</button>
+                <button id="btn-open-manual" class="cyber-btn secondary">📂 SAHA KILAVUZU</button>
+            </div>
+        </section>
     </main>
 
     <div id="manual-modal" class="modal">
@@ -218,16 +345,5 @@
     <div id="footer-placeholder"></div>
 
     <script type="module" src="ops_engine.js"></script>
-    <script src="components/header.js"></script>
-    <script src="components/footer.js"></script>
-
-    <script>
-        const modal = document.getElementById("manual-modal");
-        const openBtn = document.getElementById("btn-open-manual");
-        const closeBtn = document.getElementById("btn-close-manual");
-        openBtn.onclick = () => modal.style.display = "block";
-        if (closeBtn) closeBtn.onclick = () => modal.style.display = "none";
-        window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; }
-    </script>
 </body>
 </html>
